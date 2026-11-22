@@ -180,7 +180,7 @@ export function BatchPage() {
             <h2 className="font-serif text-xl tracking-tight">結果</h2>
             <p className="text-xs text-muted-foreground">{rows.length} 件</p>
           </div>
-          <div className="mt-4 overflow-x-auto rounded-lg border border-border">
+          <div className="mt-4 min-w-0 max-w-full overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-[900px] border-collapse text-left text-xs">
               <thead className="bg-secondary">
                 <tr>

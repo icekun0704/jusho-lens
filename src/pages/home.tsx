@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { AddressTool } from '@/components/address-tool'
 import { ArrowRightLinearIcon } from '@/components/icons'
 import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
 import { AdSlot } from '@/components/ad-slot'
 import { focusRing } from '@/components/ui/_shared'
 import { cn } from '@/lib/utils'
@@ -168,21 +169,18 @@ export function HomePage() {
             <h2 className="font-serif text-xl tracking-tight">まず、1件を戻してみてください。</h2>
             <p className="mt-1 text-sm text-muted-foreground">登録も、アップロードも要りません。</p>
           </div>
-          <button
+          <Button
             type="button"
+            className="h-11"
             onClick={() =>
               window.scrollTo({
                 top: 0,
                 behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
               })
             }
-            className={cn(
-              'inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground',
-              focusRing,
-            )}
           >
             ツールへ戻る
-          </button>
+          </Button>
         </div>
       </section>
     </div>

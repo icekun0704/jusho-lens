@@ -191,7 +191,7 @@ export function GuidePage() {
                     {s.dl.map(([k, v]) => (
                       <div key={k} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3 py-2.5 text-sm">
                         <dt className="font-mono text-xs text-muted-foreground">{k}</dt>
-                        <dd>{v}</dd>
+                        <dd className="break-words">{v}</dd>
                       </div>
                     ))}
                   </dl>
