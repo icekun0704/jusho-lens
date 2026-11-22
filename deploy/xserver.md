@@ -48,9 +48,9 @@ AdSense のサイト登録は `icekun.net`（サブディレクトリやサブ�
 - 確認: `ssh xserver 'tail -n 20 ~/icekun.net/contact-submissions.jsonl'`
 
 ```
-でんわ 03-0000-0000
+you@example.com
 ```
-のように書くと届きます。
+のように1行書くと届きます。
 
 ## サブドメインに移す場合
 
