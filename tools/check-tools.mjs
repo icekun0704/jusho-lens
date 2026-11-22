@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process'
 const ROOT = path.resolve(import.meta.dirname, '..', 'deploy', 'tools')
 const dirs = fs
   .readdirSync(ROOT, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && d.name !== 'assets')
+  .filter((d) => d.isDirectory() && !d.name.startsWith('_') && d.name !== 'assets')
   .map((d) => d.name)
   .sort()
 

@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cron式の読み方｜道具箱</title>
+<meta name="description" content="cron式（分 時 日 月 曜日）を日本語で読み解き、「毎日 9:00」「平日 3:00」のような説明と次回の実行時刻を表示します。範囲・間隔・曜日名の書き方、日と曜日を併記したときの動きにも触れています。入力はブラウザ内で処理します。">
+<link rel="canonical" href="https://icekun.net/cron/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  #tool h3 { margin: 1.3rem 0 0.3rem; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+  #summary:empty { display: none; }
+  #next { margin: 0.35rem 0 0; padding-left: 1.4rem; font-family: var(--mono); font-size: 0.8125rem; line-height: 2; }
+  #next:empty { display: none; }
+  #expr { font-family: var(--mono); font-size: 0.9375rem; }
+  #presets { max-width: 24rem; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>cron式の読み方</h1>
+    <p class="lead">cron式を日本語で読み解き、次に動く時刻を確かめます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <label class="field" for="expr">
+      <span>cron式</span>
+      <input type="text" id="expr" value="0 9 * * *" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="exprFormat">
+    </label>
+    <p class="hint" id="exprFormat" style="margin:0.5rem 0 0">分 時 日 月 曜日 の順に、空白で区切ります。</p>
+
+    <label class="field" for="presets" style="margin-top:0.9rem">
+      <span>例から選ぶ</span>
+      <select id="presets">
+        <option value="">選択してください</option>
+        <option value="0 9 * * *">毎日 9:00</option>
+        <option value="*/5 * * * *">5分ごと</option>
+        <option value="0 9 * * 1-5">平日 9:00</option>
+        <option value="0 3 * * 1">毎週月曜 3:00</option>
+        <option value="0 0 1 * *">毎月1日 0:00</option>
+      </select>
+    </label>
+
+    <p class="err" id="err" role="alert"></p>
+    <div class="result large" id="summary" aria-live="polite"></div>
+
+    <h3>項目ごとの読み</h3>
+    <table>
+      <caption class="sr-only">cron式の項目ごとの読み</caption>
+      <thead>
+        <tr><th scope="col">項目</th><th scope="col">読み</th></tr>
+      </thead>
+      <tbody id="fields"></tbody>
+    </table>
+
+    <h3>次に実行される時刻</h3>
+    <ol id="next"></ol>
+    <p class="hint" id="tz" style="margin:0.5rem 0 0"></p>
+    <p class="warn" id="warn" role="status"></p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>式を入力するか、例のボタンを押します。</li>
+      <li>日本語の説明と、次に動く時刻を確認します。</li>
+      <li>各項目の意味は下の表で確かめられます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>cron式の5つの項目</h2>
+    <p>cron式は「分 時 日 月 曜日」の5つを空白で区切り、実行するタイミングを書きます。crontabのほか、CIや定期実行を受け付けるサービスでも同じ形式が使われます。この道具は5項目の形式だけを扱い、秒を含む6項目の形式には対応していません。</p>
+
+    <h3>使える書き方</h3>
+    <p><code>*</code> はすべて、<code>5</code> はその値だけ、<code>1-5</code> は範囲、<code>1,3,5</code> は列挙、<code>*/10</code> は間隔です。<code>1-10/2</code> のように範囲と間隔を組み合わせることもできます。月と曜日は JAN や MON のような3文字の名前も使えます。曜日は 0 が日曜で、7 も日曜として扱います。</p>
+
+    <h3>日と曜日を両方書いたとき</h3>
+    <p>日と曜日の両方を指定すると、crontabはどちらか一方に一致した日に実行します。両方に一致する必要はありません。たとえば <code>0 9 1 * 1</code> は、毎月1日と毎週月曜の両方で動きます。片方を <code>*</code> にすると、もう片方だけが条件になります。</p>
+
+    <h3>時刻の数え方</h3>
+    <p>次回の時刻はブラウザの時計とタイムゾーンで計算します。cronを動かすサーバーのタイムゾーンが違えば、実際の実行時刻も変わります。夏時間のある地域では、切り替えで存在しない時刻は表示されません。31日や2月29日など、その月にない日付は飛ばされます。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var MONTH_NAMES = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12 };
+  var DOW_NAMES = { SUN: 0, MON: 1, TUE: 2, WED: 3, THU: 4, FRI: 5, SAT: 6 };
+  var DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+  var DEFS = [
+    { key: 'minute', label: '分', min: 0, max: 59 },
+    { key: 'hour', label: '時', min: 0, max: 23 },
+    { key: 'dom', label: '日', min: 1, max: 31, allowQuestion: true },
+    { key: 'month', label: '月', min: 1, max: 12, names: MONTH_NAMES },
+    { key: 'dow', label: '曜日', min: 0, max: 7, names: DOW_NAMES, wrap: 7, allowQuestion: true }
+  ];
+  var MIN = DEFS[0];
+  var HOUR = DEFS[1];
+  var DOM = DEFS[2];
+  var MONTH = DEFS[3];
+  var DOW = DEFS[4];
+
+  var MACROS = {
+    '@hourly': '0 * * * *',
+    '@daily': '0 0 * * *',
+    '@midnight': '0 0 * * *',
+    '@weekly': '0 0 * * 0',
+    '@monthly': '0 0 1 * *',
+    '@yearly': '0 0 1 1 *',
+    '@annually': '0 0 1 1 *'
+  };
+
+  var expr = document.getElementById('expr');
+  var presets = document.getElementById('presets');
+  var errEl = document.getElementById('err');
+  var warnEl = document.getElementById('warn');
+  var summaryEl = document.getElementById('summary');
+  var fieldsEl = document.getElementById('fields');
+  var nextEl = document.getElementById('next');
+  var tzEl = document.getElementById('tz');
+  var timer = null;
+
+  function pad2(n) {
+    return n < 10 ? '0' + n : String(n);
+  }
+
+  function isAll(def, values) {
+    var total = def.max - def.min + (def.wrap === undefined ? 1 : 0);
+    return values.length === total;
+  }
+
+  function parseValue(token, def) {
+    if (/^\d{1,2}$/.test(token)) return parseInt(token, 10);
+    if (def.names) {
+      var upper = token.toUpperCase();
+      if (Object.prototype.hasOwnProperty.call(def.names, upper)) return def.names[upper];
+    }
+    return NaN;
+  }
+
+  function parseField(raw, def) {
+    if (raw === '') throw new Error('「' + def.label + '」が空です。');
+    var set = Object.create(null);
+    var parts = raw.split(',');
+    for (var p = 0; p < parts.length; p++) {
+      var part = parts[p];
+      if (part === '') throw new Error('「' + def.label + '」に空の指定があります。');
+      var base = part;
+      var step = 1;
+      var hasStep = false;
+      var slash = part.indexOf('/');
+      if (slash !== -1) {
+        if (slash === 0 || slash === part.length - 1 || part.indexOf('/', slash + 1) !== -1) {
+          throw new Error('「' + def.label + '」の「' + part + '」の書き方が正しくありません。');
+        }
+        base = part.slice(0, slash);
+        var stepText = part.slice(slash + 1);
+        if (!/^\d+$/.test(stepText)) {
+          throw new Error('「' + def.label + '」の間隔は数字で指定してください。');
+        }
+        step = parseInt(stepText, 10);
+        if (step < 1) throw new Error('「' + def.label + '」の間隔は1以上にしてください。');
+        hasStep = true;
+      }
+
+      var lo;
+      var hi;
+      if (base === '*' || base === '?') {
+        if (base === '?' && !def.allowQuestion) {
+          throw new Error('「' + def.label + '」では ? を使えません。');
+        }
+        lo = def.min;
+        hi = def.max;
+      } else {
+        var dash = base.indexOf('-');
+        if (dash > 0) {
+          if (base.indexOf('-', dash + 1) !== -1) {
+            throw new Error('「' + def.label + '」の範囲「' + base + '」の書き方が正しくありません。');
+          }
+          var a = parseValue(base.slice(0, dash), def);
+          var b = parseValue(base.slice(dash + 1), def);
+          if (isNaN(a) || isNaN(b)) {
+            throw new Error('「' + def.label + '」の「' + base + '」を値として読めません。');
+          }
+          if (a > b) throw new Error('「' + def.label + '」の範囲「' + base + '」が逆順です。');
+          lo = a;
+          hi = b;
+        } else {
+          var v = parseValue(base, def);
+          if (isNaN(v)) throw new Error('「' + def.label + '」の「' + base + '」を値として読めません。');
+          lo = v;
+          hi = hasStep ? def.max : v;
+        }
+      }
+
+      if (lo < def.min || hi > def.max) {
+        throw new Error('「' + def.label + '」は ' + def.min + '〜' + def.max + ' の範囲で指定してください。');
+      }
+
+      for (var n = lo; n <= hi; n += step) {
+        var normalized = (def.wrap !== undefined && n === def.wrap) ? def.min : n;
+        set[normalized] = true;
+      }
+    }
+
+    var values = Object.keys(set).map(Number).sort(function (x, y) { return x - y; });
+    if (!values.length) throw new Error('「' + def.label + '」に値がありません。');
+    return values;
+  }
+
+  function normalizeExpression(text) {
+    var trimmed = text.trim().replace(/\s+/g, ' ');
+    if (trimmed === '') throw new Error('cron式を入力してください。');
+    var lower = trimmed.toLowerCase();
+    if (trimmed.charAt(0) === '@') {
+      if (lower === '@reboot') {
+        throw new Error('@reboot は起動時に実行されるため、時刻を計算できません。');
+      }
+      if (MACROS[lower]) return MACROS[lower].split(' ');
+      throw new Error('@ で始まる指定は扱えません。@hourly / @daily / @weekly / @monthly / @yearly が使えます。');
+    }
+    var parts = trimmed.split(' ');
+    if (parts.length > 5) {
+      throw new Error('項目が ' + parts.length + ' 個あります。秒を含む形式には対応していません。分 時 日 月 曜日 の5つにしてください。');
+    }
+    if (parts.length < 5) {
+      throw new Error('項目が ' + parts.length + ' 個あります。分 時 日 月 曜日 の5つを空白で区切ってください。');
+    }
+    return parts;
+  }
+
+  function parseExpression(text) {
+    var parts = normalizeExpression(text);
+    var parsed = {};
+    for (var i = 0; i < DEFS.length; i++) {
+      parsed[DEFS[i].key] = parseField(parts[i], DEFS[i]);
+    }
+    return parsed;
+  }
+
+  function fullStep(values, start, max) {
+    if (values.length < 2) return 0;
+    var step = values[1] - values[0];
+    if (step < 2) return 0;
+    if (values[0] !== start) return 0;
+    for (var i = 2; i < values.length; i++) {
+      if (values[i] - values[i - 1] !== step) return 0;
+    }
+    if (values[values.length - 1] + step <= max) return 0;
+    return step;
+  }
+
+  function isConsecutive(values) {
+    for (var i = 1; i < values.length; i++) {
+      if (values[i] !== values[i - 1] + 1) return false;
+    }
+    return true;
+  }
+
+  function rangeList(values, fmt) {
+    if (values.length === 1) return fmt(values[0]);
+    if (values.length === 2) return fmt(values[0]) + 'と' + fmt(values[1]);
+    var parts = [];
+    var start = 0;
+    for (var i = 1; i <= values.length; i++) {
+      if (i === values.length || values[i] !== values[i - 1] + 1) {
+        var length = i - start;
+        if (length >= 3) {
+          parts.push(fmt(values[start]) + '〜' + fmt(values[i - 1]));
+        } else {
+          for (var j = start; j < i; j++) parts.push(fmt(values[j]));
+        }
+        start = i;
+      }
+    }
+    return parts.join('、');
+  }
+
+  function minuteLabel(v) { return v + '分'; }
+  function hourLabel(v) { return v + '時'; }
+  function dayLabel(v) { return v + '日'; }
+
+  function hourList(values) {
+    return rangeList(values, hourLabel);
+  }
+
+  function monthList(values) {
+    return rangeList(values, function (v) { return v + '月'; });
+  }
+
+  function dowList(values) {
+    return rangeList(values, function (v) { return DOW_LABELS[v] + '曜'; });
+  }
+
+  function isWeekdays(values) {
+    return values.length === 5 && values.join(',') === '1,2,3,4,5';
+  }
+
+  function isWeekend(values) {
+    return values.length === 2 && values[0] === 0 && values[1] === 6;
+  }
+
+  function weeklyText(values) {
+    if (isWeekdays(values)) return '平日';
+    if (isWeekend(values)) return '土日';
+    return '毎週' + dowList(values);
+  }
+
+  function domText(values) {
+    if (isAll(DOM, values)) return '毎日';
+    var step = fullStep(values, 1, 31);
+    if (step) return '1日から' + step + '日ごと';
+    return rangeList(values, dayLabel);
+  }
+
+  function dateText(parsed) {
+    var domAll = isAll(DOM, parsed.dom);
+    var dowAll = isAll(DOW, parsed.dow);
+    var monthAll = isAll(MONTH, parsed.month);
+    if (domAll && dowAll) {
+      return monthAll ? '毎日' : '毎年' + monthList(parsed.month) + 'の毎日';
+    }
+    if (dowAll) {
+      if (monthAll) return '毎月' + domText(parsed.dom);
+      if (parsed.month.length === 1 && parsed.dom.length === 1) {
+        return '毎年' + parsed.month[0] + '月' + parsed.dom[0] + '日';
+      }
+      return '毎年' + monthList(parsed.month) + 'の' + domText(parsed.dom);
+    }
+    if (domAll) {
+      return monthAll ? weeklyText(parsed.dow) : '毎年' + monthList(parsed.month) + 'の' + dowList(parsed.dow);
+    }
+    if (monthAll) {
+      return '毎月' + domText(parsed.dom) + 'または' + weeklyText(parsed.dow);
+    }
+    return '毎年' + monthList(parsed.month) + 'の' + domText(parsed.dom) + 'または' + dowList(parsed.dow);
+  }
+
+  function summaryText(parsed) {
+    var minuteAll = isAll(MIN, parsed.minute);
+    var hourAll = isAll(HOUR, parsed.hour);
+    var mStep = fullStep(parsed.minute, 0, 59);
+    var date = dateText(parsed);
+    var base;
+    var useWa = false;
+
+    if (minuteAll && hourAll) {
+      base = '毎分';
+      useWa = true;
+    } else if (minuteAll) {
+      base = (parsed.hour.length === 1 ? parsed.hour[0] + '時台' : hourList(parsed.hour)) + 'に毎分';
+      useWa = true;
+    } else if (hourAll) {
+      if (mStep) {
+        base = mStep + '分ごと';
+      } else if (parsed.minute.length === 1) {
+        base = '毎時' + parsed.minute[0] + '分';
+      } else {
+        base = '毎時' + rangeList(parsed.minute, minuteLabel);
+      }
+      useWa = true;
+    } else if (mStep) {
+      base = (parsed.hour.length === 1 ? parsed.hour[0] + '時台' : hourList(parsed.hour)) + 'の' + mStep + '分ごと';
+      useWa = true;
+    } else if (parsed.minute.length === 1 && parsed.hour.length === 1) {
+      base = parsed.hour[0] + ':' + pad2(parsed.minute[0]);
+    } else if (parsed.minute.length === 1 && parsed.hour.length >= 3 && isConsecutive(parsed.hour)) {
+      base = parsed.hour[0] + '時〜' + parsed.hour[parsed.hour.length - 1] + '時の毎時' + parsed.minute[0] + '分';
+    } else if (parsed.minute.length === 1 && parsed.hour.length <= 6) {
+      base = parsed.hour.map(function (h) {
+        return h + ':' + pad2(parsed.minute[0]);
+      }).join('、');
+    } else if (parsed.hour.length === 1 && parsed.minute.length <= 4) {
+      base = parsed.minute.map(function (m) {
+        return parsed.hour[0] + ':' + pad2(m);
+      }).join('、');
+    } else {
+      base = hourList(parsed.hour) + 'の' + rangeList(parsed.minute, minuteLabel);
+    }
+
+    if (date === '毎日') return useWa ? base : '毎日 ' + base;
+    return date + (useWa ? 'は' : ' ') + base;
+  }
+
+  function fieldRows(parsed) {
+    var minuteText;
+    if (isAll(MIN, parsed.minute)) {
+      minuteText = '毎分';
+    } else {
+      var mStep = fullStep(parsed.minute, 0, 59);
+      minuteText = mStep ? mStep + '分ごと' : rangeList(parsed.minute, minuteLabel);
+    }
+
+    var hourText;
+    if (isAll(HOUR, parsed.hour)) {
+      hourText = '毎時';
+    } else {
+      var hStep = fullStep(parsed.hour, 0, 23);
+      hourText = hStep ? hStep + '時間ごと' : hourList(parsed.hour);
+    }
+
+    var dowText;
+    if (isAll(DOW, parsed.dow)) {
+      dowText = '毎日';
+    } else if (isWeekdays(parsed.dow)) {
+      dowText = '平日（月〜金）';
+    } else if (isWeekend(parsed.dow)) {
+      dowText = '土日';
+    } else {
+      dowText = dowList(parsed.dow);
+    }
+
+    return [
+      ['分', minuteText],
+      ['時', hourText],
+      ['日', domText(parsed.dom)],
+      ['月', isAll(MONTH, parsed.month) ? '毎月' : monthList(parsed.month)],
+      ['曜日', dowText]
+    ];
+  }
+
+  function formatDate(date) {
+    return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日(' +
+      DOW_LABELS[date.getDay()] + ') ' + pad2(date.getHours()) + ':' + pad2(date.getMinutes());
+  }
+
+  function nextRuns(parsed, count) {
+    var now = new Date();
+    var start = new Date(now.getTime());
+    start.setSeconds(0, 0);
+    start.setMinutes(start.getMinutes() + 1);
+
+    var times = [];
+    parsed.hour.forEach(function (h) {
+      parsed.minute.forEach(function (m) { times.push([h, m]); });
+    });
+    times.sort(function (a, b) { return (a[0] * 60 + a[1]) - (b[0] * 60 + b[1]); });
+
+    var out = [];
+    var domAll = isAll(DOM, parsed.dom);
+    var dowAll = isAll(DOW, parsed.dow);
+    var day = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    var limit = new Date(start.getFullYear() + 5, start.getMonth(), start.getDate());
+
+    while (day <= limit && out.length < count) {
+      if (parsed.month.indexOf(day.getMonth() + 1) !== -1) {
+        var domOk = parsed.dom.indexOf(day.getDate()) !== -1;
+        var dowOk = parsed.dow.indexOf(day.getDay()) !== -1;
+        var dayOk = (!domAll && !dowAll) ? (domOk || dowOk) : (domOk && dowOk);
+        if (dayOk) {
+          for (var i = 0; i < times.length && out.length < count; i++) {
+            var candidate = new Date(day.getFullYear(), day.getMonth(), day.getDate(), times[i][0], times[i][1], 0, 0);
+            if (candidate < start) continue;
+            if (candidate.getHours() !== times[i][0] || candidate.getMinutes() !== times[i][1]) continue;
+            out.push(candidate);
+          }
+        }
+      }
+      day.setDate(day.getDate() + 1);
+    }
+    return out;
+  }
+
+  function clearResult() {
+    summaryEl.textContent = '';
+    fieldsEl.textContent = '';
+    nextEl.textContent = '';
+    warnEl.textContent = '';
+  }
+
+  function renderRows(rows) {
+    fieldsEl.textContent = '';
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = row[0];
+      var td = document.createElement('td');
+      td.textContent = row[1];
+      tr.appendChild(th);
+      tr.appendChild(td);
+      fieldsEl.appendChild(tr);
+    });
+  }
+
+  function timezoneText() {
+    var zone = '不明';
+    try {
+      zone = Intl.DateTimeFormat().resolvedOptions().timeZone || '不明';
+    } catch (e) {
+      zone = '不明';
+    }
+    return 'この端末のタイムゾーン（' + zone + '）で計算しています。';
+  }
+
+  function update() {
+    errEl.textContent = '';
+    warnEl.textContent = '';
+    var parsed;
+    try {
+      parsed = parseExpression(expr.value);
+    } catch (error) {
+      clearResult();
+      errEl.textContent = error && error.message ? error.message : '式を読み取れませんでした。';
+      return;
+    }
+
+    summaryEl.textContent = summaryText(parsed);
+    renderRows(fieldRows(parsed));
+
+    var runs = nextRuns(parsed, 5);
+    nextEl.textContent = '';
+    if (!runs.length) {
+      warnEl.textContent = '5年以内に実行される日時が見つかりません。日付と月の組み合わせを確認してください。';
+    } else {
+      runs.forEach(function (date) {
+        var li = document.createElement('li');
+        li.textContent = formatDate(date);
+        nextEl.appendChild(li);
+      });
+    }
+
+    var notes = [];
+    if (!isAll(DOM, parsed.dom) && !isAll(DOW, parsed.dow)) {
+      notes.push('日と曜日を両方指定しているため、どちらか一方に一致する日に実行されます。');
+    }
+    if (!isAll(DOM, parsed.dom) && parsed.dom.indexOf(29) !== -1 && parsed.month.length === 1 && parsed.month[0] === 2) {
+      notes.push('2月29日は閏年にだけあります。');
+    }
+    if (notes.length) {
+      warnEl.textContent = (warnEl.textContent ? warnEl.textContent + ' ' : '') + notes.join(' ');
+    }
+  }
+
+  function scheduleUpdate() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(update, 250);
+  }
+
+  expr.addEventListener('input', function () {
+    presets.value = '';
+    scheduleUpdate();
+  });
+  expr.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (timer) clearTimeout(timer);
+      update();
+    }
+  });
+
+  presets.addEventListener('change', function () {
+    if (!presets.value) return;
+    expr.value = presets.value;
+    if (timer) clearTimeout(timer);
+    update();
+    expr.focus();
+  });
+
+  tzEl.textContent = timezoneText();
+  update();
+})();
+</script>
+</body>
+</html>

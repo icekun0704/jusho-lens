@@ -31,12 +31,12 @@
 <main class="wrap">
   <div class="page-head">
     <h1>RSA暗号化・復号</h1>
-    <p class="lead">ブラウザ内で RSA-OAEP（SHA-256）の鍵生成・暗号化・復号を行うデモです。公開鍵と秘密鍵の PEM をそのまま貼り付けて試せます。</p>
+    <p class="lead">ブラウザ内で鍵を作り、RSA の暗号化と復号を試せます。</p>
   </div>
 
   <section class="panel" id="tool">
     <h2>1. 鍵を生成</h2>
-    <p class="hint">RSA-OAEP（SHA-256）の鍵ペアを作ります。鍵はページのメモリ上にだけ保持し、送信も保存もしません。</p>
+    <p class="hint">RSA-OAEP（SHA-256）の鍵ペアを作ります。鍵はメモリ上にだけ置きます。</p>
     <div class="row">
       <label class="field" style="max-width:12rem">
         <span>鍵長</span>
@@ -77,7 +77,7 @@
     <p class="note" id="rsa-copy-msg" role="status" aria-live="polite" hidden></p>
 
     <h2 style="margin-top:2rem">2. 公開鍵で暗号化</h2>
-    <p class="hint">公開鍵の PEM と平文を入れてください。暗号文は Base64 で出力します。鍵を生成した直後は、公開鍵が下の欄に自動で入っています。</p>
+    <p class="hint">公開鍵の PEM と平文を入れてください。暗号文は Base64 で出力します。</p>
     <label class="field">
       <span>公開鍵（SPKI, PEM）</span>
       <textarea id="rsa-enc-pub" rows="5" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
@@ -100,7 +100,7 @@
     </div>
 
     <h2 style="margin-top:2rem">3. 秘密鍵で復号</h2>
-    <p class="hint">秘密鍵の PEM と Base64 の暗号文を入れます。直前に生成した鍵なら、秘密鍵の欄は空のままで復号できます。</p>
+    <p class="hint">秘密鍵の PEM と Base64 の暗号文を入れます。</p>
     <label class="field">
       <span>秘密鍵（PKCS#8, PEM）</span>
       <textarea id="rsa-dec-priv" rows="5" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
@@ -126,13 +126,10 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
-      <li>鍵長（2048 / 3072 / 4096 ビット）を選び、「鍵を生成」を押します。4096 ビットは数秒かかることがあります。</li>
-      <li>公開鍵は「2. 公開鍵で暗号化」の欄に自動で入ります。秘密鍵を見るには「秘密鍵を表示する」にチェックを入れます。コピーとダウンロードは非表示のままでも使えます。</li>
-      <li>平文を入れて「暗号化」を押すと、Base64 の暗号文が出ます。</li>
-      <li>暗号文を「3. 秘密鍵で復号」に貼り、「復号」を押します。直前に生成した鍵なら秘密鍵の欄は空のままで構いません。</li>
-      <li>別の道具で作った鍵を使うときは、公開鍵（SPKI）と秘密鍵（PKCS#8）の PEM をそれぞれの欄に貼り付けます。</li>
+      <li>鍵の長さを選んで生成します。</li>
+      <li>公開鍵で文章を暗号化します。</li>
+      <li>秘密鍵で元に戻せるか試します。</li>
     </ol>
   </section>
 
@@ -144,17 +141,19 @@
   -->
 
   <section class="prose">
-    <h2>RSA暗号化・復号について</h2>
-    <p>RSA は公開鍵暗号の一つで、公開鍵で暗号化した内容は、対になる秘密鍵でしか復号できません。このページはブラウザの Web Crypto API にある RSA-OAEP（ハッシュ SHA-256）を使います。OAEP はパディング方式の一つで、同じ平文でも暗号化のたびに異なる暗号文になります。そのため、暗号文を見比べても同じ内容かどうかは分かりません。</p>
-    <p>RSA で一度に暗号化できるデータ量は鍵長から決まり、「鍵長（ビット）÷ 8 − 66 バイト」が上限です。2048 ビットなら 190 バイト、3072 ビットなら 318 バイト、4096 ビットなら 446 バイトまでです。長い文書は AES などの共通鍵暗号で暗号化し、その鍵だけを RSA で包む「ハイブリッド暗号」が一般的で、TLS もこの方式を使っています。</p>
+    <h2>RSA 暗号化と復号</h2>
+    <p>RSA は公開鍵暗号の一つで、公開鍵で暗号化した内容は、対になる秘密鍵でしか復号できません。ここではブラウザの Web Crypto API にある RSA-OAEP（SHA-256）を使います。同じ平文でも暗号化のたびに暗号文が変わるため、見比べても同じ内容かどうかは分かりません。</p>
+    <p>一度に暗号化できるのは「鍵長（ビット）÷ 8 − 66 バイト」までで、2048 ビットなら 190 バイト、3072 ビットなら 318 バイト、4096 ビットなら 446 バイトです。長い文書は AES などの共通鍵暗号で暗号化し、その鍵だけを RSA で包む「ハイブリッド暗号」が一般的で、TLS もこの方式です。</p>
+
     <h2>鍵の形式</h2>
-    <p>公開鍵は SPKI（<code>-----BEGIN PUBLIC KEY-----</code>）、秘密鍵は PKCS#8（<code>-----BEGIN PRIVATE KEY-----</code>）の PEM 形式（RFC 7468）で入出力します。OpenSSL なら次のコマンドで作れます。</p>
+    <p>公開鍵は SPKI（<code>-----BEGIN PUBLIC KEY-----</code>）、秘密鍵は PKCS#8（<code>-----BEGIN PRIVATE KEY-----</code>）の PEM 形式で入出力します。OpenSSL なら次のコマンドで作れます。</p>
     <pre style="overflow-x:auto;background:#efe9dd;padding:0.75rem;border-radius:6px;font-family:var(--mono);font-size:0.75rem;line-height:1.8">openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private-key.pem
 openssl rsa -pubout -in private-key.pem -out public-key.pem</pre>
-    <p>暗号文は Base64 の文字列で受け渡します。改行や空白が混ざっていても、復号のときに無視します。</p>
+    <p>暗号文は Base64 で受け渡し、改行や空白が混ざっていても復号のときに無視します。</p>
+
     <h2>注意</h2>
-    <p>このページは仕組みを確かめるためのデモです。本番の秘密情報の暗号化や、秘密鍵の保管には使わないでください。鍵と入力はブラウザのメモリ上だけで扱い、サーバーへ送信したり、localStorage などに保存したりしません。ページを閉じると失われます。Web Crypto API は HTTPS または localhost でのみ動作します。</p>
-    <p>PKCS#1 形式（<code>BEGIN RSA PRIVATE KEY</code>、<code>BEGIN RSA PUBLIC KEY</code>）と、パスフレーズ付きの秘密鍵（<code>BEGIN ENCRYPTED PRIVATE KEY</code>）には対応していません。パスフレーズ付きの鍵は、OpenSSL の <code>openssl pkcs8 -topk8 -nocrypt</code> で暗号化を外した PKCS#8 に変換してから使ってください。</p>
+    <p>このページは仕組みを確かめるためのデモです。本番の秘密情報の暗号化や秘密鍵の保管には使わないでください。鍵と入力はブラウザのメモリ上だけで扱い、サーバーへ送信したり localStorage に保存したりしません。Web Crypto API は HTTPS または localhost でのみ動作します。</p>
+    <p>PKCS#1 形式（<code>BEGIN RSA PRIVATE KEY</code>、<code>BEGIN RSA PUBLIC KEY</code>）と、パスフレーズ付きの秘密鍵（<code>BEGIN ENCRYPTED PRIVATE KEY</code>）には対応していません。パスフレーズ付きの鍵は <code>openssl pkcs8 -topk8 -nocrypt</code> で暗号化を外してから使ってください。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">

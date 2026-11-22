@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>割引価格の計算｜道具箱</title>
+<meta name="description" content="定価と割引率からセール価格を計算し、税込・税抜の価格と値引き額を表示。表示価格から割引率を逆算し、重ね割引や複数商品の合計にも対応します。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/percent/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .item-list { margin-top: 0.5rem; }
+  .item-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: end;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .item-row:first-child { border-top: 1px solid var(--rule); }
+  .item-out { margin: 0; padding-bottom: 0.6rem; }
+  .item-out span { display: block; font-size: 0.7rem; color: var(--muted); }
+  .item-out b { font-family: var(--mono); font-size: 0.8125rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .item-remove { margin-bottom: 0.1rem; }
+  fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; }
+  fieldset.plain legend { padding: 0 0 0.35rem; font-size: 0.75rem; color: var(--muted); }
+  @media (max-width: 40rem) {
+    .item-row { grid-template-columns: 1fr 1fr; align-items: start; }
+    .item-out { grid-column: 1 / -1; padding-bottom: 0; }
+    .item-remove { grid-column: 1 / -1; justify-self: start; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>割引価格の計算</h1>
+    <p class="lead">定価と割引率からセール価格を出し、その逆に、表示価格が何％引きかを確かめます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="grid-2" style="align-items:start">
+      <label class="field" for="taxRate">
+        <span>消費税率</span>
+        <select id="taxRate">
+          <option value="10" selected>10％（標準）</option>
+          <option value="8">8％（軽減）</option>
+          <option value="0">0％</option>
+        </select>
+      </label>
+      <fieldset class="plain">
+        <legend>入力する価格は</legend>
+        <div class="row" style="min-height:2.35rem">
+          <label class="check"><input type="radio" name="priceMode" value="incl" checked> 税込</label>
+          <label class="check"><input type="radio" name="priceMode" value="excl"> 税抜</label>
+        </div>
+      </fieldset>
+    </div>
+    <p class="hint" style="margin:0.5rem 0 0">消費税率は、税込価格の計算とまとめ買いの合計に使います。</p>
+
+    <h2 style="margin-top:1.5rem">割引後の価格</h2>
+    <p class="hint">定価と割引率を入れると、割引額と税込のセール価格を出します。</p>
+    <div class="grid-3">
+      <label class="field" for="price">
+        <span>定価（円）</span>
+        <input type="text" id="price" inputmode="decimal" autocomplete="off" value="4,980">
+      </label>
+      <label class="field" for="rate">
+        <span>割引率（％）</span>
+        <input type="text" id="rate" inputmode="decimal" autocomplete="off" value="30">
+      </label>
+      <label class="field" for="extraRate">
+        <span>追加割引（％・任意）</span>
+        <input type="text" id="extraRate" inputmode="decimal" autocomplete="off" placeholder="10">
+      </label>
+    </div>
+    <p class="err" id="priceErr" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="saleIncl">—</b><span>セール価格（税込）</span></div>
+      <div class="stat"><b id="saleExcl">—</b><span>セール価格（税抜）</span></div>
+      <div class="stat"><b id="priceSaved">—</b><span>値引き額（税込）</span></div>
+      <div class="stat"><b id="priceEffective">—</b><span>実質割引率</span></div>
+    </div>
+    <p class="result" id="priceSummary" role="status" aria-live="polite">—</p>
+    <p class="note">円未満は四捨五入しています。追加割引は、1回目の割引後の価格にさらにかけます。</p>
+
+    <h2 style="margin-top:2rem">表示価格から割引率</h2>
+    <p class="hint">定価と、いまの価格を同じ税区分で入れると、何％引きかを出します。</p>
+    <div class="grid-2">
+      <label class="field" for="listPrice">
+        <span>定価（円）</span>
+        <input type="text" id="listPrice" inputmode="decimal" autocomplete="off" value="3,980">
+      </label>
+      <label class="field" for="currentPrice">
+        <span>現在の価格（円）</span>
+        <input type="text" id="currentPrice" inputmode="decimal" autocomplete="off" value="2,780">
+      </label>
+    </div>
+    <p class="err" id="reverseErr" role="alert" hidden></p>
+    <div class="stats">
+      <div class="stat"><b id="reverseRate">—</b><span>割引率</span></div>
+      <div class="stat"><b id="reverseSaving">—</b><span>値引き額</span></div>
+    </div>
+    <p class="result" id="reverseSummary" role="status" aria-live="polite">—</p>
+    <p class="note">税込どうし、または税抜どうしで入れてください。同じ税率なら割引率は同じになります。</p>
+
+    <h2 style="margin-top:2rem">まとめ買いの合計</h2>
+    <p class="hint">商品ごとの価格と割引率から、割引後と税込の合計を出します。空欄の行は使いません。</p>
+    <div id="itemList" class="item-list"></div>
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn secondary" type="button" id="addItem">行を追加</button>
+    </div>
+    <p class="err" id="itemsErr" role="alert" hidden></p>
+    <div class="stats">
+      <div class="stat"><b id="itemsTotalIncl">—</b><span>合計（税込）</span></div>
+      <div class="stat"><b id="itemsTotalExcl">—</b><span>合計（税抜）</span></div>
+      <div class="stat"><b id="itemsSaved">—</b><span>値引き（税込）</span></div>
+      <div class="stat"><b id="itemsCount">—</b><span>点数</span></div>
+    </div>
+    <p class="result" id="itemsSummary" role="status" aria-live="polite">—</p>
+    <p class="note">割引率が空欄なら0％として計算します。商品ごとに円未満を四捨五入して合計しています。</p>
+
+    <div class="row" style="margin-top:1.5rem">
+      <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>定価と割引率を入れると、セール価格が出ます。</li>
+      <li>定価と現在の価格から、何％引きかを出します。</li>
+      <li>商品ごとの価格と割引率から、合計を出します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>割引価格の求め方</h2>
+    <p>割引後の価格は「定価 × (1 − 割引率 ÷ 100)」で求めます。追加割引があるときは、1回目の残りに2回目の残りを掛けます。20％引きのさらに10％引きは、0.8 × 0.9 = 0.72 なので実質28％引きです。30％引きにはなりません。</p>
+
+    <h3>税込・税抜の扱い</h3>
+    <p>入力した価格に割引をかけ、もう一方の税区分は消費税率から計算します。税込から税抜は「税込 ÷ (1 + 税率)」、税抜から税込は「税抜 × (1 + 税率)」です。円未満は四捨五入しています。</p>
+
+    <h3>表示価格からの逆算</h3>
+    <p>割引率は「(定価 − 現在の価格) ÷ 定価 × 100」で求めます。定価と現在の価格を同じ税区分で入れると、税率に関係なく同じ割引率になります。片方だけ税込で入れると、率がずれます。</p>
+
+    <h3>端数と重ね割引の注意</h3>
+    <p>商品ごとに割引後の価格を円未満四捨五入して合計するため、合計に一度だけ割引をかけた場合と1円ずれることがあります。店頭の値札やレジの端数処理は店舗ごとに異なるので、実際の支払額はレジで確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+    <a href="/fuel/">燃費・ガソリン代</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const taxEl = document.getElementById('taxRate');
+  const modeEls = document.querySelectorAll('input[name="priceMode"]');
+  const priceEl = document.getElementById('price');
+  const rateEl = document.getElementById('rate');
+  const extraEl = document.getElementById('extraRate');
+  const priceErr = document.getElementById('priceErr');
+  const priceSummary = document.getElementById('priceSummary');
+  const priceOut = {
+    saleIncl: document.getElementById('saleIncl'),
+    saleExcl: document.getElementById('saleExcl'),
+    saved: document.getElementById('priceSaved'),
+    effective: document.getElementById('priceEffective')
+  };
+
+  const listEl = document.getElementById('listPrice');
+  const currentEl = document.getElementById('currentPrice');
+  const reverseErr = document.getElementById('reverseErr');
+  const reverseSummary = document.getElementById('reverseSummary');
+  const reverseRateEl = document.getElementById('reverseRate');
+  const reverseSavingEl = document.getElementById('reverseSaving');
+
+  const itemList = document.getElementById('itemList');
+  const addItemBtn = document.getElementById('addItem');
+  const itemsErr = document.getElementById('itemsErr');
+  const itemsSummary = document.getElementById('itemsSummary');
+  const itemsOut = {
+    totalIncl: document.getElementById('itemsTotalIncl'),
+    totalExcl: document.getElementById('itemsTotalExcl'),
+    saved: document.getElementById('itemsSaved'),
+    count: document.getElementById('itemsCount')
+  };
+
+  const resetBtn = document.getElementById('resetBtn');
+
+  const MAX_ROWS = 12;
+  const MAX_PRICE = 100000000;
+  const yenFormatter = new Intl.NumberFormat('ja-JP');
+
+  function parseNumber(raw) {
+    const s = String(raw)
+      .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .replace(/[．。]/g, '.')
+      .replace(/[，,]/g, '')
+      .replace(/[％%]/g, '')
+      .replace(/[¥￥]/g, '')
+      .replace(/\s+/g, '');
+    if (s === '') return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function yen(n) {
+    return yenFormatter.format(Math.round(n)) + '円';
+  }
+
+  function formatRate(n) {
+    const r = Math.round(n * 10) / 10;
+    return (Number.isInteger(r) ? String(r) : r.toFixed(1)) + '％';
+  }
+
+  function getMode() {
+    for (const el of modeEls) {
+      if (el.checked) return el.value;
+    }
+    return 'incl';
+  }
+
+  function getTax() {
+    return Number(taxEl.value);
+  }
+
+  function hideError(el) {
+    el.hidden = true;
+    el.textContent = '';
+  }
+
+  function showError(el, message) {
+    el.hidden = false;
+    el.textContent = message;
+  }
+
+  function clearPrice(message) {
+    Object.values(priceOut).forEach(el => {
+      el.textContent = '—';
+    });
+    priceSummary.className = 'result';
+    priceSummary.textContent = message || '定価と割引率を入れると計算します。';
+  }
+
+  function computePrice() {
+    const price = parseNumber(priceEl.value);
+    const rate = parseNumber(rateEl.value);
+    const extraRaw = parseNumber(extraEl.value);
+
+    if (price === null || rate === null) {
+      hideError(priceErr);
+      clearPrice();
+      return;
+    }
+    if (Number.isNaN(price) || price < 0 || price > MAX_PRICE) {
+      showError(priceErr, '定価は0〜100,000,000円の範囲で入力してください。');
+      clearPrice('入力内容を確認してください。');
+      return;
+    }
+    if (Number.isNaN(rate) || rate < 0 || rate > 100) {
+      showError(priceErr, '割引率は0〜100％の範囲で入力してください。');
+      clearPrice('入力内容を確認してください。');
+      return;
+    }
+    const extra = extraRaw === null ? 0 : extraRaw;
+    if (Number.isNaN(extra) || extra < 0 || extra > 100) {
+      showError(priceErr, '追加割引は0〜100％の範囲で入力してください。');
+      clearPrice('入力内容を確認してください。');
+      return;
+    }
+    hideError(priceErr);
+
+    const tax = getTax();
+    const remain = (1 - rate / 100) * (1 - extra / 100);
+    const effective = (1 - remain) * 100;
+    const mode = getMode();
+
+    let saleIncl;
+    let saleExcl;
+    let originalIncl;
+    if (mode === 'incl') {
+      saleIncl = Math.round(price * remain);
+      saleExcl = tax === 0 ? saleIncl : Math.round(saleIncl / (1 + tax / 100));
+      originalIncl = price;
+    } else {
+      saleExcl = Math.round(price * remain);
+      saleIncl = Math.round(saleExcl * (1 + tax / 100));
+      originalIncl = Math.round(price * (1 + tax / 100));
+    }
+    const saved = originalIncl - saleIncl;
+
+    priceOut.saleIncl.textContent = yen(saleIncl);
+    priceOut.saleExcl.textContent = yen(saleExcl);
+    priceOut.saved.textContent = yen(saved);
+    priceOut.effective.textContent = formatRate(effective);
+    priceSummary.className = 'result';
+
+    if (effective <= 0) {
+      priceSummary.textContent = '割引はありません。価格は ' + yen(saleIncl) + '（税込）、' +
+        yen(saleExcl) + '（税抜）です。';
+      return;
+    }
+
+    let text = '定価 ' + yen(price) + ' から ' + formatRate(rate) + ' 引き。';
+    if (extra > 0) {
+      text += 'さらに ' + formatRate(extra) + ' 引きで、実質 ' + formatRate(effective) + ' 引きです。';
+    }
+    text += 'セール価格は ' + yen(saleExcl) + '（税込 ' + yen(saleIncl) + '）で、' +
+      yen(saved) + ' 安くなります。';
+    priceSummary.textContent = text;
+  }
+
+  function computeReverse() {
+    const list = parseNumber(listEl.value);
+    const current = parseNumber(currentEl.value);
+
+    if (list === null || current === null) {
+      hideError(reverseErr);
+      reverseRateEl.textContent = '—';
+      reverseSavingEl.textContent = '—';
+      reverseSummary.className = 'result';
+      reverseSummary.textContent = '定価と現在の価格を入れると計算します。';
+      return;
+    }
+    if (Number.isNaN(list) || list <= 0 || list > MAX_PRICE) {
+      showError(reverseErr, '定価は1〜100,000,000円の範囲で入力してください。');
+      reverseRateEl.textContent = '—';
+      reverseSavingEl.textContent = '—';
+      reverseSummary.className = 'result';
+      reverseSummary.textContent = '入力内容を確認してください。';
+      return;
+    }
+    if (Number.isNaN(current) || current < 0 || current > MAX_PRICE) {
+      showError(reverseErr, '現在の価格は0〜100,000,000円の範囲で入力してください。');
+      reverseRateEl.textContent = '—';
+      reverseSavingEl.textContent = '—';
+      reverseSummary.className = 'result';
+      reverseSummary.textContent = '入力内容を確認してください。';
+      return;
+    }
+    hideError(reverseErr);
+
+    const diff = list - current;
+    if (diff > 0.005) {
+      const savedRate = diff / list * 100;
+      reverseRateEl.textContent = formatRate(savedRate);
+      reverseSavingEl.textContent = yen(diff);
+      reverseSummary.className = 'result';
+      reverseSummary.textContent = '定価 ' + yen(list) + ' の商品が ' + yen(current) + '。' +
+        formatRate(savedRate) + ' 引きで、' + yen(diff) + ' 安い計算です。';
+    } else if (Math.abs(diff) < 0.005) {
+      reverseRateEl.textContent = '0％';
+      reverseSavingEl.textContent = '0円';
+      reverseSummary.className = 'result';
+      reverseSummary.textContent = '定価と現在の価格が同じです。割引はありません。';
+    } else {
+      reverseRateEl.textContent = '—';
+      reverseSavingEl.textContent = '—';
+      reverseSummary.className = 'result warn';
+      reverseSummary.textContent = '現在の価格が定価より ' + yen(-diff) + ' 高いです。割引にはなりません。';
+    }
+  }
+
+  function updateAddButton() {
+    addItemBtn.disabled = itemList.querySelectorAll('.item-row').length >= MAX_ROWS;
+  }
+
+  function renumberRows() {
+    itemList.querySelectorAll('.item-row').forEach((row, index) => {
+      const inputs = row.querySelectorAll('input');
+      if (inputs[0]) inputs[0].setAttribute('aria-label', (index + 1) + '点目の価格（円）');
+      if (inputs[1]) inputs[1].setAttribute('aria-label', (index + 1) + '点目の割引率（％）');
+      const remove = row.querySelector('.item-remove');
+      if (remove) remove.setAttribute('aria-label', (index + 1) + '点目を削除');
+    });
+  }
+
+  function updateRowLabels() {
+    const label = getMode() === 'incl' ? '割引後（税込）' : '割引後（税抜）';
+    itemList.querySelectorAll('.item-row .item-out span').forEach(el => {
+      el.textContent = label;
+    });
+  }
+
+  function createRow(priceValue, rateValue) {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const priceLabel = document.createElement('label');
+    priceLabel.className = 'field';
+    const priceText = document.createElement('span');
+    priceText.textContent = '価格（円）';
+    const priceInput = document.createElement('input');
+    priceInput.type = 'text';
+    priceInput.inputMode = 'decimal';
+    priceInput.autocomplete = 'off';
+    priceInput.placeholder = '1,280';
+    priceInput.value = priceValue == null ? '' : String(priceValue);
+    priceLabel.append(priceText, priceInput);
+
+    const rateLabel = document.createElement('label');
+    rateLabel.className = 'field';
+    const rateText = document.createElement('span');
+    rateText.textContent = '割引率（％）';
+    const rateInput = document.createElement('input');
+    rateInput.type = 'text';
+    rateInput.inputMode = 'decimal';
+    rateInput.autocomplete = 'off';
+    rateInput.placeholder = '20';
+    rateInput.value = rateValue == null ? '' : String(rateValue);
+    rateLabel.append(rateText, rateInput);
+
+    const out = document.createElement('p');
+    out.className = 'item-out';
+    const outLabel = document.createElement('span');
+    outLabel.textContent = getMode() === 'incl' ? '割引後（税込）' : '割引後（税抜）';
+    const outValue = document.createElement('b');
+    outValue.textContent = '—';
+    out.append(outLabel, outValue);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn ghost item-remove';
+    remove.textContent = '削除';
+    remove.addEventListener('click', () => {
+      row.remove();
+      let nextFocus = addItemBtn;
+      if (!itemList.querySelector('.item-row')) {
+        nextFocus = createRow().priceInput;
+      }
+      renumberRows();
+      updateAddButton();
+      computeItems();
+      nextFocus.focus();
+    });
+
+    priceInput.addEventListener('input', computeItems);
+    rateInput.addEventListener('input', computeItems);
+
+    row.append(priceLabel, rateLabel, out, remove);
+    itemList.append(row);
+    renumberRows();
+    updateAddButton();
+    return { row, priceInput, rateInput, outValue };
+  }
+
+  function clearItems(message) {
+    Object.values(itemsOut).forEach(el => {
+      el.textContent = '—';
+    });
+    itemList.querySelectorAll('.item-out b').forEach(el => {
+      el.textContent = '—';
+    });
+    itemsSummary.className = 'result';
+    itemsSummary.textContent = message || '商品の価格を入れると合計が出ます。';
+  }
+
+  function computeItems() {
+    const rows = Array.from(itemList.querySelectorAll('.item-row'));
+    const mode = getMode();
+    const tax = getTax();
+    let count = 0;
+    let originalIncl = 0;
+    let totalIncl = 0;
+    let totalExcl = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const inputs = row.querySelectorAll('input');
+      const outValue = row.querySelector('.item-out b');
+      const price = parseNumber(inputs[0].value);
+      const rateRaw = parseNumber(inputs[1].value);
+
+      if (price === null) {
+        outValue.textContent = '—';
+        continue;
+      }
+      if (Number.isNaN(price) || price < 0 || price > MAX_PRICE) {
+        showError(itemsErr, (i + 1) + '点目の価格は0〜100,000,000円の範囲で入力してください。');
+        clearItems('入力内容を確認してください。');
+        return;
+      }
+      const rate = rateRaw === null ? 0 : rateRaw;
+      if (Number.isNaN(rate) || rate < 0 || rate > 100) {
+        showError(itemsErr, (i + 1) + '点目の割引率は0〜100％の範囲で入力してください。');
+        clearItems('入力内容を確認してください。');
+        return;
+      }
+
+      const remain = 1 - rate / 100;
+      let rowIncl;
+      let rowExcl;
+      if (mode === 'incl') {
+        rowIncl = Math.round(price * remain);
+        rowExcl = tax === 0 ? rowIncl : Math.round(rowIncl / (1 + tax / 100));
+        originalIncl += price;
+      } else {
+        rowExcl = Math.round(price * remain);
+        rowIncl = Math.round(rowExcl * (1 + tax / 100));
+        originalIncl += Math.round(price * (1 + tax / 100));
+      }
+      totalIncl += rowIncl;
+      totalExcl += rowExcl;
+      count++;
+      outValue.textContent = yen(mode === 'incl' ? rowIncl : rowExcl);
+    }
+
+    hideError(itemsErr);
+
+    if (count === 0) {
+      clearItems();
+      return;
+    }
+
+    const saved = originalIncl - totalIncl;
+    itemsOut.totalIncl.textContent = yen(totalIncl);
+    itemsOut.totalExcl.textContent = yen(totalExcl);
+    itemsOut.saved.textContent = yen(saved);
+    itemsOut.count.textContent = count + '点';
+    itemsSummary.className = 'result';
+
+    if (saved <= 0) {
+      itemsSummary.textContent = count + '点の合計は ' + yen(totalIncl) + '（税込）。割引はありません。';
+    } else {
+      itemsSummary.textContent = count + '点の合計は ' + yen(totalIncl) + '（税込）。割引前の税込合計 ' +
+        yen(originalIncl) + ' から ' + yen(saved) + ' 安くなります。';
+    }
+  }
+
+  function resetAll() {
+    taxEl.value = '10';
+    modeEls.forEach(el => {
+      el.checked = el.value === 'incl';
+    });
+    priceEl.value = '4,980';
+    rateEl.value = '30';
+    extraEl.value = '';
+    listEl.value = '3,980';
+    currentEl.value = '2,780';
+    itemList.replaceChildren();
+    for (let i = 0; i < 3; i++) createRow();
+    updateRowLabels();
+    computePrice();
+    computeReverse();
+    computeItems();
+    priceEl.focus();
+  }
+
+  priceEl.addEventListener('input', computePrice);
+  rateEl.addEventListener('input', computePrice);
+  extraEl.addEventListener('input', computePrice);
+  listEl.addEventListener('input', computeReverse);
+  currentEl.addEventListener('input', computeReverse);
+
+  taxEl.addEventListener('change', () => {
+    computePrice();
+    computeItems();
+  });
+
+  modeEls.forEach(el => {
+    el.addEventListener('change', () => {
+      updateRowLabels();
+      computePrice();
+      computeItems();
+    });
+  });
+
+  addItemBtn.addEventListener('click', () => {
+    if (itemList.querySelectorAll('.item-row').length >= MAX_ROWS) return;
+    const record = createRow();
+    record.priceInput.focus();
+    computeItems();
+  });
+
+  resetBtn.addEventListener('click', resetAll);
+
+  for (let i = 0; i < 3; i++) createRow();
+  computePrice();
+  computeReverse();
+  computeItems();
+})();
+</script>
+</body>
+</html>

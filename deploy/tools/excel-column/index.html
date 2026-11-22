@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel列番号変換｜道具箱</title>
+<meta name="description" content="ExcelやGoogleスプレッドシートの列番号と列字母を相互変換します。1→A、27→AA、16384→XFDに対応。A:CやA1:C5のような範囲の列数も計算できます。入力はブラウザ内で処理します。">
+<link rel="canonical" href="https://icekun.net/excel-column/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  #convResult { font-size: clamp(1.15rem, 2.8vw, 1.5rem); }
+  #tool .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #tool .stats b { font-size: 1.35rem; }
+  .examples { font-family: var(--mono); font-size: 0.8125rem; color: var(--muted); line-height: 1.9; }
+  @media (max-width: 40rem) {
+    input[type="text"], input[type="number"] { font-size: 1rem; }
+    #tool .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+    #tool .stats b { font-size: 1.15rem; }
+    #tool .stat { padding: 0.7rem 0.6rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>Excel列番号変換</h1>
+    <p class="lead">列番号と列字母を相互に変換します。範囲の列数も数えられます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>列番号と列字母</h2>
+    <p class="hint">どちらかを入力すると、もう一方がすぐに変わります。1〜16384（XFD）に対応します。</p>
+
+    <div class="grid-2">
+      <label class="field" for="numInput">
+        <span>列番号（1〜16384）</span>
+        <input id="numInput" type="number" min="1" max="16384" step="1" inputmode="numeric" value="27" autocomplete="off">
+      </label>
+      <label class="field" for="lettersInput">
+        <span>列字母（A〜XFD）</span>
+        <input id="lettersInput" type="text" value="AA" maxlength="10" autocomplete="off" spellcheck="false" autocapitalize="characters">
+      </label>
+    </div>
+    <p class="err" id="convError" role="status" aria-live="polite"></p>
+
+    <p class="result large" id="convResult" aria-live="polite" aria-atomic="true">27 列目は AA 列です。</p>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn" type="button" id="copyLetters">列字母をコピー</button>
+    </div>
+    <p class="note" id="convStatus" role="status" aria-live="polite"></p>
+    <p class="hint" style="margin-top:0.6rem">列字母は小文字でもかまいません。</p>
+  </section>
+
+  <section class="panel">
+    <h2>範囲の列数</h2>
+    <p class="hint">A:C の形で入力すると、範囲に含まれる列を数えます。両端を含みます。A1:C5 のようなセル範囲でも数えられます。</p>
+
+    <label class="field" for="rangeInput">
+      <span>範囲（例: A:C、B:E、B2:D9）</span>
+      <input id="rangeInput" type="text" value="A:C" maxlength="24" autocomplete="off" spellcheck="false" autocapitalize="characters">
+    </label>
+    <p class="err" id="rangeError" role="status" aria-live="polite"></p>
+
+    <div class="stats">
+      <div class="stat"><b id="rangeCount">3</b><span>列数</span></div>
+      <div class="stat"><b id="rangeStart">A</b><span>開始列</span></div>
+      <div class="stat"><b id="rangeEnd">C</b><span>終了列</span></div>
+    </div>
+    <p class="note" id="rangeNote" aria-live="polite">A列からC列まで、3列です。</p>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn secondary" type="button" id="copyCount">列数をコピー</button>
+    </div>
+    <p class="note" id="rangeStatus" role="status" aria-live="polite"></p>
+    <p class="hint examples" style="margin-top:0.6rem">1 → A　26 → Z　27 → AA　702 → ZZ　703 → AAA　16384 → XFD</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>列番号か列字母を入力します。</li>
+      <li>もう一方の表記にすぐ切り替わります。</li>
+      <li>A:C の形で範囲の列数を数えます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>変換のしくみ</h2>
+    <p>表計算ソフトの列には、A、B、…、Z、AA、AB、… と名前が付きます。26進数に似ていますが、0に当たる文字がないため、Z の次は AA、ZZ の次は AAA になります。27列目が AA、52列目が AZ、53列目が BA です。</p>
+    <p>列番号から字母へは、番号から1を引いた値を26で割った余りを文字に直し、商を繰り返すと求められます。逆向きは、各文字を A=1 〜 Z=26 の数に置き換え、26を掛けて足していきます。</p>
+    <p>Excel と Google スプレッドシートは、どちらも 16384 列（XFD）まで扱えます。範囲 A:C の列数は、C の 3 から A の 1 を引いて 1 を足した 3 です。開始と終了が同じ A:A なら1列になります。範囲を逆に書いた C:A も、同じ3列として数えます。</p>
+
+    <h3>使う場面</h3>
+    <p>A1形式の参照では列が字母、VBA の <code>Cells(行, 列)</code> や一部のAPIでは列が番号で指定されます。同じ列を別の書き方に直すとき、番号と字母がずれていないか確かめられます。数式の <code>COLUMN()</code> が使えない場面でも、変換した字母をそのまま参照に書けます。</p>
+    <p>列番号は 1〜16384、列字母は A〜XFD までです。それを超える値はエラーとして表示します。全角の字母やコロンで入力しても、半角に直して読み取ります。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/color-blind/">色覚シミュレーション</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const MAX_COLUMN = 16384;
+
+  const $ = (id) => document.getElementById(id);
+
+  const numInput = $('numInput');
+  const lettersInput = $('lettersInput');
+  const convError = $('convError');
+  const convResult = $('convResult');
+  const convStatus = $('convStatus');
+  const rangeInput = $('rangeInput');
+  const rangeError = $('rangeError');
+  const rangeCount = $('rangeCount');
+  const rangeStart = $('rangeStart');
+  const rangeEnd = $('rangeEnd');
+  const rangeNote = $('rangeNote');
+  const rangeStatus = $('rangeStatus');
+
+  let currentColumn = 27;
+  let currentCount = 3;
+  let rangeValid = true;
+
+  function numberToLetters(number) {
+    let value = number;
+    let letters = '';
+    while (value > 0) {
+      value -= 1;
+      letters = String.fromCharCode(65 + (value % 26)) + letters;
+      value = Math.floor(value / 26);
+    }
+    return letters;
+  }
+
+  function lettersToNumber(text) {
+    const letters = String(text).normalize('NFKC').trim().toUpperCase();
+    if (!/^[A-Z]+$/.test(letters)) {
+      return null;
+    }
+    let number = 0;
+    for (const character of letters) {
+      number = number * 26 + (character.charCodeAt(0) - 64);
+    }
+    return number;
+  }
+
+  function setError(element, input, message) {
+    element.textContent = message || '';
+    if (!input) {
+      return;
+    }
+    if (message) {
+      input.setAttribute('aria-invalid', 'true');
+    } else {
+      input.removeAttribute('aria-invalid');
+    }
+  }
+
+  function renderConversion() {
+    const letters = numberToLetters(currentColumn);
+    convResult.textContent = `${currentColumn.toLocaleString('ja-JP')} 列目は ${letters} 列です。`;
+    return letters;
+  }
+
+  function onNumberInput() {
+    const raw = numInput.value.trim();
+    if (raw === '') {
+      setError(convError, numInput, '');
+      return;
+    }
+    const number = Number(raw);
+    if (!Number.isInteger(number) || number < 1 || number > MAX_COLUMN) {
+      setError(convError, numInput, `列番号は 1〜${MAX_COLUMN.toLocaleString('ja-JP')} の整数で入力してください。`);
+      return;
+    }
+    setError(convError, numInput, '');
+    currentColumn = number;
+    lettersInput.value = numberToLetters(number);
+    convStatus.textContent = '';
+    renderConversion();
+  }
+
+  function onLettersInput() {
+    const raw = lettersInput.value;
+    if (raw.trim() === '') {
+      setError(convError, lettersInput, '');
+      return;
+    }
+    const number = lettersToNumber(raw);
+    if (number === null) {
+      setError(convError, lettersInput, '列字母は A〜XFD の形式で入力してください。');
+      return;
+    }
+    if (number < 1 || number > MAX_COLUMN) {
+      setError(convError, lettersInput, `列字母は A〜${numberToLetters(MAX_COLUMN)}（${MAX_COLUMN.toLocaleString('ja-JP')}列）までです。`);
+      return;
+    }
+    setError(convError, lettersInput, '');
+    currentColumn = number;
+    numInput.value = number;
+    convStatus.textContent = '';
+    renderConversion();
+  }
+
+  numInput.addEventListener('input', onNumberInput);
+  lettersInput.addEventListener('input', onLettersInput);
+
+  numInput.addEventListener('change', () => {
+    const raw = numInput.value.trim();
+    const number = Number(raw);
+    if (raw === '' || !Number.isInteger(number) || number < 1 || number > MAX_COLUMN) {
+      numInput.value = currentColumn;
+      setError(convError, numInput, '');
+      renderConversion();
+    } else {
+      onNumberInput();
+    }
+  });
+
+  lettersInput.addEventListener('change', () => {
+    const number = lettersToNumber(lettersInput.value);
+    if (number === null || number < 1 || number > MAX_COLUMN) {
+      lettersInput.value = numberToLetters(currentColumn);
+      setError(convError, lettersInput, '');
+      renderConversion();
+    } else {
+      lettersInput.value = numberToLetters(number);
+      onLettersInput();
+    }
+  });
+
+  function parseRange(raw) {
+    const text = String(raw).normalize('NFKC').trim().toUpperCase().replace(/\$/g, '');
+    const match = text.match(/^([A-Z]+)(\d*)\s*:\s*([A-Z]+)(\d*)$/);
+    if (!match) {
+      return { error: 'A:C の形で入力してください。' };
+    }
+    const start = lettersToNumber(match[1]);
+    const end = lettersToNumber(match[3]);
+    if (start === null || end === null) {
+      return { error: '列字母は A〜XFD の形式で入力してください。' };
+    }
+    if (start < 1 || start > MAX_COLUMN || end < 1 || end > MAX_COLUMN) {
+      return { error: `列字母は A〜${numberToLetters(MAX_COLUMN)}（${MAX_COLUMN.toLocaleString('ja-JP')}列）までです。` };
+    }
+    return {
+      start,
+      end,
+      count: Math.abs(end - start) + 1,
+      startLabel: numberToLetters(start),
+      endLabel: numberToLetters(end),
+    };
+  }
+
+  function clearRange() {
+    rangeValid = false;
+    rangeCount.textContent = '—';
+    rangeStart.textContent = '—';
+    rangeEnd.textContent = '—';
+    rangeNote.textContent = '';
+  }
+
+  function onRangeInput() {
+    const raw = rangeInput.value;
+    if (raw.trim() === '') {
+      setError(rangeError, rangeInput, '');
+      clearRange();
+      rangeStatus.textContent = '';
+      return;
+    }
+    const result = parseRange(raw);
+    if (result.error) {
+      setError(rangeError, rangeInput, result.error);
+      clearRange();
+      rangeStatus.textContent = '';
+      return;
+    }
+    setError(rangeError, rangeInput, '');
+    rangeValid = true;
+    currentCount = result.count;
+    rangeCount.textContent = result.count.toLocaleString('ja-JP');
+    rangeStart.textContent = result.startLabel;
+    rangeEnd.textContent = result.endLabel;
+    rangeNote.textContent = result.startLabel === result.endLabel
+      ? `${result.startLabel}列だけ、1列です。`
+      : `${result.startLabel}列から${result.endLabel}列まで、${result.count.toLocaleString('ja-JP')}列です。`;
+    rangeStatus.textContent = '';
+  }
+
+  rangeInput.addEventListener('input', onRangeInput);
+  rangeInput.addEventListener('change', () => {
+    const result = parseRange(rangeInput.value);
+    if (!result.error) {
+      rangeInput.value = `${result.startLabel}:${result.endLabel}`;
+      onRangeInput();
+    } else if (rangeInput.value.trim() !== '') {
+      setError(rangeError, rangeInput, result.error);
+    }
+  });
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (error) {
+      // クリップボード API が使えないときは下の方法に切り替える
+    }
+    try {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-1000px';
+      area.style.opacity = '0';
+      document.body.append(area);
+      area.select();
+      const copied = document.execCommand('copy');
+      area.remove();
+      return copied;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  $('copyLetters').addEventListener('click', () => {
+    const letters = numberToLetters(currentColumn);
+    copyText(letters).then((copied) => {
+      convStatus.textContent = copied
+        ? `列字母 ${letters} をコピーしました。`
+        : 'コピーできませんでした。表示されている値を選択してコピーしてください。';
+      convStatus.className = copied ? 'note ok' : 'note err';
+    });
+  });
+
+  $('copyCount').addEventListener('click', () => {
+    if (!rangeValid) {
+      rangeStatus.textContent = 'コピーできる列数がありません。範囲を入力してください。';
+      rangeStatus.className = 'note err';
+      return;
+    }
+    copyText(String(currentCount)).then((copied) => {
+      rangeStatus.textContent = copied
+        ? `列数 ${currentCount.toLocaleString('ja-JP')} をコピーしました。`
+        : 'コピーできませんでした。表示されている値を選択してコピーしてください。';
+      rangeStatus.className = copied ? 'note ok' : 'note err';
+    });
+  });
+
+  renderConversion();
+  onRangeInput();
+})();
+</script>
+</body>
+</html>

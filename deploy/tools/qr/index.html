@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QRコード作成｜道具箱</title>
+<meta name="description" content="URL・テキスト・WiFi設定からQRコードを作成。大きさ、誤り訂正レベル、余白、色を指定し、PNGやSVGで保存できます。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/qr/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+  .seg {
+    display: inline-flex; gap: 0.25rem; padding: 0.25rem;
+    background: var(--bg); border: 1px solid var(--rule); border-radius: 8px;
+  }
+  .seg label { position: relative; }
+  .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .seg label span {
+    display: inline-flex; align-items: center; height: 2rem; padding: 0 0.9rem;
+    border-radius: 6px; font-size: 0.8125rem; color: var(--muted);
+    cursor: pointer; white-space: nowrap;
+  }
+  .seg input:checked + span {
+    background: var(--card); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--rule);
+  }
+  .seg input:focus-visible + span { outline: 2px solid var(--ox); outline-offset: 2px; }
+  .seg-row { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; justify-content: space-between; }
+  .qr-stage {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 18rem; padding: 1rem;
+    background: var(--bg); border: 1px solid var(--rule); border-radius: 8px;
+  }
+  .qr-stage canvas, .qr-stage svg { display: block; max-width: 100%; height: auto; }
+  .qr-stage svg { width: 100%; }
+  input[type="color"] {
+    width: 100%; height: 2.25rem; padding: 0.2rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); cursor: pointer;
+  }
+  .val { margin: 0.35rem 0 0; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>QRコード作成</h1>
+    <p class="lead">URLやWiFi設定をQRコードにして保存できます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="seg-row">
+      <div class="seg" role="radiogroup" aria-label="QRコードにする内容">
+        <label><input type="radio" name="mode" value="text" checked><span>URL・テキスト</span></label>
+        <label><input type="radio" name="mode" value="wifi"><span>WiFi設定</span></label>
+      </div>
+      <p class="hint" id="payloadInfo" role="status" aria-live="polite" style="margin:0"></p>
+    </div>
+
+    <div id="textPane" style="margin-top:1rem">
+      <div class="field">
+        <label for="textIn"><span>URL またはテキスト</span></label>
+        <textarea id="textIn" placeholder="例: https://icekun.net/" autocomplete="off" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <div id="wifiPane" hidden>
+      <div class="grid-2">
+        <div class="field">
+          <label for="wifiSsid"><span>SSID（ネットワーク名）</span></label>
+          <input type="text" id="wifiSsid" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label for="wifiAuth"><span>暗号化方式</span></label>
+          <select id="wifiAuth">
+            <option value="WPA" selected>WPA / WPA2 / WPA3</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">なし（オープン）</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="wifiPassField" style="margin-top:1rem">
+        <label for="wifiPass"><span>パスワード</span></label>
+        <input type="password" id="wifiPass" autocomplete="new-password" spellcheck="false">
+      </div>
+      <label class="check" for="wifiHidden" style="margin-top:1rem">
+        <input type="checkbox" id="wifiHidden">
+        <span>ステルス（SSID を非表示）</span>
+      </label>
+    </div>
+
+    <h2 style="margin-top:2rem">見た目</h2>
+    <div class="grid-3" style="margin-top:1rem">
+      <div class="field">
+        <label for="qrSize"><span>大きさ</span></label>
+        <input type="range" id="qrSize" min="128" max="1024" step="32" value="512">
+        <p class="val" id="qrSizeVal">512 px</p>
+      </div>
+      <div class="field">
+        <label for="qrMargin"><span>余白</span></label>
+        <input type="range" id="qrMargin" min="0" max="8" step="1" value="4">
+        <p class="val" id="qrMarginVal">4 モジュール</p>
+      </div>
+      <div class="field">
+        <label for="qrEc"><span>誤り訂正レベル</span></label>
+        <select id="qrEc">
+          <option value="L">L（約7%）</option>
+          <option value="M" selected>M（約15%）</option>
+          <option value="Q">Q（約25%）</option>
+          <option value="H">H（約30%）</option>
+        </select>
+        <p class="val">高いほど汚れに強い</p>
+      </div>
+      <div class="field">
+        <label for="qrFg"><span>前景色</span></label>
+        <input type="color" id="qrFg" value="#000000">
+      </div>
+      <div class="field">
+        <label for="qrBg"><span>背景色</span></label>
+        <input type="color" id="qrBg" value="#ffffff">
+      </div>
+    </div>
+    <p class="hint" id="qrWarn" style="margin:0.5rem 0 0"></p>
+
+    <div class="grid-2" style="margin-top:2rem">
+      <div>
+        <div class="seg" role="radiogroup" aria-label="プレビュー形式" style="margin-bottom:0.75rem">
+          <label><input type="radio" name="preview" value="canvas" checked><span>画像</span></label>
+          <label><input type="radio" name="preview" value="svg"><span>SVG</span></label>
+        </div>
+        <div class="qr-stage">
+          <canvas id="qrCanvas" width="320" height="320" role="img" aria-label="生成したQRコード">QRコードを表示するにはJavaScriptが必要です。</canvas>
+          <div id="qrSvg" hidden></div>
+        </div>
+        <p class="hint" id="qrInfo" role="status" aria-live="polite" style="margin:0.75rem 0 0">内容を入力すると、ここにQRコードが表示されます。</p>
+      </div>
+
+      <div class="stack">
+        <div>
+          <div class="row">
+            <button type="button" class="btn" id="dlPng" disabled>PNGをダウンロード</button>
+            <button type="button" class="btn secondary" id="dlSvg" disabled>SVGをダウンロード</button>
+          </div>
+          <div class="row" style="margin-top:0.75rem">
+            <button type="button" class="btn ghost" id="copyPng" disabled>PNGをコピー</button>
+            <button type="button" class="btn ghost" id="clearBtn">クリア</button>
+          </div>
+        </div>
+        <p class="hint" id="msg" role="status" aria-live="polite"></p>
+        <div class="stats" id="stats" hidden>
+          <div class="stat"><b id="statBytes">—</b><span>内容のバイト数</span></div>
+          <div class="stat"><b id="statVersion">—</b><span>QRの版</span></div>
+          <div class="stat"><b id="statModules">—</b><span>格子</span></div>
+        </div>
+        <p class="hint">PNGは資料やチャット向け、SVGは印刷向けです。</p>
+      </div>
+    </div>
+    <noscript><p class="warn">QRコードの作成にはJavaScriptが必要です。</p></noscript>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>URLやWiFi設定を入力します。</li>
+      <li>大きさ、余白、色を整えます。</li>
+      <li>PNGかSVGで保存するか、コピーします。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>QRコードについて</h2>
+    <p>QRコードは、文字やURLを縦横の格子に変えた二次元コードです。スマートフォンのカメラで読み取ると、書かれた内容を開いたり保存したりできます。名刺、チラシ、店頭の案内など、短い案内を貼る用途に向きます。</p>
+
+    <h2>読み取りやすくするには</h2>
+    <p>余白は4モジュール以上とり、前景と背景の明暗差を大きくしてください。前景を背景より暗くするのが基本です。印刷する場合は小さくしすぎず、実際の用紙と距離で一度読み取って確認してください。誤り訂正レベルを上げると、一部が汚れても読み取りやすくなりますが、入る文字数は減ります。</p>
+
+    <h2>WiFi設定のQRコード</h2>
+    <p>WiFi設定は、SSID、パスワード、暗号化方式を1つの文字列にまとめた形式です。対応するスマートフォンで読み取ると、ネットワークへの接続画面が開きます。パスワードを含むため、配布する範囲には注意してください。</p>
+
+    <h2>保存形式</h2>
+    <p>PNGは画像として資料に貼りやすく、SVGは拡大しても輪郭が崩れません。印刷にはSVG、WebやチャットにはPNGが向きます。色を変えた場合は、読み取りアプリで確認してから配布してください。</p>
+    <p>入力した内容はブラウザ内でQRコードに変換され、外部へ送信されません。ページを閉じると内容は残りません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script src="/_vendor/qrcode.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var CAP = { L: 2953, M: 2331, Q: 1663, H: 1273 };
+  var HARD_LIMIT = CAP.L;
+
+  var textIn = document.getElementById('textIn');
+  var textPane = document.getElementById('textPane');
+  var wifiPane = document.getElementById('wifiPane');
+  var wifiSsid = document.getElementById('wifiSsid');
+  var wifiPass = document.getElementById('wifiPass');
+  var wifiAuth = document.getElementById('wifiAuth');
+  var wifiHidden = document.getElementById('wifiHidden');
+  var wifiPassField = document.getElementById('wifiPassField');
+
+  var qrSize = document.getElementById('qrSize');
+  var qrSizeVal = document.getElementById('qrSizeVal');
+  var qrMargin = document.getElementById('qrMargin');
+  var qrMarginVal = document.getElementById('qrMarginVal');
+  var qrEc = document.getElementById('qrEc');
+  var qrFg = document.getElementById('qrFg');
+  var qrBg = document.getElementById('qrBg');
+  var qrWarn = document.getElementById('qrWarn');
+  var payloadInfo = document.getElementById('payloadInfo');
+
+  var qrCanvas = document.getElementById('qrCanvas');
+  var qrSvg = document.getElementById('qrSvg');
+  var qrInfo = document.getElementById('qrInfo');
+  var msg = document.getElementById('msg');
+  var stats = document.getElementById('stats');
+  var statBytes = document.getElementById('statBytes');
+  var statVersion = document.getElementById('statVersion');
+  var statModules = document.getElementById('statModules');
+
+  var dlPng = document.getElementById('dlPng');
+  var dlSvg = document.getElementById('dlSvg');
+  var copyPng = document.getElementById('copyPng');
+  var clearBtn = document.getElementById('clearBtn');
+
+  var state = { valid: false, svg: '' };
+  var timer = 0;
+
+  function currentMode() {
+    var checked = document.querySelector('input[name="mode"]:checked');
+    return checked ? checked.value : 'text';
+  }
+
+  function clampInt(value, min, max) {
+    var n = parseInt(value, 10);
+    if (isNaN(n)) n = min;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function byteLength(s) {
+    return new TextEncoder().encode(s).length;
+  }
+
+  function escapeWifi(s) {
+    return String(s).replace(/([\\;,":])/g, '\\$1');
+  }
+
+  function buildPayload() {
+    if (currentMode() === 'wifi') {
+      var ssid = wifiSsid.value;
+      if (!ssid) return { error: 'SSIDを入力してください。', payload: '' };
+      var auth = wifiAuth.value;
+      var pass = wifiPass.value;
+      if (auth !== 'nopass' && !pass) {
+        return { error: 'パスワードを入力してください。', payload: '' };
+      }
+      var s = 'WIFI:T:' + auth + ';S:' + escapeWifi(ssid) + ';';
+      if (auth !== 'nopass') s += 'P:' + escapeWifi(pass) + ';';
+      if (wifiHidden.checked) s += 'H:true;';
+      s += ';';
+      return { payload: s };
+    }
+    var text = textIn.value.trim();
+    if (!text) return { error: 'URLまたはテキストを入力してください。', payload: '' };
+    return { payload: text };
+  }
+
+  function setMsg(text, kind) {
+    msg.textContent = text || '';
+    msg.className = kind ? 'hint ' + kind : 'hint';
+  }
+
+  function setButtons(on) {
+    dlPng.disabled = !on;
+    dlSvg.disabled = !on;
+    copyPng.disabled = !on;
+  }
+
+  function updatePayloadInfo(payload, ec) {
+    var bytes = payload ? byteLength(payload) : 0;
+    var cap = CAP[ec] || CAP.M;
+    var parts = [];
+    if (currentMode() === 'text') {
+      parts.push(textIn.value.length.toLocaleString('ja-JP') + ' 文字');
+    }
+    parts.push(bytes.toLocaleString('ja-JP') + ' バイト');
+    parts.push('上限 ' + cap.toLocaleString('ja-JP') + ' バイト（誤り訂正 ' + ec + '）');
+    payloadInfo.textContent = parts.join(' · ');
+    payloadInfo.className = (bytes > cap || bytes > HARD_LIMIT) ? 'hint warn' : 'hint';
+    return bytes;
+  }
+
+  function parseHex(h) {
+    h = String(h).replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    if (h.length !== 6) return null;
+    var n = parseInt(h, 16);
+    if (isNaN(n)) return null;
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  function luminance(rgb) {
+    var c = rgb.map(function (v) {
+      v = v / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+
+  function contrastRatio(a, b) {
+    var l1 = luminance(a);
+    var l2 = luminance(b);
+    return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  }
+
+  function updateStyleWarn() {
+    var fg = parseHex(qrFg.value);
+    var bg = parseHex(qrBg.value);
+    var parts = [];
+    if (clampInt(qrMargin.value, 0, 8) < 4) {
+      parts.push('余白は4以上にすると読み取りやすくなります。');
+    }
+    if (fg && bg) {
+      if (luminance(fg) >= luminance(bg)) {
+        parts.push('前景色を背景色より暗くしてください。');
+      } else if (contrastRatio(fg, bg) < 4.5) {
+        parts.push('前景と背景の差が小さいため、読み取れない場合があります。');
+      }
+    }
+    qrWarn.textContent = parts.length ? parts.join(' ') : '前景が暗く、背景が明るい配色が基本です。';
+    qrWarn.className = parts.length ? 'hint warn' : 'hint';
+  }
+
+  function setSvg(svg) {
+    try {
+      var doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+      if (!doc || doc.getElementsByTagName('parsererror').length) {
+        qrSvg.replaceChildren();
+        return;
+      }
+      var root = doc.documentElement;
+      if (root && root.nodeName.toLowerCase() === 'svg') {
+        qrSvg.replaceChildren(document.importNode(root, true));
+      } else {
+        qrSvg.replaceChildren();
+      }
+    } catch (e) {
+      qrSvg.replaceChildren();
+    }
+  }
+
+  function clearCanvas() {
+    var ctx = qrCanvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+  }
+
+  function setIdle(text, kind) {
+    state.valid = false;
+    state.svg = '';
+    setButtons(false);
+    stats.hidden = true;
+    clearCanvas();
+    qrSvg.replaceChildren();
+    qrInfo.textContent = text;
+    qrInfo.className = kind ? 'hint ' + kind : 'hint';
+  }
+
+  function render() {
+    var built = buildPayload();
+    var ec = qrEc.value;
+
+    if (built.error) {
+      updatePayloadInfo('', ec);
+      setIdle(built.error, 'warn');
+      return;
+    }
+
+    var payload = built.payload;
+    var bytes = updatePayloadInfo(payload, ec);
+
+    if (bytes > HARD_LIMIT) {
+      setIdle('内容が長すぎます。2,953 バイト以内にしてください。', 'err');
+      return;
+    }
+
+    var size = clampInt(qrSize.value, 128, 1024);
+    var margin = clampInt(qrMargin.value, 0, 8);
+    var fg = qrFg.value;
+    var bg = qrBg.value;
+
+    var data;
+    try {
+      data = QRCode.create(payload, { errorCorrectionLevel: ec });
+    } catch (e) {
+      setIdle('この内容は誤り訂正 ' + ec + ' では入りきりません。レベルを下げるか、内容を短くしてください。', 'err');
+      return;
+    }
+
+    try {
+      QRCode.toCanvas(qrCanvas, payload, {
+        width: size,
+        margin: margin,
+        errorCorrectionLevel: ec,
+        color: { dark: fg, light: bg }
+      }, function (err) {
+        if (err) {
+          setIdle('QRコードを描画できませんでした。配色や入力を変えてください。', 'err');
+          return;
+        }
+
+        qrCanvas.style.width = '';
+        qrCanvas.style.height = '';
+        qrCanvas.style.maxWidth = '100%';
+        qrCanvas.style.height = 'auto';
+
+        QRCode.toString(payload, {
+          type: 'svg',
+          width: size,
+          margin: margin,
+          errorCorrectionLevel: ec,
+          color: { dark: fg, light: bg }
+        }, function (err2, svg) {
+          if (err2 || !svg) {
+            setIdle('SVGを生成できませんでした。', 'err');
+            return;
+          }
+          state.valid = true;
+          state.svg = svg;
+          setSvg(svg);
+          statBytes.textContent = bytes.toLocaleString('ja-JP');
+          statVersion.textContent = String(data.version);
+          statModules.textContent = data.modules.size + '×' + data.modules.size;
+          stats.hidden = false;
+          qrInfo.textContent = 'QRコードを生成しました。' + bytes.toLocaleString('ja-JP') + ' バイト、誤り訂正 ' + ec + '。';
+          qrInfo.className = 'hint';
+          setButtons(true);
+          setMsg('', '');
+        });
+      });
+    } catch (e) {
+      setIdle('QRコードを描画できませんでした。配色や入力を変えてください。', 'err');
+    }
+  }
+
+  function scheduleRender() {
+    clearTimeout(timer);
+    timer = setTimeout(render, 140);
+  }
+
+  function onContentChange() {
+    var built = buildPayload();
+    updatePayloadInfo(built.payload || '', qrEc.value);
+    scheduleRender();
+  }
+
+  function syncWifiPass() {
+    wifiPassField.hidden = wifiAuth.value === 'nopass';
+  }
+
+  function setMode() {
+    var wifi = currentMode() === 'wifi';
+    textPane.hidden = wifi;
+    wifiPane.hidden = !wifi;
+    onContentChange();
+  }
+
+  function saveBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+  }
+
+  var modeRadios = document.querySelectorAll('input[name="mode"]');
+  Array.prototype.forEach.call(modeRadios, function (radio) {
+    radio.addEventListener('change', setMode);
+  });
+
+  var previewRadios = document.querySelectorAll('input[name="preview"]');
+  Array.prototype.forEach.call(previewRadios, function (radio) {
+    radio.addEventListener('change', function () {
+      var svgMode = document.querySelector('input[name="preview"]:checked').value === 'svg';
+      qrCanvas.hidden = svgMode;
+      qrSvg.hidden = !svgMode;
+    });
+  });
+
+  textIn.addEventListener('input', onContentChange);
+  wifiSsid.addEventListener('input', onContentChange);
+  wifiPass.addEventListener('input', onContentChange);
+  wifiHidden.addEventListener('change', onContentChange);
+  wifiAuth.addEventListener('change', function () {
+    syncWifiPass();
+    onContentChange();
+  });
+
+  qrSize.addEventListener('input', function () {
+    qrSizeVal.textContent = clampInt(qrSize.value, 128, 1024) + ' px';
+    scheduleRender();
+  });
+  qrMargin.addEventListener('input', function () {
+    qrMarginVal.textContent = clampInt(qrMargin.value, 0, 8) + ' モジュール';
+    updateStyleWarn();
+    scheduleRender();
+  });
+  qrEc.addEventListener('change', onContentChange);
+  qrFg.addEventListener('input', function () {
+    updateStyleWarn();
+    scheduleRender();
+  });
+  qrBg.addEventListener('input', function () {
+    updateStyleWarn();
+    scheduleRender();
+  });
+
+  dlPng.addEventListener('click', function () {
+    if (!state.valid) return;
+    qrCanvas.toBlob(function (blob) {
+      if (!blob) {
+        setMsg('PNGを作成できませんでした。', 'err');
+        return;
+      }
+      saveBlob(blob, 'qr-code.png');
+      setMsg('PNGを保存しました。', 'ok');
+    }, 'image/png');
+  });
+
+  dlSvg.addEventListener('click', function () {
+    if (!state.valid || !state.svg) return;
+    saveBlob(new Blob([state.svg], { type: 'image/svg+xml' }), 'qr-code.svg');
+    setMsg('SVGを保存しました。', 'ok');
+  });
+
+  copyPng.addEventListener('click', function () {
+    if (!state.valid) return;
+    if (!navigator.clipboard || typeof window.ClipboardItem === 'undefined') {
+      setMsg('このブラウザは画像のコピーに対応していません。PNGで保存してください。', 'warn');
+      return;
+    }
+    qrCanvas.toBlob(function (blob) {
+      if (!blob) {
+        setMsg('コピー用の画像を作成できませんでした。', 'err');
+        return;
+      }
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+        setMsg('PNGをクリップボードにコピーしました。', 'ok');
+      }, function () {
+        setMsg('コピーできませんでした。ブラウザの権限を確認してください。', 'err');
+      });
+    }, 'image/png');
+  });
+
+  clearBtn.addEventListener('click', function () {
+    textIn.value = '';
+    wifiSsid.value = '';
+    wifiPass.value = '';
+    wifiAuth.value = 'WPA';
+    wifiHidden.checked = false;
+    syncWifiPass();
+    updatePayloadInfo('', qrEc.value);
+    setIdle('内容を入力すると、ここにQRコードが表示されます。');
+    setMsg('', '');
+  });
+
+  syncWifiPass();
+  updateStyleWarn();
+  updatePayloadInfo('', qrEc.value);
+  setIdle('内容を入力すると、ここにQRコードが表示されます。');
+})();
+</script>
+</body>
+</html>

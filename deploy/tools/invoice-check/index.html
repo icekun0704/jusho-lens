@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>適格請求書発行事業者登録番号のチェック｜道具箱</title>
+<meta name="description" content="T+13桁の適格請求書発行事業者登録番号を、形式と法人番号の検査用数字で確認します。複数件を一括で検証でき、個人事業者等の番号は別体系である旨も表示します。入力はブラウザ内で処理します。">
+<link rel="canonical" href="https://icekun.net/invoice-check/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  #msg:empty { display: none; }
+  .check-table td { vertical-align: top; }
+  .check-table .input { font-family: var(--mono); font-size: 0.76rem; word-break: break-all; }
+  .check-table .verdict { white-space: nowrap; font-size: 0.78rem; font-weight: 600; }
+  .check-table .note { font-size: 0.78rem; line-height: 1.75; }
+  .stat span { line-height: 1.5; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>適格請求書発行事業者登録番号のチェック</h1>
+    <p class="lead">T+13桁の形式と、法人番号の検査用数字を確かめます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>番号を確かめる</h2>
+    <p class="hint">1行に1件ずつ貼り付けてください。社名やタブが混ざっていても番号を拾います。</p>
+
+    <label class="field" for="src">
+      <span>登録番号（1行に1件、最大1,000件）</span>
+      <textarea id="src" rows="8" spellcheck="false" placeholder="T8700110005901"></textarea>
+    </label>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn" type="button" id="runBtn">検証する</button>
+      <button class="btn secondary" type="button" id="sampleBtn">サンプル</button>
+      <button class="btn ghost" type="button" id="clearBtn">クリア</button>
+    </div>
+
+    <p class="err" id="err" role="alert" hidden></p>
+    <p class="hint" id="msg" role="status" aria-live="polite"></p>
+
+    <div class="stats" id="stats" hidden>
+      <div class="stat"><b id="stCount">0</b><span>件数</span></div>
+      <div class="stat"><b id="stOk">0</b><span>法人番号の規則に一致</span></div>
+      <div class="stat"><b id="stNg">0</b><span>一致しない</span></div>
+      <div class="stat"><b id="stErr">0</b><span>形式エラー</span></div>
+    </div>
+
+    <div id="resultsWrap" hidden style="overflow-x:auto;margin-top:1rem">
+      <table class="check-table" style="min-width:34rem">
+        <caption class="sr-only">登録番号の検証結果</caption>
+        <thead>
+          <tr>
+            <th scope="col">行</th>
+            <th scope="col">入力</th>
+            <th scope="col">判定</th>
+            <th scope="col">内容</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+
+    <p class="warn">形式が正しいことと、登録済みであることは別です。実在は国税庁の公表サイトで確認してください。</p>
+    <p class="hint">「一致」は法人番号の規則に合うという意味です。法人の登録番号であることや、登録が有効であることは示しません。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。外部APIは使いません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>登録番号を1行に1件ずつ貼ります。</li>
+      <li>「検証する」を押します。</li>
+      <li>判定を見て、公表サイトで確認します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>判定の見方</h2>
+    <p>登録番号は「T」と数字13桁です。法人では13桁が法人番号ですが、法人番号を持たない個人事業者や人格のない社団等には、法人番号ではない13桁が割り当てられます（国税庁の公表サイト）。</p>
+    <p>法人番号の先頭1桁は検査用数字です。残り12桁の最下位から奇数桁を1倍、偶数桁を2倍して合計し、9で割った余りを9から引いた数が検査用数字になります（余りが0なら9）。国税庁の例では、基礎番号 700110005901 から 8 を求め、8700110005901 としています。</p>
+    <p>この道具は、13桁の先頭がこの計算と合うかを見ます。合わなくても、個人事業者等の番号は別体系のため、誤りとは断定できません。先頭が0の13桁は、法人番号の検査用数字が1〜9なので法人番号ではありえません。</p>
+    <p>検査用数字には限界があります。基礎番号の0と9を入れ替えた誤りは検出できません。一致しても実在や登録の状態は分からないため、<a href="https://www.invoice-kohyo.nta.go.jp/">適格請求書発行事業者公表サイト</a>で確認してください。</p>
+    <p>計算式の出典は<a href="https://www.houjin-bangou.nta.go.jp/documents/checkdigit.pdf">国税庁「チェックデジットの計算」</a>、登録番号の構成は<a href="https://www.invoice-kohyo.nta.go.jp/about-toroku/index.html">国税庁「登録番号とは」</a>です。</p>
+    <p class="hint">この道具は形式と検査用数字だけを見ます。登録の有無や、取引時点で有効だったかは判定しません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+    <a href="/denshi/">電子帳簿保存法のファイル名生成</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var src = $('src');
+  var runBtn = $('runBtn');
+  var sampleBtn = $('sampleBtn');
+  var clearBtn = $('clearBtn');
+  var err = $('err');
+  var msg = $('msg');
+  var stats = $('stats');
+  var resultsWrap = $('resultsWrap');
+  var body = $('body');
+
+  var stCount = $('stCount');
+  var stOk = $('stOk');
+  var stNg = $('stNg');
+  var stErr = $('stErr');
+
+  var MAX_LINES = 1000;
+  var MAX_CHARS = 100000;
+  var NUMBER_RE = /(?:^|[^0-9])([Tt]?)([0-9]{13})(?![0-9])/;
+
+  function showError(text) {
+    msg.textContent = '';
+    err.textContent = text;
+    err.hidden = false;
+  }
+
+  function showMessage(text) {
+    err.hidden = true;
+    err.textContent = '';
+    msg.textContent = text;
+  }
+
+  function clearResults() {
+    err.hidden = true;
+    err.textContent = '';
+    msg.textContent = '';
+    stats.hidden = true;
+    resultsWrap.hidden = true;
+    body.textContent = '';
+  }
+
+  // 国税庁「チェックデジットの計算」: 最下位から奇数桁×1、偶数桁×2。
+  function checkDigit(base12) {
+    var sum = 0;
+    var i;
+    for (i = 0; i < 12; i++) {
+      var digit = Number(base12.charAt(11 - i));
+      sum += digit * (i % 2 === 0 ? 1 : 2);
+    }
+    return 9 - (sum % 9);
+  }
+
+  function extract(line, lineNo) {
+    var raw = line.trim();
+    var normalized = typeof raw.normalize === 'function' ? raw.normalize('NFKC') : raw;
+
+    // 全角数字・全角Tは NFKC で半角になる。区切り文字を除いて番号を探す。
+    var compact = normalized.replace(/[\s　,\-‐‑‒–—―−－ー_]/g, '');
+    var m = NUMBER_RE.exec(compact);
+
+    if (!m) {
+      var runs = compact.match(/[0-9]{5,}/g) || [];
+      var reason = runs.length > 0
+        ? '数字が' + runs[0].length + '桁です。13桁で入力してください。'
+        : '13桁の数字が見つかりません。';
+      return { type: 'format', line: lineNo, raw: raw, note: reason };
+    }
+
+    var rest = compact.slice(m.index + m[0].length);
+    var hasAnother = NUMBER_RE.test(rest);
+
+    return {
+      type: 'number',
+      line: lineNo,
+      raw: raw,
+      digits: m[2],
+      hasT: m[1] !== '',
+      hasAnother: hasAnother
+    };
+  }
+
+  function verify() {
+    clearResults();
+
+    var text = src.value;
+    if (text.trim() === '') {
+      showError('登録番号を入れてください。');
+      return;
+    }
+    if (text.length > MAX_CHARS) {
+      showError('入力が長すぎます。1,000件までに分けてください。');
+      return;
+    }
+
+    var lines = text.replace(/\r\n?/g, '\n').split('\n').filter(function (line) {
+      return line.trim() !== '';
+    });
+    if (lines.length > MAX_LINES) {
+      showError('一度に確認できるのは1,000件までです。分けて貼り付けてください。');
+      return;
+    }
+
+    var results = [];
+    var seen = {};
+    var counts = { ok: 0, ng: 0, format: 0 };
+    var i;
+
+    for (i = 0; i < lines.length; i++) {
+      var r = extract(lines[i], i + 1);
+
+      if (r.type === 'format') {
+        counts.format++;
+        results.push(r);
+        continue;
+      }
+
+      var expected = checkDigit(r.digits.slice(1));
+      var notes = [];
+
+      if (r.digits.charAt(0) === String(expected)) {
+        r.verdict = 'ok';
+        counts.ok++;
+        notes.push('検査用数字は計算値 ' + expected + ' と一致します。');
+      } else {
+        r.verdict = 'ng';
+        counts.ng++;
+        if (r.digits.charAt(0) === '0') {
+          notes.push('先頭が0です。法人番号の検査用数字は1〜9なので法人番号ではありません。個人事業者等の番号か、書き写しの誤りです。');
+        } else {
+          notes.push('計算値は ' + expected + '、先頭は ' + r.digits.charAt(0) + ' です。法人番号の規則に合いません。個人事業者等の番号は別体系なので、誤りとは断定できません。');
+        }
+      }
+
+      if (!r.hasT) {
+        notes.push('Tがありません。13桁を法人番号として確認しました。');
+      }
+      if (r.hasAnother) {
+        notes.push('同じ行に13桁の数字が複数あるため、最初の番号を見ました。');
+      }
+      if (Object.prototype.hasOwnProperty.call(seen, r.digits)) {
+        notes.push('同じ番号が' + seen[r.digits] + '行目にもあります。');
+      } else {
+        seen[r.digits] = r.line;
+      }
+
+      r.note = notes.join(' ');
+      results.push(r);
+    }
+
+    stCount.textContent = String(lines.length);
+    stOk.textContent = String(counts.ok);
+    stNg.textContent = String(counts.ng);
+    stErr.textContent = String(counts.format);
+    stats.hidden = false;
+
+    body.textContent = '';
+    results.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var tdLine = document.createElement('td');
+      tdLine.className = 'num';
+      tdLine.textContent = String(item.line);
+      tr.appendChild(tdLine);
+
+      var tdInput = document.createElement('td');
+      tdInput.className = 'input';
+      tdInput.textContent = item.raw;
+      tr.appendChild(tdInput);
+
+      var tdVerdict = document.createElement('td');
+      var span = document.createElement('span');
+      span.className = 'verdict ' + (item.verdict === 'ok' ? 'ok' : item.verdict === 'ng' ? 'warn' : 'err');
+      span.textContent = item.verdict === 'ok' ? '一致' : item.verdict === 'ng' ? '不一致' : '形式エラー';
+      tdVerdict.appendChild(span);
+      tr.appendChild(tdVerdict);
+
+      var tdNote = document.createElement('td');
+      tdNote.className = 'note';
+      tdNote.textContent = item.note;
+      tr.appendChild(tdNote);
+
+      body.appendChild(tr);
+    });
+
+    resultsWrap.hidden = false;
+
+    var tail = counts.ng + counts.format > 0
+      ? '一致しない番号と形式エラーは、公表サイトで確認してください。'
+      : '登録の状態は公表サイトで確認してください。';
+    showMessage(lines.length + '件を確認しました。' + tail);
+  }
+
+  runBtn.addEventListener('click', verify);
+
+  src.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      verify();
+    }
+  });
+
+  sampleBtn.addEventListener('click', function () {
+    src.value = [
+      'T8700110005901',
+      '株式会社霞商店 T8700110005901',
+      'T8700110005902',
+      'T0000000000000',
+      '8700110005901',
+      '12345'
+    ].join('\n');
+    verify();
+    src.focus();
+  });
+
+  clearBtn.addEventListener('click', function () {
+    src.value = '';
+    clearResults();
+    src.focus();
+  });
+
+  src.addEventListener('input', function () {
+    if (!err.hidden || msg.textContent !== '') {
+      clearResults();
+    }
+  });
+})();
+</script>
+</body>
+</html>

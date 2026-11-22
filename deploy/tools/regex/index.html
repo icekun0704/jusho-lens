@@ -41,7 +41,7 @@
 <main class="wrap">
   <div class="page-head">
     <h1>正規表現テスター</h1>
-    <p class="lead">パターンと対象テキストを入れると、マッチした箇所を色付けし、件数・位置・キャプチャグループを一覧にします。フラグの違いもその場で確かめられます。</p>
+    <p class="lead">正規表現がどこに一致するか、その場で色付けして確かめられます。</p>
   </div>
 
   <section class="panel" id="tool">
@@ -62,13 +62,13 @@
         </div>
       </div>
     </div>
-    <p class="hint" id="patternHelp" style="margin:0.5rem 0 0">パターン本体だけを入力し、修飾子はチェックボックスで指定します。入力のたびに結果が更新されます。</p>
+    <p class="hint" id="patternHelp" style="margin:0.5rem 0 0">パターン本体だけを入力し、フラグはチェックで指定します。</p>
 
     <label class="field" for="target" style="margin-top:1rem">
       <span>対象テキスト</span>
       <textarea id="target" rows="6" spellcheck="false" aria-describedby="targetHelp"></textarea>
     </label>
-    <p class="hint" id="targetHelp" style="margin:0.5rem 0 0">100KB（102,400バイト）まで。超えた場合は先頭だけを対象にします。</p>
+    <p class="hint" id="targetHelp" style="margin:0.5rem 0 0">100KB（102,400バイト）まで。超えた分は先頭だけを対象にします。</p>
 
     <div class="row" style="margin-top:1.25rem">
       <button class="btn secondary" type="button" id="btnSample">サンプルを入れる</button>
@@ -100,18 +100,16 @@
     <div class="result" id="marked" aria-live="off"></div>
 
     <h2 style="margin-top:1.5rem;font-size:1rem">マッチ一覧</h2>
-    <p class="hint" style="margin:0 0 0.25rem">位置は1始まりではなく、対象文字列の先頭を0としたUTF-16コード単位のオフセットです。</p>
+    <p class="hint" style="margin:0 0 0.25rem">位置は先頭を0とした UTF-16 コード単位のオフセットです。</p>
     <div id="list"></div>
   </section>
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
-      <li>「正規表現パターン」に、スラッシュで囲まずにパターン本体を入力します。例: <code>\d{3}-\d{4}</code></li>
-      <li>必要に応じて g・i・m・s・u・y のフラグをオンにします。g をオフにすると最初の1件だけを調べます。</li>
-      <li>「対象テキスト」に検索したい文章を貼り付けます。入力のたびにハイライト・マッチ数・一覧が更新されます。</li>
-      <li>「プリセット」でメール・URL・電話番号・郵便番号・日付の代表的なパターンを試せます。「結果をコピー」でパターンとマッチ一覧をテキストとして取り出せます。</li>
+      <li>パターンを入れます。</li>
+      <li>対象テキストを貼ります。</li>
+      <li>色の付いた一致を確かめます。</li>
     </ol>
   </section>
 
@@ -123,17 +121,15 @@
   -->
 
   <section class="prose">
-    <h2>正規表現テスターについて</h2>
-    <p>正規表現は、文字列の検索や置換に使われるパターンの書き方です。この道具は、ブラウザの JavaScript が持つ RegExp をそのまま使って、パターンと対象テキストの一致を調べます。入力内容はブラウザの外へ送られません。</p>
+    <h2>正規表現テスター</h2>
+    <p>正規表現は、文字列の検索や置換に使うパターンの書き方です。ブラウザの JavaScript が持つ RegExp をそのまま使って、パターンと対象テキストの一致を調べます。</p>
 
     <h3>フラグの意味</h3>
-    <p><code>g</code> は全体検索で、最初の一致で止めずにすべての一致を探します。<code>i</code> は大文字小文字を区別しません。<code>m</code> は複数行モードで、<code>^</code> と <code>$</code> が各行の先頭と末尾にも一致します。<code>s</code> は <code>.</code> が改行にも一致するようにします。<code>u</code> は Unicode モードで、サロゲートペアを1文字として扱い、<code>\u{...}</code> などの書き方が使えます。<code>y</code> は sticky モードで、<code>lastIndex</code> の位置から連続して一致する箇所だけを探します。g も y もオフのときは、最初の1件だけを表示します。</p>
+    <p><code>g</code> はすべての一致を探し、<code>i</code> は大文字小文字を区別しません。<code>m</code> は複数行モードで <code>^</code> と <code>$</code> が各行の先頭と末尾にも一致し、<code>s</code> は <code>.</code> が改行にも一致します。<code>u</code> は Unicode モードでサロゲートペアを1文字として扱い、<code>y</code> は <code>lastIndex</code> の位置から連続する一致だけを探します。g も y もオフのときは最初の1件だけを表示します。</p>
 
-    <h3>表示の読み方</h3>
-    <p>「位置」は、対象テキストの先頭を0とした UTF-16 コード単位のオフセットです。日本語の多くは1文字が1コード単位ですが、絵文字などは2コード単位になります。「グループ」には、丸括弧で囲んだキャプチャグループが番号順に並びます。名前付きグループは <code>(?&lt;name&gt;...)</code> で定義でき、名前でも表示します。一致しなかったグループは「未参加」と表示します。長さ0の一致はハイライトせず、一覧に「(長さ0)」として残します。</p>
-
-    <h3>制限と注意</h3>
-    <p>対象テキストは100KB（102,400バイト）までで、超えた分は先頭から切り詰めて検証します。一致が多い場合は、ハイライトを先頭1,000件、一覧を先頭200件まで表示します。また、<code>(a+)+</code> のような入れ子の繰り返しを含むパターンでは、一致に膨大な時間がかかることがあります（破滅的バックトラック）。JavaScript の正規表現は途中で中断できないため、そのようなパターンを長いテキストに当てるとタブが応答しなくなることがあります。心当たりのあるパターンは、短いテキストで試してください。</p>
+    <h3>表示の読み方と制限</h3>
+    <p>位置は対象テキストの先頭を0とした UTF-16 コード単位のオフセットです。日本語の多くは1文字1コード単位ですが、絵文字などは2コード単位になります。丸括弧のキャプチャグループは番号順に並び、名前付きグループ（<code>(?&lt;name&gt;...)</code>）は名前でも表示します。長さ0の一致はハイライトせず、一覧に「(長さ0)」として残します。</p>
+    <p>対象テキストは 100KB までで、超えた分は先頭から切り詰めます。ハイライトは先頭 1,000 件、一覧は先頭 200 件までです。<code>(a+)+</code> のような入れ子の繰り返しは、一致に膨大な時間がかかることがあります。JavaScript の正規表現は途中で中断できないため、長いテキストに当てるとタブが応答しなくなることがあります。短いテキストで試してください。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">

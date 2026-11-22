@@ -36,7 +36,7 @@
 <main class="wrap">
   <div class="page-head">
     <h1>URLエンコード</h1>
-    <p class="lead">文字列をパーセントエンコードし、また元に戻します。通常の方式と、フォーム送信で使われる「空白を + にする」方式の両方に対応しています。</p>
+    <p class="lead">文字列をURL用にエンコード・デコードし、フォーム送信の方式にも対応しています。</p>
   </div>
 
   <section class="panel" id="tool">
@@ -52,13 +52,13 @@
       <input type="checkbox" id="optForm" aria-describedby="formHelp">
       <span id="formLabel">フォーム方式（空白を + に）</span>
     </label>
-    <p class="hint" id="formHelp" style="margin:0.35rem 0 0">フォーム方式は application/x-www-form-urlencoded に合わせ、空白を + として扱います。</p>
+    <p class="hint" id="formHelp" style="margin:0.35rem 0 0">フォーム方式では、空白を + として扱います。</p>
 
     <label class="field" for="src" style="margin-top:1.25rem">
       <span>変換する文字列</span>
       <textarea id="src" rows="5" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="srcHelp"></textarea>
     </label>
-    <p class="hint" id="srcHelp" style="margin:0.5rem 0 0">変換はUTF-8として行います。Shift_JISなどで作られた文字列は正しく変換できません。</p>
+    <p class="hint" id="srcHelp" style="margin:0.5rem 0 0">変換はUTF-8で行います。Shift_JISの文字列は正しく変換できません。</p>
 
     <div class="row" style="margin-top:1.25rem">
       <button class="btn" type="button" id="btnRun">エンコードする</button>
@@ -76,12 +76,11 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <p class="hint">結果はボタンからコピーできます。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
-      <li>「変換の向き」でエンコードかデコードを選びます。ボタンの表示も選んだ向きに変わります。</li>
-      <li>フォーム送信のデータを扱う場合は「フォーム方式」をオンにします。エンコードでは空白が + になり、デコードでは + が空白として戻ります。</li>
-      <li>「変換する文字列」欄に入力し、「エンコードする」（または「デコードする」）を押します。Ctrl（Macは⌘）+ Enter でも実行できます。</li>
-      <li>結果を確認し、「結果をコピー」でクリップボードに入れます。デコードで % の後ろが不正な場合は、理由が赤字で表示されます。</li>
+      <li>エンコードかデコードを選びます。</li>
+      <li>文字列を入力して実行します。</li>
+      <li>結果を確認してコピーします。</li>
     </ol>
   </section>
 
@@ -93,14 +92,14 @@
   -->
 
   <section class="prose">
-    <h2>URLエンコードについて</h2>
-    <p>URLでは、そのままでは使えない文字を「%」と2桁の16進数で表します。これをパーセントエンコードといいます。日本語のような文字は、まずUTF-8のバイト列に変換し、その1バイトずつを %XX の形にします。たとえば「日」は UTF-8 で E6 97 A5 なので、%E6%97%A5 になります。この道具はブラウザの encodeURIComponent と decodeURIComponent を使い、同じ規則で変換します。</p>
+    <h2>URLエンコードのしくみ</h2>
+    <p>URLでは使えない文字を「%」と2桁の16進数で表します。日本語はまずUTF-8のバイト列にし、1バイトずつ%XXにします。たとえば「日」は「%E6%97%A5」です。ここではブラウザのencodeURIComponentとdecodeURIComponentを使います。</p>
 
     <h3>通常方式とフォーム方式の違い</h3>
-    <p>encodeURIComponent は、英数字と <code>- _ . ! ~ * ' ( )</code> をそのまま残し、それ以外を %XX にします。空白は %20 です。一方、HTMLのフォーム送信で使われる application/x-www-form-urlencoded では、空白を + で表し、<code>! ' ( ) ~</code> も %XX にします。この道具の「フォーム方式」はこの規則に合わせています。クエリ文字列のなかでは + が空白を意味しますが、URLのパス部分では + は文字どおりのプラスです。フォーム方式はフォームのデータにだけ使ってください。</p>
+    <p>encodeURIComponentは英数字と <code>- _ . ! ~ * ' ( )</code> を残し、それ以外を%XXにします。空白は%20です。フォーム送信のapplication/x-www-form-urlencodedでは空白を+で表し、<code>! ' ( ) ~</code> も%XXにします。クエリでは+が空白を意味しますが、URLのパスでは+は文字どおりのプラスです。フォーム方式はフォームのデータにだけ使ってください。</p>
 
     <h3>エラーになる例</h3>
-    <p>デコードでは、% の後ろに2桁の16進数がないとエラーになります。また、16進数としては正しくても、UTF-8として不正なバイト列（例: %FF の単独）はデコードできません。% そのものを文字として含めたいときは、あらかじめ %25 にエンコードされている必要があります。すでにエンコード済みの文字列をもう一度エンコードすると、% が %25 になり、二重エンコードになります。元の文字列がUTF-8かどうかも確認してください。</p>
+    <p>デコードでは、%の後ろに2桁の16進数がないとエラーになります。正しい16進数でもUTF-8として不正なバイト列（例: %FF単独）は戻せません。%そのものを含めたいときは、あらかじめ%25にエンコードされている必要があります。エンコード済みの文字列をもう一度エンコードすると%が%25になり、二重エンコードになります。元の文字列がUTF-8かも確認してください。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">

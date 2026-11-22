@@ -1,0 +1,54 @@
+# ================================================================
+# icekun.net  配信最適化 .htaccess
+# ----------------------------------------------------------------
+# 方針:
+#  - 圧縮はオリジン nginx(gzip) と Cloudflare(brotli) が付与済み。
+#    Apache mod_deflate は二重圧縮の恐れがあるため無効のまま（末尾に控え）。
+#  - キャッシュはパスごとに .htaccess で明示する。
+#    Xserver は .htaccess の Cache-Control / Expires / Pragma を
+#    パネル設定より優先する（公式マニュアル記載）。
+#  - 既存の Xserver サーバーキャッシュ用 SetEnvIf 3行は先頭でそのまま維持。
+# ================================================================
+
+# ---- Xserver サーバーキャッシュ設定（パネル付与。削除しないこと） ----
+SetEnvIf Request_URI ".*" Ngx_Cache_NoCacheMode=off
+SetEnvIf Request_URI ".*" Ngx_Cache_AllCacheMode
+SetEnvIf Request_URI ".*" WpCommentDeny
+
+# ---- キャッシュ制御 ----
+<IfModule mod_headers.c>
+  # ハッシュ付きビルド成果物（/jusho/assets/index-<hash>.js|css）
+  # → 1年・immutable。URL にハッシュが含まれるので安全。
+  SetEnvIf Request_URI "^/jusho/assets/" JUSHO_IMMUTABLE
+  Header set Cache-Control "public, max-age=31536000, immutable" env=JUSHO_IMMUTABLE
+  Header unset Expires env=JUSHO_IMMUTABLE
+
+  # 住所辞書 JSON（/jusho/data/）→ 1日。
+  # 更新を早めに反映しつつ、通常の再訪はキャッシュで賄う。
+  SetEnvIf Request_URI "^/jusho/data/" JUSHO_DATA
+  Header set Cache-Control "public, max-age=86400" env=JUSHO_DATA
+  Header unset Expires env=JUSHO_DATA
+
+  # 共有スタイル（/assets/tools.css 等・ファイル名にハッシュ無し）→ 1日。
+  # 長すぎると更新が反映されにくいので控えめに。
+  SetEnvIf Request_URI "^/assets/" TOOL_ASSET
+  Header set Cache-Control "public, max-age=86400" env=TOOL_ASSET
+  Header unset Expires env=TOOL_ASSET
+
+  # 動的 PHP（contact.php / ip.php）→ キャッシュ禁止。
+  SetEnvIf Request_URI "\.php(\?.*)?$" DYN_PHP
+  Header set Cache-Control "no-store" env=DYN_PHP
+  Header unset Expires env=DYN_PHP
+
+  # 直接アクセスされる HTML → 毎回検証（デプロイ反映を優先）。
+  SetEnvIf Request_URI "\.html(\?.*)?$" HTML_DOC
+  Header set Cache-Control "no-cache" env=HTML_DOC
+  Header unset Expires env=HTML_DOC
+</IfModule>
+
+# ---- 圧縮（現状は nginx / Cloudflare 任せ。必要時のみ有効化） ----
+# <IfModule mod_deflate.c>
+#   AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml
+#   AddOutputFilterByType DEFLATE application/javascript application/json
+#   AddOutputFilterByType DEFLATE application/xml image/svg+xml
+# </IfModule>

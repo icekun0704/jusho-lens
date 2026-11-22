@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>色覚シミュレーション｜道具箱</title>
+<meta name="description" content="指定した2色がP型・D型・T型の色覚でどう見えるかを近似表示し、色差（CIE76）から見分けにくさの目安を出します。配色の参考用で、医療診断ではありません。入力はブラウザ内で処理します。">
+<link rel="canonical" href="https://icekun.net/color-blind/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .pickrow { display: flex; gap: 0.5rem; align-items: center; }
+  .pickrow input[type="color"] {
+    width: 3.25rem; flex: none; height: 2.4rem; padding: 0.15rem;
+    border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); cursor: pointer;
+  }
+  .pickrow input[type="text"] { min-width: 0; }
+  input[aria-invalid="true"] { border-color: var(--err); }
+
+  .sim-table { margin-top: 1.25rem; }
+  .sim-table th[scope="row"] { white-space: nowrap; font-weight: 500; color: var(--ink); font-size: 0.8125rem; }
+  .sim-table td { vertical-align: middle; }
+  .sim-table td.mono { font-size: 0.8125rem; }
+  .pair {
+    display: flex; height: 2.2rem; min-width: 9rem;
+    border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
+  }
+  .pair span { flex: 1 1 50%; }
+  .pairhex {
+    display: block; margin-top: 0.25rem;
+    font-family: var(--mono); font-size: 0.68rem; color: var(--muted); word-break: break-all;
+  }
+  .judge { white-space: nowrap; font-weight: 500; }
+  .is-ok { color: var(--ok); }
+  .is-warn { color: var(--warn); }
+  .is-err { color: var(--err); }
+
+  .verdict {
+    margin: 1.1rem 0 0; padding: 0.85rem 1rem;
+    border: 1px solid var(--rule); border-radius: 8px; background: var(--bg);
+    font-size: 0.9375rem; font-weight: 500; line-height: 1.8;
+  }
+  .verdict.is-ok { border-color: #b9cdb4; background: #f1f5ed; }
+  .verdict.is-warn { border-color: #e0cba4; background: #f8f1e2; }
+  .verdict.is-err { border-color: #e0b9b2; background: #f9eee9; }
+
+  #tool .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  @media (max-width: 40rem) {
+    input[type="text"] { font-size: 1rem; }
+    #tool .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+    #tool .stats b { font-size: 1.15rem; }
+    #tool .stat { padding: 0.7rem 0.6rem; }
+    .sim-table thead {
+      position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap;
+    }
+    .sim-table, .sim-table tbody, .sim-table tr, .sim-table td { display: block; width: 100%; }
+    .sim-table tr {
+      margin: 0 0 0.7rem; padding: 0.55rem 0.8rem;
+      border: 1px solid var(--rule); border-radius: 8px; background: var(--bg);
+    }
+    .sim-table th[scope="row"] { display: block; padding: 0 0 0.3rem; border: 0; font-size: 0.75rem; color: var(--muted); }
+    .sim-table td { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0; border: 0; }
+    .sim-table td::before { content: attr(data-label); flex: 0 0 3.4rem; font-size: 0.7rem; color: var(--muted); }
+    .sim-table td .pair { flex: 1 1 auto; min-width: 0; height: 1.8rem; }
+    .sim-table td[data-label="見本"] { flex-wrap: wrap; }
+    .sim-table td[data-label="見本"] .pairhex { flex-basis: 100%; padding-left: 4rem; margin-top: 0.2rem; }
+    .verdict { font-size: 0.875rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>色覚シミュレーション</h1>
+    <p class="lead">2色の組み合わせが、P型・D型・T型でどう見えるかを並べて比べられます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>2色の見え方</h2>
+    <p class="hint">色を変えると、表と判定がその場で更新されます。</p>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="hex1"><span>色1</span></label>
+        <div class="pickrow">
+          <input id="picker1" type="color" value="#ff6666" aria-label="色1をカラーピッカーで選ぶ">
+          <input id="hex1" type="text" value="#ff6666" maxlength="7" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="err" id="err1" role="status" aria-live="polite"></p>
+      </div>
+      <div class="field">
+        <label for="hex2"><span>色2</span></label>
+        <div class="pickrow">
+          <input id="picker2" type="color" value="#66cc66" aria-label="色2をカラーピッカーで選ぶ">
+          <input id="hex2" type="text" value="#66cc66" maxlength="7" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="err" id="err2" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn secondary" type="button" id="swap">2色を入れ替える</button>
+      <span class="hint" style="margin:0">見本:</span>
+      <button class="btn ghost" type="button" data-sample="rg">赤と緑の例</button>
+      <button class="btn ghost" type="button" data-sample="gb">青と緑の例</button>
+      <button class="btn ghost" type="button" data-sample="light">明暗の例</button>
+    </div>
+    <p class="note" id="actionStatus" role="status" aria-live="polite"></p>
+
+    <table class="sim-table">
+      <caption class="sr-only">色1と色2を、通常・P型・D型・T型の見え方で比べた表</caption>
+      <thead>
+        <tr>
+          <th scope="col">見え方</th>
+          <th scope="col">2色を並べた見本</th>
+          <th scope="col">色差</th>
+          <th scope="col">判定</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-sim="normal">
+          <th scope="row">通常</th>
+          <td data-label="見本">
+            <span class="pair" aria-hidden="true"><span class="half"></span><span class="half"></span></span>
+            <span class="pairhex" aria-hidden="true"></span>
+            <span class="sr-only pair-desc"></span>
+          </td>
+          <td data-label="色差" class="mono delta">—</td>
+          <td data-label="判定" class="judge">—</td>
+        </tr>
+        <tr data-sim="p">
+          <th scope="row">P型（1型）</th>
+          <td data-label="見本">
+            <span class="pair" aria-hidden="true"><span class="half"></span><span class="half"></span></span>
+            <span class="pairhex" aria-hidden="true"></span>
+            <span class="sr-only pair-desc"></span>
+          </td>
+          <td data-label="色差" class="mono delta">—</td>
+          <td data-label="判定" class="judge">—</td>
+        </tr>
+        <tr data-sim="d">
+          <th scope="row">D型（2型）</th>
+          <td data-label="見本">
+            <span class="pair" aria-hidden="true"><span class="half"></span><span class="half"></span></span>
+            <span class="pairhex" aria-hidden="true"></span>
+            <span class="sr-only pair-desc"></span>
+          </td>
+          <td data-label="色差" class="mono delta">—</td>
+          <td data-label="判定" class="judge">—</td>
+        </tr>
+        <tr data-sim="t">
+          <th scope="row">T型（3型）</th>
+          <td data-label="見本">
+            <span class="pair" aria-hidden="true"><span class="half"></span><span class="half"></span></span>
+            <span class="pairhex" aria-hidden="true"></span>
+            <span class="sr-only pair-desc"></span>
+          </td>
+          <td data-label="色差" class="mono delta">—</td>
+          <td data-label="判定" class="judge">—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="verdict" id="verdict" role="status" aria-live="polite"></p>
+
+    <div class="stats">
+      <div class="stat"><b id="minDelta">—</b><span>最小の色差（P・D・T）</span></div>
+      <div class="stat"><b id="minType">—</b><span>色差が最小の型</span></div>
+      <div class="stat"><b id="normalDelta">—</b><span>通常の見え方の色差</span></div>
+    </div>
+
+    <p class="warn" style="margin-top:1rem">この結果は医療診断ではありません。色覚には個人差があり、同じ型でも見え方は異なります。</p>
+    <p class="hint" style="margin-top:0.35rem">文字と背景のコントラストは<a href="/color/">カラー・コントラスト</a>で確かめられます。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>2色をカラーピッカーかHEXで選びます。</li>
+      <li>表でP型・D型・T型の見え方を比べます。</li>
+      <li>色差と判定を見て配色を決めます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>見え方の近似と色差</h2>
+    <p>ヒトの色覚は、網膜にある3種類の錐体の組み合わせで決まります。P型は赤を感じる錐体、D型は緑を感じる錐体、T型は青を感じる錐体の働きが弱い状態です。P型とD型は男性に多く、日本人男性では合わせて約5%とされています。T型は非常にまれです。</p>
+    <p>このページは、Machado ら（2009）の行列を線形RGBに適用し、表示用にsRGBへ戻して近似しています。強度は最大（1.0）で計算します。実際の見え方は個人差が大きく、同じ型でも程度が異なります。</p>
+
+    <h3>色差の求め方</h3>
+    <p>色差はCIE76（ΔE76）で計算します。2色をsRGBからXYZに変換し、D65の白色点でLabに直して、Lab空間のユークリッド距離を求めます。値が大きいほど色が離れて見える目安になります。</p>
+    <p>このページでは、10未満を「見分けにくい」、10以上20未満を「やや近い」、20以上を「離れている」と表示します。境界は絶対的な基準ではありません。配色を見直すきっかけとして使ってください。</p>
+
+    <h3>色だけに頼らないために</h3>
+    <p>色の違いだけで情報を伝えず、形・位置・文字・模様を組み合わせると、色覚にかかわらず読み取れます。グラフでは線の種類や直接ラベル、表では記号や並び順が助けになります。文字と背景のコントラストは<a href="/color/">カラー・コントラスト</a>で数値として確かめられます。</p>
+
+    <h3>注意</h3>
+    <p>このページの結果は医療診断ではありません。色覚の型や程度を判定するものではなく、配色の参考として近似を表示しています。心配なときは眼科などの専門機関に相談してください。画面の設定や照明でも見え方は変わります。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/excel-column/">Excel列番号変換</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+
+  const MATRICES = {
+    p: [
+      [0.152286, 1.052583, -0.204868],
+      [0.114503, 0.786281, 0.099216],
+      [-0.003882, -0.048116, 1.051998],
+    ],
+    d: [
+      [0.367322, 0.860646, -0.227968],
+      [0.280085, 0.672501, 0.047413],
+      [-0.011820, 0.042940, 0.968881],
+    ],
+    t: [
+      [1.255528, -0.076749, -0.178779],
+      [-0.078411, 0.930809, 0.147602],
+      [0.004733, 0.691367, 0.303900],
+    ],
+  };
+
+  const TYPE_LABELS = { p: 'P型', d: 'D型', t: 'T型' };
+
+  const SAMPLES = {
+    rg: ['#ff6666', '#66cc66'],
+    gb: ['#7dcea0', '#85c1e9'],
+    light: ['#1f4e79', '#f2c14e'],
+  };
+
+  const colors = [
+    { r: 255, g: 102, b: 102 },
+    { r: 102, g: 204, b: 102 },
+  ];
+
+  const rows = new Map();
+  for (const row of document.querySelectorAll('tr[data-sim]')) {
+    rows.set(row.dataset.sim, {
+      row,
+      halves: row.querySelectorAll('.half'),
+      hex: row.querySelector('.pairhex'),
+      desc: row.querySelector('.pair-desc'),
+      delta: row.querySelector('.delta'),
+      judge: row.querySelector('.judge'),
+    });
+  }
+
+  const pickers = [$('picker1'), $('picker2')];
+  const hexInputs = [$('hex1'), $('hex2')];
+  const errors = [$('err1'), $('err2')];
+  const verdict = $('verdict');
+  const minDelta = $('minDelta');
+  const minType = $('minType');
+  const normalDelta = $('normalDelta');
+  const actionStatus = $('actionStatus');
+
+  const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+
+  function toHex(rgb) {
+    return '#' + [rgb.r, rgb.g, rgb.b]
+      .map((channel) => Math.round(clamp(channel, 0, 255)).toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  function parseHex(value) {
+    let text = String(value).trim().replace(/^#/, '').toLowerCase();
+    if (/^[0-9a-f]{3}$/.test(text)) {
+      text = text[0] + text[0] + text[1] + text[1] + text[2] + text[2];
+    }
+    if (!/^[0-9a-f]{6}$/.test(text)) {
+      return null;
+    }
+    return {
+      r: parseInt(text.slice(0, 2), 16),
+      g: parseInt(text.slice(2, 4), 16),
+      b: parseInt(text.slice(4, 6), 16),
+    };
+  }
+
+  function srgbToLinear(channel) {
+    const c = channel / 255;
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  }
+
+  function linearToSrgb(value) {
+    const c = clamp(value, 0, 1);
+    const v = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+    return Math.round(v * 255);
+  }
+
+  function simulate(rgb, matrix) {
+    const r = srgbToLinear(rgb.r);
+    const g = srgbToLinear(rgb.g);
+    const b = srgbToLinear(rgb.b);
+    return {
+      r: linearToSrgb(matrix[0][0] * r + matrix[0][1] * g + matrix[0][2] * b),
+      g: linearToSrgb(matrix[1][0] * r + matrix[1][1] * g + matrix[1][2] * b),
+      b: linearToSrgb(matrix[2][0] * r + matrix[2][1] * g + matrix[2][2] * b),
+    };
+  }
+
+  function toLab(rgb) {
+    const r = srgbToLinear(rgb.r);
+    const g = srgbToLinear(rgb.g);
+    const b = srgbToLinear(rgb.b);
+
+    const x = (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / 0.95047;
+    const y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b;
+    const z = (0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / 1.08883;
+
+    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : (841 / 108) * t + 4 / 29);
+    const fx = f(x);
+    const fy = f(y);
+    const fz = f(z);
+
+    return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+  }
+
+  function deltaE(a, b) {
+    const first = toLab(a);
+    const second = toLab(b);
+    return Math.hypot(first[0] - second[0], first[1] - second[1], first[2] - second[2]);
+  }
+
+  function judge(delta, same) {
+    if (same) {
+      return { label: '同じ色', className: 'is-warn' };
+    }
+    if (delta < 10) {
+      return { label: '見分けにくい', className: 'is-err' };
+    }
+    if (delta < 20) {
+      return { label: 'やや近い', className: 'is-warn' };
+    }
+    return { label: '離れている', className: 'is-ok' };
+  }
+
+  function render() {
+    const hex1 = toHex(colors[0]);
+    const hex2 = toHex(colors[1]);
+    const same = hex1 === hex2;
+    const measured = {};
+
+    for (const [key, nodes] of rows) {
+      const first = key === 'normal' ? colors[0] : simulate(colors[0], MATRICES[key]);
+      const second = key === 'normal' ? colors[1] : simulate(colors[1], MATRICES[key]);
+      const firstHex = toHex(first);
+      const secondHex = toHex(second);
+      const delta = deltaE(first, second);
+      measured[key] = delta;
+
+      nodes.halves[0].style.backgroundColor = firstHex;
+      nodes.halves[1].style.backgroundColor = secondHex;
+      nodes.hex.textContent = `${firstHex} / ${secondHex}`;
+      nodes.desc.textContent = `色1 ${firstHex}、色2 ${secondHex}`;
+      nodes.delta.textContent = delta.toFixed(1);
+
+      const result = judge(delta, same);
+      nodes.judge.textContent = result.label;
+      nodes.judge.className = `judge ${result.className}`;
+    }
+
+    let closestKey = 'p';
+    for (const key of ['d', 't']) {
+      if (measured[key] < measured[closestKey]) {
+        closestKey = key;
+      }
+    }
+    const closest = measured[closestKey];
+
+    minDelta.textContent = same ? '0.0' : closest.toFixed(1);
+    minType.textContent = same ? '—' : TYPE_LABELS[closestKey];
+    normalDelta.textContent = measured.normal.toFixed(1);
+
+    let message;
+    let className;
+    if (same) {
+      message = '2色が同じ値です。別の色を選んでください。';
+      className = 'is-warn';
+    } else if (measured.normal < 10) {
+      message = `2色はもともと近い色です（色差 ${measured.normal.toFixed(1)}）。`;
+      className = 'is-warn';
+    } else if (closest < 10) {
+      message = `${TYPE_LABELS[closestKey]}では見分けにくい組み合わせです（色差 ${closest.toFixed(1)}）。`;
+      className = 'is-err';
+    } else if (closest < 20) {
+      message = `${TYPE_LABELS[closestKey]}ではやや近い組み合わせです（色差 ${closest.toFixed(1)}）。`;
+      className = 'is-warn';
+    } else {
+      message = 'P型・D型・T型のどれでも色差は20以上です。';
+      className = 'is-ok';
+    }
+    verdict.textContent = message;
+    verdict.className = `verdict ${className}`;
+  }
+
+  function setColor(index, rgb) {
+    colors[index] = rgb;
+    render();
+  }
+
+  function bindColor(index) {
+    const picker = pickers[index];
+    const hexInput = hexInputs[index];
+    const error = errors[index];
+
+    picker.addEventListener('input', () => {
+      const rgb = parseHex(picker.value);
+      if (!rgb) {
+        return;
+      }
+      error.textContent = '';
+      hexInput.removeAttribute('aria-invalid');
+      hexInput.value = toHex(rgb);
+      actionStatus.textContent = '';
+      setColor(index, rgb);
+    });
+
+    hexInput.addEventListener('input', () => {
+      const rgb = parseHex(hexInput.value);
+      if (!rgb) {
+        error.textContent = 'HEX は #rgb または #rrggbb の形式で入力してください。';
+        hexInput.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      error.textContent = '';
+      hexInput.removeAttribute('aria-invalid');
+      picker.value = toHex(rgb);
+      actionStatus.textContent = '';
+      setColor(index, rgb);
+    });
+
+    hexInput.addEventListener('change', () => {
+      const rgb = parseHex(hexInput.value);
+      if (rgb) {
+        hexInput.value = toHex(rgb);
+      } else {
+        hexInput.value = toHex(colors[index]);
+        error.textContent = '';
+        hexInput.removeAttribute('aria-invalid');
+      }
+      render();
+    });
+  }
+
+  bindColor(0);
+  bindColor(1);
+
+  function setPair(hex1, hex2, message) {
+    const first = parseHex(hex1);
+    const second = parseHex(hex2);
+    if (!first || !second) {
+      return;
+    }
+    colors[0] = first;
+    colors[1] = second;
+    pickers[0].value = toHex(first);
+    pickers[1].value = toHex(second);
+    hexInputs[0].value = toHex(first);
+    hexInputs[1].value = toHex(second);
+    for (const error of errors) {
+      error.textContent = '';
+    }
+    for (const input of hexInputs) {
+      input.removeAttribute('aria-invalid');
+    }
+    render();
+    actionStatus.textContent = message;
+    actionStatus.className = 'note ok';
+  }
+
+  $('swap').addEventListener('click', () => {
+    const first = toHex(colors[0]);
+    const second = toHex(colors[1]);
+    setPair(second, first, '2色を入れ替えました。');
+  });
+
+  for (const button of document.querySelectorAll('[data-sample]')) {
+    button.addEventListener('click', () => {
+      const pair = SAMPLES[button.dataset.sample];
+      if (pair) {
+        setPair(pair[0], pair[1], '見本の色を入れました。');
+      }
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

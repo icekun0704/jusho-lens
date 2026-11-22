@@ -21,6 +21,7 @@
   #headerWrap { align-self: end; min-height: 2.35rem; }
   #out { margin-top: 0; min-height: 14rem; }
   #out[readonly] { background: #f4efe4; }
+  .note .mono { word-break: normal; }
   #tool .stats { grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 48rem) {
     #tool .stats { grid-template-columns: repeat(4, 1fr); }
@@ -44,7 +45,7 @@
 <main class="wrap">
   <div class="page-head">
     <h1>CSV⇔JSON変換</h1>
-    <p class="lead">CSVをJSONに、JSONをCSVに変換します。引用符で囲んだカンマ・改行・引用符を含むセルも、CSVの規則に沿って正しく扱います。</p>
+    <p class="lead">CSV を JSON に、JSON を CSV に、その場で変換します。</p>
   </div>
 
   <section class="panel" id="tool">
@@ -82,8 +83,8 @@
       <button class="btn secondary" type="button" id="btnDownload">ダウンロード</button>
       <button class="btn ghost" type="button" id="btnClear">クリア</button>
     </div>
-    <p class="warn" style="margin:0.6rem 0 0">入力は2MBまでです。超える場合は分割して変換してください。</p>
-    <p class="hint" style="margin:0.25rem 0 0">UTF-8として読み込みます。行数・列数は変換結果の数です（CSV→JSONではヘッダー行を除く）。</p>
+    <p class="warn" style="margin:0.6rem 0 0">入力は 2MB までです。超える場合は分割してください。</p>
+    <p class="hint" style="margin:0.25rem 0 0">UTF-8 として読み込みます。行数・列数は変換結果の数です。</p>
     <p class="err" id="errMsg" role="alert"></p>
     <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
     <p class="sr-only" id="live" role="status" aria-live="polite"></p>
@@ -99,18 +100,15 @@
       <div class="stat"><b id="stIn">0 B</b><span>入力サイズ</span></div>
       <div class="stat"><b id="stOut">0 B</b><span>出力サイズ</span></div>
     </div>
-    <p class="note">出力形式: <span class="mono">CSV = UTF-8（BOM付き）・改行CRLF</span>、<span class="mono">JSON = UTF-8・改行LF</span>。コピーするテキストにはBOMを付けません。</p>
+    <p class="note">出力は CSV が <span class="mono">UTF-8（BOM付き）・CRLF</span>、JSON が <span class="mono">UTF-8・LF</span> です。</p>
   </section>
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
-      <li>「変換の向き」で CSV → JSON か JSON → CSV を選びます。選ぶと見本のデータが切り替わります。</li>
-      <li>CSV → JSON では「区切り文字」を選び、必要なら「1行目をヘッダー行として使う」をオンにします。オフの場合は各行が配列になります。</li>
-      <li>上の欄にデータを貼り付けるか、「サンプル」で見本を入れます。入力は変換のたびに自動で反映され、「変換する」または Ctrl+Enter（Macは ⌘+Enter）でも実行できます。</li>
-      <li>下の欄に変換結果が出ます。「結果をコピー」でクリップボードへ、「ダウンロード」でファイルに保存します。CSVはExcel向けにUTF-8（BOM付き）・CRLFで保存します。</li>
-      <li>エラーが出たときは、引用符の閉じ忘れやJSONの形を確認してください。2MBを超える入力は分割して変換します。</li>
+      <li>変換の向きを選びます。</li>
+      <li>データを貼り付けて変換します。</li>
+      <li>結果をコピーするか保存します。</li>
     </ol>
   </section>
 
@@ -122,20 +120,14 @@
   -->
 
   <section class="prose">
-    <h2>CSV⇔JSON変換について</h2>
-    <p>CSVは表をカンマで区切って並べたテキスト、JSONは配列やオブジェクトを構造として表すテキストです。この道具は2つの形式をブラウザ内で相互に変換します。入力した内容は送信されず、ページを閉じれば残りません。</p>
+    <h2>CSV と JSON の変換</h2>
+    <p>CSV は表をカンマで区切ったテキスト、JSON は配列やオブジェクトを構造として表すテキストです。2つの形式を相互に変換します。</p>
 
-    <h3>CSVの書式</h3>
-    <p>CSVの一般的な仕様はRFC 4180（2005年公開）にまとめられています。セルに区切り文字・引用符・改行を含めるときは、セル全体をダブルクォートで囲みます。セルの中にダブルクォートを入れたいときは、二重に書いてエスケープします（<code>"特売"</code> は <code>"メモ: ""特売"" です"</code>）。行の区切りはCRLFまたはLFで、この道具はどちらも読み分けます。</p>
-    <p>Excelが保存するCSVはShift_JISのことがあり、UTF-8として読むと文字化けします。その場合はExcel側で「CSV UTF-8」形式で保存し直してください。この道具が書き出すCSVはUTF-8で、Excelが文字コードを判別できるようBOMを付けています。</p>
+    <h3>CSV の書式</h3>
+    <p>CSV の一般的な仕様は RFC 4180 にまとめられています。セルに区切り文字・引用符・改行を含めるときは全体をダブルクォートで囲み、中のダブルクォートは二重に書きます。行の区切りは CRLF と LF のどちらも読めます。Excel が保存した Shift_JIS の CSV は文字化けするため、「CSV UTF-8」で保存し直してください。書き出す CSV は Excel 向けに BOM 付きの UTF-8 です。</p>
 
-    <h3>JSONとの違い</h3>
-    <p>CSVのセルはすべて文字列として扱われ、数値・真偽値・nullの区別がありません。CSV → JSONでは値を文字列のまま出力するため、先頭が0の郵便番号や電話番号、桁の多いIDが壊れません。数値として使いたい場合は、変換後に受け取る側で型を変換してください。</p>
-    <p>JSON → CSVでは、オブジェクトの配列はキーをヘッダー行にして出力し、配列の配列はそのまま出力します。値がオブジェクトや配列に入れ子になっている場合は、その部分をJSON文字列にして1つのセルに収めます。オブジェクト・配列・単一の値が混在した配列は、形をそろえるようエラーにしています。</p>
-
-    <h3>変換のルールと制限</h3>
-    <p>CSV → JSONでヘッダーを使うとき、空の見出しは <code>column1</code> のような名前になり、重複する見出しには <code>_2</code> などの連番を付けます。データ行がヘッダーより多い場合は、余った列に <code>column5</code> のような名前を追加します。空行は読み飛ばします。</p>
-    <p>入力の上限は2MBです。それを超えると変換せずにエラーを表示します。行数・列数そのものには固定の上限を設けていませんが、ブラウザのメモリの範囲で動作します。大量のデータは分割して変換してください。</p>
+    <h3>値と見出しの扱い</h3>
+    <p>CSV のセルはすべて文字列として扱うので、先頭が0の郵便番号や桁の多い ID が壊れません。JSON → CSV ではオブジェクトの配列はキーを見出しにし、入れ子の値は JSON 文字列として1つのセルに収めます。配列の配列はそのまま出力し、形の混在した配列はエラーにします。空の見出しは <code>column1</code> のような名前に、重複する見出しには <code>_2</code> などの連番を付けます。入力の上限は 2MB で、超える場合は分割してください。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">

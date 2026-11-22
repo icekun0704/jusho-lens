@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV結合｜道具箱</title>
+<meta name="description" content="複数のCSVファイルを1つにまとめるツール。見出し行の一致を確認し、区切り文字と文字コード（UTF-8・Shift_JIS）を指定できます。結合結果は表で確認して、UTF-8のCSVで保存できます。処理はブラウザ内だけで行います。">
+<link rel="canonical" href="https://icekun.net/csv-merge/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+
+  .drop {
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    padding: 1.75rem 1rem; text-align: center; cursor: pointer;
+    border: 1.5px dashed var(--rule); border-radius: 10px;
+    background: var(--bg);
+  }
+  .drop:hover { border-color: #c9bfae; background: #f4efe4; }
+  .drop.dragover { border-color: var(--ox); background: var(--mark); }
+  .drop:focus-within { outline: 2px solid var(--ox); outline-offset: 3px; }
+  .drop-title { font-weight: 600; font-size: 0.9375rem; }
+  .drop-sub { font-size: 0.78rem; color: var(--muted); line-height: 1.7; }
+
+  fieldset.opts {
+    margin: 1.25rem 0 0; padding: 0.9rem 1rem;
+    border: 1px solid var(--rule); border-radius: 8px;
+  }
+  fieldset.opts legend {
+    padding: 0 0.4rem; font-size: 0.75rem; color: var(--muted);
+  }
+  fieldset.opts .check + .check { margin-top: 0.55rem; }
+  fieldset.opts .check { color: var(--ink); }
+  fieldset.opts .check:has(input:disabled) { opacity: 0.5; cursor: default; }
+
+  .list-head {
+    display: flex; flex-wrap: wrap; align-items: center;
+    justify-content: space-between; gap: 0.5rem;
+  }
+  .list-head h2 { margin: 0; }
+
+  .filelist { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+  .file-item {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem;
+    padding: 0.6rem 0; border-bottom: 1px solid var(--rule);
+  }
+  .file-item:last-child { border-bottom: 0; }
+  .file-name { font-weight: 500; word-break: break-all; }
+  .file-meta { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+  .file-flag {
+    font-size: 0.68rem; padding: 0.08rem 0.45rem; border-radius: 999px;
+    border: 1px solid var(--rule); color: var(--muted); white-space: nowrap;
+  }
+  .file-flag.ok { color: var(--ok); border-color: #c3d6bd; background: #eef4ea; }
+  .file-flag.ng { color: var(--warn); border-color: #e3d2b3; background: #f8efdf; }
+  .file-item .btn { margin-left: auto; height: 1.9rem; }
+
+  .tbl-scroll {
+    margin-top: 1rem; overflow: auto; max-height: 26rem;
+    border: 1px solid var(--rule); border-radius: 8px; background: var(--bg);
+  }
+  .tbl-scroll table { border-collapse: separate; border-spacing: 0; }
+  .tbl-scroll th, .tbl-scroll td {
+    max-width: 18rem; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; border-bottom: 1px solid var(--rule);
+  }
+  .tbl-scroll thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--card); box-shadow: inset 0 -1px 0 var(--rule);
+  }
+  .tbl-scroll td.num, .tbl-scroll th.num {
+    color: var(--muted); text-align: right; width: 3rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .tbl-scroll tbody tr:last-child td { border-bottom: 0; }
+  .tbl-scroll tbody tr:nth-child(even) { background: #f4efe4; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>CSV結合</h1>
+    <p class="lead">部署や月ごとに分かれたCSVを、1つにまとめます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <label class="drop" id="drop" for="files" aria-describedby="fileHint">
+      <span class="drop-title">CSVをここにドロップ</span>
+      <span class="drop-sub">押してファイルを選ぶこともできます。複数まとめて選べます。</span>
+      <input type="file" class="sr-only" id="files" accept=".csv,text/csv,.txt" multiple>
+    </label>
+    <p class="hint" id="fileHint" style="margin:0.55rem 0 0">読み込みはUTF-8とShift_JISに対応しています。保存はUTF-8です。</p>
+
+    <div class="grid-2" style="margin-top:1.25rem">
+      <label class="field" for="delim">
+        <span>区切り文字</span>
+        <select id="delim">
+          <option value="auto" selected>自動判定</option>
+          <option value="comma">カンマ（,）</option>
+          <option value="tab">タブ</option>
+          <option value="semi">セミコロン（;）</option>
+        </select>
+      </label>
+      <label class="field" for="enc">
+        <span>文字コード</span>
+        <select id="enc">
+          <option value="auto" selected>自動判定</option>
+          <option value="utf-8">UTF-8</option>
+          <option value="shift_jis">Shift_JIS</option>
+        </select>
+      </label>
+    </div>
+
+    <fieldset class="opts">
+      <legend>結合のしかた</legend>
+      <label class="check"><input type="checkbox" id="optHeader" checked> 1行目を見出し行として扱う</label>
+      <label class="check"><input type="checkbox" id="optSkip" checked> 2つ目以降の見出し行は出力しない</label>
+      <label class="check"><input type="checkbox" id="optDedupe" checked> 列名が重複したら番号を付ける</label>
+      <label class="check"><input type="checkbox" id="optBom" checked> 保存時にBOMを付ける（Excel向け）</label>
+    </fieldset>
+
+    <div id="listWrap" hidden style="margin-top:1.25rem">
+      <div class="list-head">
+        <h2>読み込んだファイル</h2>
+        <button class="btn ghost" type="button" id="btnClear">すべて外す</button>
+      </div>
+      <ul class="filelist" id="fileList" aria-label="読み込んだファイル"></ul>
+      <p class="hint" style="margin:0.25rem 0 0">上から順に結合します。</p>
+    </div>
+
+    <p class="hint" id="status" role="status" aria-live="polite" style="min-height:1.5rem;margin:1rem 0 0"></p>
+    <div id="warnWrap"></div>
+
+    <div class="stats" id="statsOut" hidden></div>
+
+    <div class="tbl-scroll" id="preview" role="region" aria-label="結合結果のプレビュー" tabindex="0" hidden></div>
+
+    <div class="row" style="margin-top:1rem">
+      <button class="btn" type="button" id="btnDownload" disabled>CSVを保存</button>
+      <span class="hint" id="saveNote" style="margin:0"></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">読み込みも結合も、ブラウザ内だけで処理します。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>CSVファイルをまとめて選びます。</li>
+      <li>見出しと区切り文字を確認します。</li>
+      <li>プレビューを見て保存します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>CSV結合のしくみ</h2>
+    <p>部署・支店・月ごとに分かれたCSVを、1つの表にまとめます。ファイルを追加すると、その場で読み込んで結合し、先頭30行をプレビューします。内容はサーバーに送りません。</p>
+
+    <h3>読み込みと確認</h3>
+    <p>区切り文字は、各ファイルの先頭5行を走査して、引用符の外で最も多く現れるものを選びます。自動判定が合わないときは、カンマ・タブ・セミコロンから指定してください。文字コードは、BOMがあればそれを優先し、なければUTF-8として読めるかを試して、読めない場合にShift_JISとみなします。UTF-8・Shift_JIS・UTF-16（BOM付き）を読み込めます。</p>
+    <p>1つ目のファイルの見出し行を基準に、2つ目以降の見出しが一致するかを一覧に表示します。一致しない場合は警告を出し、列は左から順にそろえて結合します。列の数が足りない行は、空のセルで埋めます。見出し行をデータとして残すかどうかは、「2つ目以降の見出し行は出力しない」で切り替えます。</p>
+
+    <h3>保存と制限</h3>
+    <p>保存するファイルはUTF-8です。文字コードの変換は読み込み方向だけで、Shift_JISでの書き出しには対応していません。区切り文字は、指定したもの、自動判定の場合は最も多かったものを使います。Excelでそのまま開けるよう、BOMを付けて保存できます。</p>
+    <p>1ファイル20MB、30ファイル、合計100,000データ行までを目安にしています。引用符で囲んだセル内の改行や、二重引用符によるエスケープにも対応します。読み取れない文字が混じったときは、文字コードを変えて試してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+    <a href="/csv/">CSV⇔JSON変換</a>
+    <a href="/holiday/">祝日カレンダー</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var MAX_FILES = 30;
+  var MAX_BYTES = 20 * 1024 * 1024;
+  var MAX_ROWS = 100000;
+  var MAX_CELLS = 5000000;
+  var PREVIEW_ROWS = 30;
+
+  var nf = new Intl.NumberFormat('ja-JP');
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  var drop = $('drop');
+  var input = $('files');
+  var listWrap = $('listWrap');
+  var fileList = $('fileList');
+  var statusEl = $('status');
+  var statsOut = $('statsOut');
+  var preview = $('preview');
+  var btnDownload = $('btnDownload');
+  var saveNote = $('saveNote');
+  var warnWrap = $('warnWrap');
+  var optHeader = $('optHeader');
+  var optSkip = $('optSkip');
+  var optDedupe = $('optDedupe');
+  var optBom = $('optBom');
+  var delimSel = $('delim');
+  var encSel = $('enc');
+
+  var entries = [];
+  var seq = 0;
+  var merged = null;
+
+  var ENC_NAMES = { 'utf-8': 'UTF-8', 'shift_jis': 'Shift_JIS', 'utf-16le': 'UTF-16LE', 'utf-16be': 'UTF-16BE' };
+  var DELIM_NAMES = { ',': 'カンマ', '\t': 'タブ', ';': 'セミコロン' };
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text || '';
+    statusEl.className = cls || 'hint';
+    statusEl.style.margin = '1rem 0 0';
+  }
+
+  function mapDelim(v) {
+    if (v === 'comma') return ',';
+    if (v === 'tab') return '\t';
+    if (v === 'semi') return ';';
+    return ',';
+  }
+
+  /* ---------- decoding ---------- */
+
+  function decodeBytes(bytes, encOpt) {
+    var enc = encOpt;
+    if (enc === 'auto') {
+      if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        enc = 'utf-8';
+      } else if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+        enc = 'utf-16le';
+      } else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+        enc = 'utf-16be';
+      } else {
+        try {
+          new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+          enc = 'utf-8';
+        } catch (e) {
+          enc = 'shift_jis';
+        }
+      }
+    }
+    var text;
+    try {
+      text = new TextDecoder(enc, { fatal: false }).decode(bytes);
+    } catch (e) {
+      enc = 'utf-8';
+      text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
+    var bad = (text.match(/�/g) || []).length;
+    return { text: text, enc: enc, bad: bad };
+  }
+
+  /* ---------- parsing ---------- */
+
+  function guessDelim(text) {
+    var codes = [44, 9, 59];
+    var counts = [0, 0, 0];
+    var inQ = false;
+    var lines = 0;
+    var i;
+    var k;
+    for (i = 0; i < text.length && lines < 5; i++) {
+      var c = text.charCodeAt(i);
+      if (c === 34) { inQ = !inQ; continue; }
+      if (inQ) continue;
+      if (c === 10) { lines++; continue; }
+      for (k = 0; k < 3; k++) { if (c === codes[k]) counts[k]++; }
+    }
+    var best = 0;
+    for (k = 1; k < 3; k++) { if (counts[k] > counts[best]) best = k; }
+    return counts[best] > 0 ? String.fromCharCode(codes[best]) : ',';
+  }
+
+  function parseCSV(text, delim) {
+    var rows = [];
+    var row = [];
+    var field = '';
+    var i = 0;
+    var n = text.length;
+    var inQ = false;
+    var start = 0;
+    var dc = delim.charCodeAt(0);
+    var c;
+
+    while (i < n) {
+      c = text.charCodeAt(i);
+      if (inQ) {
+        if (c === 34) {
+          if (text.charCodeAt(i + 1) === 34) {
+            field += text.slice(start, i) + '"';
+            i += 2;
+            start = i;
+            continue;
+          }
+          field += text.slice(start, i);
+          inQ = false;
+          i++;
+          start = i;
+          continue;
+        }
+        i++;
+        continue;
+      }
+      if (c === 34) {
+        field += text.slice(start, i);
+        inQ = true;
+        i++;
+        start = i;
+        continue;
+      }
+      if (c === dc) {
+        field += text.slice(start, i);
+        row.push(field);
+        field = '';
+        i++;
+        start = i;
+        continue;
+      }
+      if (c === 10 || c === 13) {
+        field += text.slice(start, i);
+        row.push(field);
+        rows.push(row);
+        row = [];
+        field = '';
+        if (c === 13 && text.charCodeAt(i + 1) === 10) i += 2;
+        else i++;
+        start = i;
+        continue;
+      }
+      i++;
+    }
+    field += text.slice(start, n);
+    if (field !== '' || row.length) {
+      row.push(field);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function parseEntry(e, delimOpt, encOpt) {
+    var key = delimOpt + '|' + encOpt;
+    if (e.key === key && e.parsed) return;
+    var dec = decodeBytes(e.bytes, encOpt);
+    var delim = delimOpt === 'auto' ? guessDelim(dec.text) : mapDelim(delimOpt);
+    var rows = parseCSV(dec.text, delim).filter(function (r) {
+      if (!r.length) return false;
+      for (var i = 0; i < r.length; i++) {
+        if (String(r[i]).trim() !== '') return true;
+      }
+      return false;
+    });
+    e.parsed = { rows: rows, enc: dec.enc, delim: delim, bad: dec.bad };
+    e.key = key;
+  }
+
+  function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (String(a[i]).trim() !== String(b[i]).trim()) return false;
+    }
+    return true;
+  }
+
+  function dedupeHeader(h) {
+    var seen = Object.create(null);
+    var out = [];
+    for (var i = 0; i < h.length; i++) {
+      var name = String(h[i]).trim();
+      if (name === '') { out.push('列' + (i + 1)); continue; }
+      if (seen[name]) {
+        seen[name]++;
+        out.push(name + ' (' + seen[name] + ')');
+      } else {
+        seen[name] = 1;
+        out.push(name);
+      }
+    }
+    return out;
+  }
+
+  /* ---------- files ---------- */
+
+  function addFiles(files) {
+    var accepted = [];
+    var msg = '';
+
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (!f) continue;
+      if (entries.length + accepted.length >= MAX_FILES) {
+        msg = 'ファイルは' + MAX_FILES + '個までです。';
+        break;
+      }
+      var dup = entries.some(function (e) {
+        return e.file.name === f.name && e.file.size === f.size && e.file.lastModified === f.lastModified;
+      });
+      if (dup) {
+        accepted = accepted.filter(function (a) { return a !== f; });
+        continue;
+      }
+      if (f.size > MAX_BYTES) {
+        msg = f.name + ' は大きすぎます（1ファイル20MBまで）。';
+        continue;
+      }
+      accepted.push(f);
+    }
+
+    if (!accepted.length) {
+      if (msg) setStatus(msg, 'err');
+      return;
+    }
+    if (msg) setStatus(msg, 'warn');
+
+    accepted.forEach(function (f) {
+      var entry = { id: ++seq, file: f, bytes: null, parsed: null, key: null, error: null };
+      entries.push(entry);
+      f.arrayBuffer().then(function (buf) {
+        entry.bytes = new Uint8Array(buf);
+        rebuild();
+      }).catch(function () {
+        entry.error = '読み込めませんでした';
+        rebuild();
+      });
+    });
+
+    rebuild();
+  }
+
+  function removeEntry(id) {
+    entries = entries.filter(function (e) { return e.id !== id; });
+    rebuild();
+  }
+
+  function computeFlags(usable) {
+    var useHeader = optHeader.checked;
+    var ref = null;
+    var flags = {};
+    usable.forEach(function (e) {
+      if (e.error || !e.parsed) { flags[e.id] = 'none'; return; }
+      if (!e.parsed.rows.length) { flags[e.id] = 'none'; return; }
+      if (!useHeader) { flags[e.id] = 'nohead'; return; }
+      var h = e.parsed.rows[0];
+      if (!ref) { ref = h; flags[e.id] = 'first'; return; }
+      flags[e.id] = arraysEqual(h, ref) ? 'same' : 'diff';
+    });
+    return flags;
+  }
+
+  function renderList(flags) {
+    fileList.textContent = '';
+    entries.forEach(function (e) {
+      var li = document.createElement('li');
+      li.className = 'file-item';
+
+      var name = document.createElement('span');
+      name.className = 'file-name';
+      name.textContent = e.file.name;
+
+      var meta = document.createElement('span');
+      meta.className = 'file-meta';
+      var parts = [];
+      if (e.error) {
+        parts.push(e.error);
+      } else if (e.parsed) {
+        var p = e.parsed;
+        var dataRows = Math.max(0, p.rows.length - (optHeader.checked ? 1 : 0));
+        var cols = 0;
+        for (var i = 0; i < p.rows.length; i++) {
+          if (p.rows[i].length > cols) cols = p.rows[i].length;
+        }
+        parts.push(nf.format(dataRows) + '行');
+        if (cols) parts.push(cols + '列');
+        parts.push(ENC_NAMES[p.enc] || p.enc);
+        parts.push(DELIM_NAMES[p.delim] || p.delim);
+      } else {
+        parts.push('読み込み中');
+      }
+      meta.textContent = parts.join(' / ');
+
+      var flagEl = document.createElement('span');
+      flagEl.className = 'file-flag';
+      var f = flags ? flags[e.id] : null;
+      if (f === 'first') {
+        flagEl.textContent = '見出しの基準';
+        flagEl.className += ' ok';
+      } else if (f === 'same') {
+        flagEl.textContent = '見出し一致';
+        flagEl.className += ' ok';
+      } else if (f === 'diff') {
+        flagEl.textContent = '見出しが違う';
+        flagEl.className += ' ng';
+      } else if (f === 'none') {
+        flagEl.textContent = '空のファイル';
+        flagEl.className += ' ng';
+      } else if (!f) {
+        flagEl.hidden = true;
+      }
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn ghost';
+      btn.textContent = '外す';
+      btn.setAttribute('aria-label', e.file.name + ' を一覧から外す');
+      btn.addEventListener('click', function () { removeEntry(e.id); });
+
+      li.appendChild(name);
+      li.appendChild(meta);
+      li.appendChild(flagEl);
+      li.appendChild(btn);
+      fileList.appendChild(li);
+    });
+  }
+
+  /* ---------- merge ---------- */
+
+  function buildMerged(usable) {
+    var useHeader = optHeader.checked;
+    var skipRepeated = optSkip.checked;
+    var dedupe = optDedupe.checked;
+    var ref = null;
+    var rows = [];
+    var fileCount = 0;
+    var skipped = 0;
+    var colCount = 0;
+    var cells = 0;
+    var warnings = [];
+    var votes = Object.create(null);
+
+    usable.forEach(function (e) {
+      if (!e.parsed) return;
+      var rs = e.parsed.rows;
+      if (!rs.length) {
+        warnings.push(e.file.name + ' は中身が空のため、とばしました。');
+        return;
+      }
+      fileCount++;
+      votes[e.parsed.delim] = (votes[e.parsed.delim] || 0) + 1;
+
+      var data = rs;
+      if (useHeader) {
+        var h = rs[0];
+        data = rs.slice(1);
+        if (!ref) {
+          ref = h;
+        } else {
+          var same = arraysEqual(h, ref);
+          if (same && skipRepeated) {
+            skipped++;
+          } else {
+            data = [h].concat(data);
+          }
+          if (!same) {
+            warnings.push(e.file.name + ' の見出し行が1つ目と違います。列は左から順にそろえました。');
+          }
+        }
+      }
+
+      for (var i = 0; i < data.length; i++) {
+        var r = data[i];
+        if (r.length > colCount) colCount = r.length;
+        rows.push(r);
+        cells += r.length;
+        if (rows.length > MAX_ROWS) {
+          var err = new Error('データ行が ' + nf.format(MAX_ROWS) + ' 行を超えました。ファイルを分けてください。');
+          err.limit = true;
+          throw err;
+        }
+        if (cells > MAX_CELLS) {
+          var err2 = new Error('セル数が多すぎます。ファイルを分けてください。');
+          err2.limit = true;
+          throw err2;
+        }
+      }
+    });
+
+    if (!fileCount) {
+      var err3 = new Error('中身のあるCSVがありません。');
+      err3.limit = true;
+      throw err3;
+    }
+
+    if (ref) {
+      if (ref.length > colCount) colCount = ref.length;
+      ref = ref.slice();
+      while (ref.length < colCount) ref.push('列' + (ref.length + 1));
+      if (dedupe) ref = dedupeHeader(ref);
+    }
+
+    var delimOut = ',';
+    if (delimSel.value !== 'auto') {
+      delimOut = mapDelim(delimSel.value);
+    } else {
+      var best = '';
+      var bestN = 0;
+      Object.keys(votes).forEach(function (k) {
+        if (votes[k] > bestN) { best = k; bestN = votes[k]; }
+      });
+      delimOut = best || ',';
+    }
+
+    return {
+      header: ref,
+      rows: rows,
+      colCount: colCount,
+      fileCount: fileCount,
+      skipped: skipped,
+      warnings: warnings,
+      delimOut: delimOut
+    };
+  }
+
+  /* ---------- render ---------- */
+
+  function showEmpty() {
+    statsOut.hidden = true;
+    statsOut.textContent = '';
+    preview.hidden = true;
+    preview.textContent = '';
+    btnDownload.disabled = true;
+    saveNote.textContent = '';
+    warnWrap.textContent = '';
+  }
+
+  function renderWarnings(msgs) {
+    warnWrap.textContent = '';
+    if (!msgs.length) return;
+    var ul = document.createElement('ul');
+    ul.className = 'warn';
+    ul.style.margin = '0.5rem 0 0';
+    ul.style.paddingLeft = '1.1rem';
+    msgs.slice(0, 5).forEach(function (t) {
+      var li = document.createElement('li');
+      li.textContent = t;
+      ul.appendChild(li);
+    });
+    if (msgs.length > 5) {
+      var more = document.createElement('li');
+      more.textContent = 'ほかに ' + (msgs.length - 5) + '件の注意があります。';
+      ul.appendChild(more);
+    }
+    warnWrap.appendChild(ul);
+  }
+
+  function renderStats(m) {
+    statsOut.textContent = '';
+    statsOut.hidden = false;
+    var items = [
+      [nf.format(m.fileCount) + '個', 'ファイル'],
+      [nf.format(m.rows.length) + '行', 'データ行'],
+      [nf.format(m.colCount) + '列', '列']
+    ];
+    if (m.skipped > 0) items.push([nf.format(m.skipped) + '行', '省いた見出し行']);
+    items.forEach(function (it) {
+      var d = document.createElement('div');
+      d.className = 'stat';
+      var b = document.createElement('b');
+      b.textContent = it[0];
+      var s = document.createElement('span');
+      s.textContent = it[1];
+      d.appendChild(b);
+      d.appendChild(s);
+      statsOut.appendChild(d);
+    });
+  }
+
+  function renderPreview(m, displayHeader) {
+    preview.textContent = '';
+    preview.hidden = false;
+
+    var table = document.createElement('table');
+    var cap = document.createElement('caption');
+    cap.className = 'sr-only';
+    var shown = Math.min(m.rows.length, PREVIEW_ROWS);
+    cap.textContent = '結合結果の先頭' + shown + '行';
+    table.appendChild(cap);
+
+    var thead = document.createElement('thead');
+    var htr = document.createElement('tr');
+    var numH = document.createElement('th');
+    numH.scope = 'col';
+    numH.className = 'num';
+    numH.textContent = '#';
+    htr.appendChild(numH);
+    displayHeader.forEach(function (h) {
+      var th = document.createElement('th');
+      th.scope = 'col';
+      th.textContent = h;
+      th.title = h;
+      htr.appendChild(th);
+    });
+    thead.appendChild(htr);
+    table.appendChild(thead);
+
+    var tbody = document.createElement('tbody');
+    var limit = Math.min(m.rows.length, PREVIEW_ROWS);
+    for (var r = 0; r < limit; r++) {
+      var tr = document.createElement('tr');
+      var num = document.createElement('td');
+      num.className = 'num';
+      num.textContent = String(r + 1);
+      tr.appendChild(num);
+      for (var c = 0; c < m.colCount; c++) {
+        var td = document.createElement('td');
+        var v = m.rows[r][c] === undefined ? '' : String(m.rows[r][c]);
+        td.textContent = v;
+        if (v !== '') td.title = v;
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    preview.appendChild(table);
+
+    if (m.rows.length > limit) {
+      var note = document.createElement('p');
+      note.className = 'hint';
+      note.style.padding = '0.6rem 0.7rem';
+      note.style.margin = '0';
+      note.textContent = 'プレビューは先頭 ' + limit + ' 行です。残り ' + nf.format(m.rows.length - limit) + ' 行も保存に含まれます。';
+      preview.appendChild(note);
+    }
+  }
+
+  function renderResult(m, problems) {
+    var displayHeader = m.header ? m.header.slice() : [];
+    if (!m.header) {
+      for (var i = 0; i < m.colCount; i++) displayHeader.push('列' + (i + 1));
+    }
+    while (displayHeader.length < m.colCount) {
+      displayHeader.push('列' + (displayHeader.length + 1));
+    }
+
+    renderStats(m);
+    renderPreview(m, displayHeader);
+
+    btnDownload.disabled = m.rows.length === 0;
+    btnDownload.onclick = function () { downloadCSV(m, displayHeader); };
+
+    saveNote.textContent = '区切りは' + (DELIM_NAMES[m.delimOut] || m.delimOut) +
+      '、文字コードはUTF-8' + (optBom.checked ? '（BOM付き）' : '') + 'で保存します。';
+
+    renderWarnings(problems.concat(m.warnings));
+
+    var msg = nf.format(m.fileCount) + '個のファイルから ' + nf.format(m.rows.length) + ' 行をまとめました。';
+    if (m.skipped > 0) msg += ' 見出し行を ' + nf.format(m.skipped) + ' 行はぶきました。';
+    setStatus(msg, (problems.length || m.warnings.length) ? 'warn' : 'ok');
+  }
+
+  function csvCell(v, delim) {
+    v = String(v);
+    if (v.indexOf('"') >= 0 || v.indexOf('\n') >= 0 || v.indexOf('\r') >= 0 || v.indexOf(delim) >= 0) {
+      return '"' + v.replace(/"/g, '""') + '"';
+    }
+    return v;
+  }
+
+  function downloadCSV(m, header) {
+    var delim = m.delimOut;
+    var lines = [];
+    var i;
+    var c;
+    if (m.header) {
+      var hcells = [];
+      for (i = 0; i < m.colCount; i++) {
+        hcells.push(csvCell(header[i] === undefined ? '' : header[i], delim));
+      }
+      lines.push(hcells.join(delim));
+    }
+    for (i = 0; i < m.rows.length; i++) {
+      var cells = [];
+      for (c = 0; c < m.colCount; c++) {
+        cells.push(csvCell(m.rows[i][c] === undefined ? '' : m.rows[i][c], delim));
+      }
+      lines.push(cells.join(delim));
+    }
+    var body = lines.join('\r\n') + '\r\n';
+    if (optBom.checked) body = '﻿' + body;
+
+    var blob = new Blob([body], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var d = new Date();
+    a.href = url;
+    a.download = 'merged-' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+
+  /* ---------- rebuild ---------- */
+
+  function rebuild() {
+    var usable = entries.filter(function (e) { return !e.error && e.bytes; });
+    listWrap.hidden = entries.length === 0;
+
+    var delimOpt = delimSel.value;
+    var encOpt = encSel.value;
+    var problems = [];
+
+    usable.forEach(function (e) {
+      try {
+        parseEntry(e, delimOpt, encOpt);
+      } catch (err) {
+        e.error = '解析できませんでした';
+      }
+      if (e.parsed && e.parsed.bad > 0) {
+        problems.push(e.file.name + ' に読み取れない文字があります。文字コードを変えて試してください。');
+      }
+    });
+
+    var flags = computeFlags(usable);
+    renderList(flags);
+
+    if (!entries.length) {
+      merged = null;
+      showEmpty();
+      setStatus('', 'hint');
+      return;
+    }
+    if (!usable.length) {
+      merged = null;
+      showEmpty();
+      setStatus('ファイルを読み込めませんでした。', 'err');
+      return;
+    }
+
+    try {
+      merged = buildMerged(usable);
+    } catch (err) {
+      merged = null;
+      showEmpty();
+      setStatus((err && err.limit) ? err.message : '結合できませんでした。', 'err');
+      return;
+    }
+
+    renderResult(merged, problems);
+  }
+
+  /* ---------- events ---------- */
+
+  optSkip.disabled = !optHeader.checked;
+
+  input.addEventListener('change', function () {
+    var files = Array.prototype.slice.call(input.files || []);
+    input.value = '';
+    if (files.length) addFiles(files);
+  });
+
+  ['dragenter', 'dragover'].forEach(function (type) {
+    drop.addEventListener(type, function (e) {
+      e.preventDefault();
+      drop.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'dragend'].forEach(function (type) {
+    drop.addEventListener(type, function () {
+      drop.classList.remove('dragover');
+    });
+  });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    drop.classList.remove('dragover');
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length) addFiles(Array.prototype.slice.call(files));
+  });
+
+  $('btnClear').addEventListener('click', function () {
+    entries = [];
+    rebuild();
+    setStatus('一覧を空にしました。', 'hint');
+    input.focus();
+  });
+
+  [delimSel, encSel].forEach(function (el) {
+    el.addEventListener('change', rebuild);
+  });
+
+  optHeader.addEventListener('change', function () {
+    optSkip.disabled = !optHeader.checked;
+    rebuild();
+  });
+  optSkip.addEventListener('change', rebuild);
+  optDedupe.addEventListener('change', rebuild);
+  optBom.addEventListener('change', function () {
+    if (merged) {
+      saveNote.textContent = '区切りは' + (DELIM_NAMES[merged.delimOut] || merged.delimOut) +
+        '、文字コードはUTF-8' + (optBom.checked ? '（BOM付き）' : '') + 'で保存します。';
+    }
+  });
+
+  rebuild();
+})();
+</script>
+</body>
+</html>

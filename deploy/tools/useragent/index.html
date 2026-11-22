@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User-Agentの判定｜道具箱</title>
+<meta name="description" content="User-Agent文字列から、端末の種類・OS・ブラウザ・エンジンを端末内の正規表現だけで判定します。現在のUAのコピー、ログのUAの貼り付け、よく見る記号の一覧に対応。入力はブラウザの外に出ません。">
+<link rel="canonical" href="https://icekun.net/useragent/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  #ua { min-height: 4.5rem; }
+  #verdict:empty { display: none; }
+  #notes { margin: 0.75rem 0 0; padding-left: 1.1rem; }
+  #notes li { font-size: 0.75rem; color: var(--muted); line-height: 1.8; }
+  #notes:empty { display: none; }
+  #copyStatus { margin: 0.5rem 0 0; min-height: 0; }
+  #copyStatus:empty { display: none; }
+  .prose table { margin: 0.75rem 0 1rem; }
+  .prose th, .prose td { font-size: 0.8125rem; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>User-Agentの判定</h1>
+    <p class="lead">いま使っているブラウザのUser-Agentから、OSと端末の種類を推測します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <label class="field" for="ua">
+      <span>User-Agent</span>
+      <textarea id="ua" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="uaHelp"></textarea>
+    </label>
+    <p class="hint" id="uaHelp" style="margin:0.5rem 0 0">現在の値が入っています。ほかの端末やログのUAに書き換えると、その文字列を判定します。</p>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn" type="button" id="btnCopy">UAをコピー</button>
+      <button class="btn secondary" type="button" id="btnReset">現在のUAに戻す</button>
+    </div>
+    <p class="ok" id="copyStatus" role="status" aria-live="polite"></p>
+
+    <div class="result large" id="verdict" aria-live="polite"></div>
+    <table style="margin-top:1rem">
+      <caption class="sr-only">User-Agentからの判定結果</caption>
+      <thead>
+        <tr><th scope="col">項目</th><th scope="col">判定</th><th scope="col">手がかり</th></tr>
+      </thead>
+      <tbody id="detect"></tbody>
+    </table>
+    <p class="hint" style="margin-top:0.75rem">判定はUser-Agentの文字列からの推測です。実際の端末やソフトウェアと異なる場合があります。</p>
+    <ul id="notes"></ul>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>この端末のUser-Agentが最初から入っています。</li>
+      <li>端末・OS・ブラウザの判定を確認します。</li>
+      <li>ログのUAを貼り付ければ、同じように判定します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>判定のしくみ</h2>
+    <p>User-Agentは、ブラウザがサーバーへ送る名乗りの文字列です。OS、ブラウザ、端末の種類が短い記号の組み合わせで書かれています。この道具は文字列を端末内の正規表現で照合するだけで、外部には送りません。</p>
+
+    <h3>当てにならない場合</h3>
+    <p>User-Agentは書き換えられます。同じブラウザでも端末やアプリによって文字列が変わり、Chromeなどは情報を減らす方向に進んでいます。Windows 11でも「Windows NT 10.0」と名乗り、iPadのSafariはmacOSとして名乗ります。判定は目安として扱ってください。</p>
+
+    <h3>主な記号</h3>
+    <p>よく見る部分の意味を次の表にまとめました。アクセス解析のログや不具合報告に添えられた文字列を貼り付ければ、同じように判定できます。iOSのブラウザはどれもWebKitを使うため、ChromeやFirefoxでも中身はSafariと同じです。</p>
+    <table>
+      <caption class="sr-only">User-Agentでよく見る記号と意味</caption>
+      <thead>
+        <tr><th scope="col">文字列</th><th scope="col">意味</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">Mozilla/5.0</td><td>ほとんどのUAの先頭。互換性のための固定文字列。</td></tr>
+        <tr><td class="mono">Windows NT 10.0</td><td>Windows 10 と 11。どちらかは区別できない。</td></tr>
+        <tr><td class="mono">Macintosh</td><td>Mac、またはiPadOSのSafari。</td></tr>
+        <tr><td class="mono">iPhone / iPad</td><td>Appleの端末。</td></tr>
+        <tr><td class="mono">Android 14</td><td>Androidのバージョン。</td></tr>
+        <tr><td class="mono">Mobile</td><td>携帯端末向けの印。</td></tr>
+        <tr><td class="mono">Chrome/131</td><td>Chrome 131。</td></tr>
+        <tr><td class="mono">CriOS/131</td><td>iOS版のChrome。中身はWebKit。</td></tr>
+        <tr><td class="mono">Edg/131</td><td>Edge（Chromium版）。</td></tr>
+        <tr><td class="mono">Version/17.2 Safari/605.1.15</td><td>Safari 17.2。</td></tr>
+        <tr><td class="mono">Firefox/132</td><td>Firefox 132。</td></tr>
+        <tr><td class="mono">Googlebot/2.1</td><td>Googleのクローラ。</td></tr>
+        <tr><td class="mono">HeadlessChrome</td><td>画面のないChrome。自動化や検査に使われる。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var uaInput = document.getElementById('ua');
+  var copyBtn = document.getElementById('btnCopy');
+  var resetBtn = document.getElementById('btnReset');
+  var copyStatus = document.getElementById('copyStatus');
+  var verdictEl = document.getElementById('verdict');
+  var detectEl = document.getElementById('detect');
+  var notesEl = document.getElementById('notes');
+  var currentUA = navigator.userAgent || '';
+  var timer = null;
+
+  var BOTS = [
+    [/Googlebot/i, 'Googlebot'],
+    [/Google-InspectionTool|GoogleOther/i, 'Google の検査ツール'],
+    [/bingbot/i, 'bingbot'],
+    [/BingPreview/i, 'BingPreview'],
+    [/Yahoo! Slurp/i, 'Yahoo! Slurp'],
+    [/DuckDuckBot/i, 'DuckDuckBot'],
+    [/Baiduspider/i, 'Baiduspider'],
+    [/YandexBot/i, 'YandexBot'],
+    [/Applebot/i, 'Applebot'],
+    [/AhrefsBot/i, 'AhrefsBot'],
+    [/SemrushBot/i, 'SemrushBot'],
+    [/MJ12bot/i, 'MJ12bot'],
+    [/PetalBot/i, 'PetalBot'],
+    [/facebookexternalhit/i, 'Facebook の取得'],
+    [/Twitterbot/i, 'Twitterbot'],
+    [/Slackbot/i, 'Slackbot'],
+    [/Discordbot/i, 'Discordbot'],
+    [/HeadlessChrome/i, 'Headless Chrome'],
+    [/PhantomJS/i, 'PhantomJS'],
+    [/Lighthouse/i, 'Lighthouse'],
+    [/curl\//i, 'curl'],
+    [/Wget\//i, 'Wget'],
+    [/python-requests|aiohttp/i, 'python-requests'],
+    [/Go-http-client/i, 'Go-http-client'],
+    [/okhttp\//i, 'okhttp'],
+    [/axios\//i, 'axios'],
+    [/node-fetch/i, 'node-fetch'],
+    [/PostmanRuntime/i, 'Postman'],
+    [/bot\b|crawler|spider/i, 'ボット']
+  ];
+
+  var APPS = [
+    [/MicroMessenger/i, 'WeChat'],
+    [/\bLine\/[\d.]+/i, 'LINE'],
+    [/Instagram/i, 'Instagram'],
+    [/FBAN|FBAV/i, 'Facebook'],
+    [/Twitter/i, 'X（Twitter）'],
+    [/musical_ly|BytedanceWebview|TikTok/i, 'TikTok'],
+    [/Snapchat/i, 'Snapchat']
+  ];
+
+  function botName(ua) {
+    for (var i = 0; i < BOTS.length; i++) {
+      var match = BOTS[i][0].exec(ua);
+      if (match) return BOTS[i][1];
+    }
+    return '';
+  }
+
+  function major(version) {
+    return parseInt(version.split('.')[0], 10);
+  }
+
+  function detect(ua, isCurrent) {
+    var result = {
+      device: 'デスクトップ', deviceHint: '—',
+      os: '不明', osHint: '—',
+      browser: '不明', browserHint: '—',
+      engine: '不明', engineHint: '—',
+      app: '', appHint: '—'
+    };
+    var m;
+    var bot = botName(ua);
+    var isIPad = /iPad/.test(ua) || (/Macintosh/.test(ua) && isCurrent && navigator.maxTouchPoints > 1);
+    var isTablet = isIPad || /Tablet|PlayBook|Silk|Kindle/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
+    var isPhone = !isTablet && /iPhone|iPod|Windows Phone|IEMobile|BlackBerry|BB10|Opera Mini|Mobile/i.test(ua);
+
+    if (bot) {
+      result.device = 'ボット';
+      result.deviceHint = bot;
+    } else if (isTablet) {
+      result.device = 'タブレット';
+      result.deviceHint = isIPad ? 'iPad' : (/Android/i.test(ua) ? 'Android（Mobile なし）' : 'Tablet');
+    } else if (isPhone) {
+      result.device = 'スマートフォン';
+      result.deviceHint = /iPhone/.test(ua) ? 'iPhone' : (/Android/i.test(ua) ? 'Android + Mobile' : 'Mobile');
+    } else {
+      result.deviceHint = /Windows/.test(ua) ? 'Windows' : (/Macintosh/.test(ua) ? 'Macintosh' : (/Linux|X11/.test(ua) ? 'Linux' : '—'));
+    }
+
+    if (/Windows Phone/i.test(ua)) {
+      result.os = 'Windows Phone';
+      result.osHint = 'Windows Phone';
+    } else if ((m = /Windows NT ([\d.]+)/i.exec(ua))) {
+      var win = {
+        '10.0': 'Windows 10 または 11',
+        '6.3': 'Windows 8.1',
+        '6.2': 'Windows 8',
+        '6.1': 'Windows 7',
+        '6.0': 'Windows Vista',
+        '5.1': 'Windows XP'
+      };
+      result.os = win[m[1]] || ('Windows NT ' + m[1]);
+      result.osHint = m[0];
+    } else if ((m = /(?:iPhone|iPad|iPod).*?OS (\d+)[._](\d+)/.exec(ua))) {
+      result.os = 'iOS ' + m[1] + '.' + m[2];
+      result.osHint = 'CPU OS ' + m[1] + '_' + m[2];
+    } else if (isIPad && /Macintosh/.test(ua)) {
+      result.os = 'iPadOS（macOS と表示）';
+      result.osHint = 'Macintosh';
+    } else if ((m = /Android[ \/]([\d.]+)/i.exec(ua))) {
+      result.os = 'Android ' + m[1];
+      result.osHint = m[0];
+    } else if (/Android/i.test(ua)) {
+      result.os = 'Android';
+      result.osHint = 'Android';
+    } else if (/CrOS/.test(ua)) {
+      result.os = 'ChromeOS';
+      result.osHint = 'CrOS';
+    } else if ((m = /Mac OS X (\d+)[._](\d+)(?:[._](\d+))?/.exec(ua))) {
+      result.os = 'macOS ' + m[1] + '.' + m[2] + (m[3] ? '.' + m[3] : '');
+      result.osHint = m[0];
+    } else if (/Ubuntu/.test(ua)) {
+      result.os = 'Ubuntu';
+      result.osHint = 'Ubuntu';
+    } else if (/Linux|X11/.test(ua)) {
+      result.os = 'Linux';
+      result.osHint = /X11/.test(ua) ? 'X11' : 'Linux';
+    }
+
+    if ((m = /Edg(?:e|A|iOS)?\/([\d.]+)/.exec(ua))) {
+      result.browser = 'Edge ' + major(m[1]);
+      result.browserHint = m[0];
+    } else if ((m = /OPR\/([\d.]+)/.exec(ua)) || (m = /Opera[\/ ]([\d.]+)/.exec(ua))) {
+      result.browser = 'Opera ' + major(m[1]);
+      result.browserHint = m[0];
+    } else if ((m = /SamsungBrowser\/([\d.]+)/.exec(ua))) {
+      result.browser = 'Samsung Internet ' + major(m[1]);
+      result.browserHint = m[0];
+    } else if ((m = /Vivaldi\/([\d.]+)/.exec(ua))) {
+      result.browser = 'Vivaldi ' + major(m[1]);
+      result.browserHint = m[0];
+    } else if ((m = /Firefox\/([\d.]+)/.exec(ua)) || (m = /FxiOS\/([\d.]+)/.exec(ua))) {
+      result.browser = 'Firefox ' + major(m[1]);
+      result.browserHint = m[0];
+    } else if ((m = /CriOS\/([\d.]+)/.exec(ua)) || (m = /Chrome\/([\d.]+)/.exec(ua))) {
+      result.browser = 'Chrome ' + major(m[1]);
+      result.browserHint = m[0];
+    } else if ((m = /MSIE ([\d.]+)/.exec(ua)) || (m = /Trident\/.*rv:([\d.]+)/.exec(ua))) {
+      result.browser = 'Internet Explorer ' + major(m[1]);
+      result.browserHint = m[0];
+    } else if (/Safari\//.test(ua)) {
+      m = /Version\/([\d.]+)/.exec(ua);
+      result.browser = m ? 'Safari ' + m[1] : 'Safari';
+      result.browserHint = m ? m[0] : 'Safari';
+    }
+
+    var iosWebKit = /iPhone|iPad|iPod/.test(ua);
+    if (result.browser.indexOf('Internet Explorer') === 0) {
+      result.engine = 'Trident';
+    } else if (result.browser.indexOf('Firefox') === 0) {
+      result.engine = iosWebKit ? 'WebKit' : 'Gecko';
+    } else if (/^(Chrome|Edge|Opera|Vivaldi|Samsung)/.test(result.browser)) {
+      result.engine = iosWebKit ? 'WebKit' : 'Blink';
+    } else if (result.browser.indexOf('Safari') === 0) {
+      result.engine = 'WebKit';
+    }
+
+    if (result.engine === '不明' && iosWebKit && /AppleWebKit/.test(ua)) {
+      result.engine = 'WebKit';
+    }
+
+    if (result.engine === 'WebKit' || result.engine === 'Blink') {
+      m = /AppleWebKit\/([\d.]+)/.exec(ua);
+      result.engineHint = m ? 'AppleWebKit/' + m[1] : '—';
+    } else if (result.engine === 'Gecko') {
+      result.engineHint = /Gecko\/\d+/.test(ua) ? 'Gecko' : '—';
+    } else if (result.engine === 'Trident') {
+      result.engineHint = 'Trident';
+    }
+
+    for (var a = 0; a < APPS.length; a++) {
+      m = APPS[a][0].exec(ua);
+      if (m) {
+        result.app = APPS[a][1];
+        result.appHint = m[0];
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  function notesFor(ua, result, isCurrent, bot) {
+    var notes = [];
+    if (/Windows NT 10\.0/.test(ua)) {
+      notes.push('Windows NT 10.0 は Windows 10 と 11 の共通の表記です。');
+    }
+    if (/Mac OS X 10[._]15/.test(ua) && result.browser.indexOf('Safari') === 0) {
+      notes.push('Safari の UA は macOS 10.15 のまま固定されるため、実際のバージョンと異なる場合があります。');
+    }
+    if (/Android/.test(ua) && /Chrome|Edg|SamsungBrowser/.test(ua)) {
+      notes.push('Chrome 系は UA の情報を減らしているため、Android のバージョンが実際と異なる場合があります。');
+    }
+    if (isCurrent && /Macintosh/.test(ua) && result.device === 'タブレット') {
+      notes.push('iPad の Safari は macOS として名乗るため、タッチ対応の有無から推測しています。');
+    }
+    if (bot) {
+      notes.push('ボットの判定は文字列の一致による推測です。');
+    }
+    return notes;
+  }
+
+  function row(label, value, hint) {
+    var tr = document.createElement('tr');
+    var th = document.createElement('th');
+    th.scope = 'row';
+    th.textContent = label;
+    var td = document.createElement('td');
+    td.textContent = value;
+    var clue = document.createElement('td');
+    clue.className = 'mono';
+    clue.textContent = hint || '—';
+    tr.appendChild(th);
+    tr.appendChild(td);
+    tr.appendChild(clue);
+    return tr;
+  }
+
+  function analyze() {
+    var ua = uaInput.value.trim();
+    detectEl.textContent = '';
+    notesEl.textContent = '';
+    copyStatus.textContent = '';
+
+    if (!ua) {
+      verdictEl.textContent = 'UA文字列を入力してください。';
+      return;
+    }
+
+    var isCurrent = ua === currentUA;
+    var result = detect(ua, isCurrent);
+    var bot = botName(ua);
+    var parts = [];
+
+    if (bot) {
+      parts.push(bot + '（ボット）');
+    } else {
+      if (result.device !== '不明') parts.push(result.device);
+      if (result.os !== '不明') parts.push(result.os);
+      if (result.browser !== '不明') parts.push(result.browser);
+      if (result.app) parts.push(result.app + ' 内');
+    }
+
+    verdictEl.textContent = parts.length ? parts.join('・') : '判定できませんでした';
+
+    detectEl.appendChild(row('端末', result.device, result.deviceHint));
+    detectEl.appendChild(row('OS', result.os, result.osHint));
+    detectEl.appendChild(row('ブラウザ', result.browser, result.browserHint));
+    detectEl.appendChild(row('エンジン', result.engine, result.engineHint));
+    if (result.app) detectEl.appendChild(row('アプリ内', result.app, result.appHint));
+
+    notesFor(ua, result, isCurrent, bot).forEach(function (text) {
+      var li = document.createElement('li');
+      li.textContent = text;
+      notesEl.appendChild(li);
+    });
+  }
+
+  function legacyCopy(text) {
+    try {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-9999px';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(area);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  copyBtn.addEventListener('click', function () {
+    var text = uaInput.value;
+    if (!text) {
+      copyStatus.className = 'err';
+      copyStatus.textContent = 'コピーする文字列がありません。';
+      return;
+    }
+    function done(ok) {
+      copyStatus.className = ok ? 'ok' : 'err';
+      copyStatus.textContent = ok ? 'User-Agent をコピーしました。' : 'コピーできませんでした。文字列を選択してコピーしてください。';
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () {
+        done(true);
+      }, function () {
+        done(legacyCopy(text));
+      });
+    } else {
+      done(legacyCopy(text));
+    }
+  });
+
+  resetBtn.addEventListener('click', function () {
+    uaInput.value = currentUA;
+    analyze();
+    uaInput.focus();
+  });
+
+  uaInput.addEventListener('input', function () {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(analyze, 150);
+  });
+
+  uaInput.value = currentUA;
+  analyze();
+})();
+</script>
+</body>
+</html>

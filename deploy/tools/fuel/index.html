@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>燃費・ガソリン代｜道具箱</title>
+<meta name="description" content="走行距離と給油量から満タン法の実燃費（km/L）を計算。今回のガソリン代、1kmあたりの燃料費、満タンで走れる距離、次の給油までの目安も表示します。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/fuel/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .stat b { font-variant-numeric: tabular-nums; }
+  .result { font-variant-numeric: tabular-nums; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>燃費・ガソリン代</h1>
+    <p class="lead">走行距離と給油量から実燃費を出し、1kmあたりの燃料費と次の給油の目安を確かめます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>給油の記録</h2>
+    <p class="hint">前回の給油から今回までに走った距離と、今回入れた量を入れます。</p>
+
+    <div class="grid-3">
+      <label class="field" for="distance">
+        <span>走行距離（km）</span>
+        <input type="text" id="distance" inputmode="decimal" autocomplete="off" value="512">
+      </label>
+      <label class="field" for="fuel">
+        <span>給油量（L）</span>
+        <input type="text" id="fuel" inputmode="decimal" autocomplete="off" value="36.4">
+      </label>
+      <label class="field" for="unitPrice">
+        <span>ガソリン単価（円/L）</span>
+        <input type="text" id="unitPrice" inputmode="decimal" autocomplete="off" value="172">
+      </label>
+    </div>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <label class="field" for="days">
+        <span>前回からの日数（日・任意）</span>
+        <input type="text" id="days" inputmode="decimal" autocomplete="off" value="14">
+      </label>
+      <label class="field" for="tank">
+        <span>タンク容量（L・任意）</span>
+        <input type="text" id="tank" inputmode="decimal" autocomplete="off" value="45">
+      </label>
+    </div>
+    <p class="hint" style="margin:0.5rem 0 0">日数とタンク容量を入れると、満タンで走れる距離と給油間隔も出します。</p>
+
+    <p class="err" id="status" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="kmPerL">—</b><span>実燃費（km/L）</span></div>
+      <div class="stat"><b id="fuelCost">—</b><span>今回の給油代</span></div>
+      <div class="stat"><b id="costPerKm">—</b><span>1kmあたりの燃料費</span></div>
+      <div class="stat"><b id="nextFill">—</b><span>次の給油まで（目安）</span></div>
+    </div>
+
+    <div aria-live="polite">
+      <p class="result" id="summary">—</p>
+      <p class="note" id="paceNote"></p>
+    </div>
+
+    <p class="warn">満タン法の値です。給油ノズルの停止位置や気温で数％変わるため、1回の結果だけで判断しないでください。</p>
+
+    <div class="row" style="margin-top:1rem">
+      <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>前回の給油から今回までに走った距離を入れます。</li>
+      <li>今回入れた給油量と、レシートの単価を入れます。</li>
+      <li>日数とタンク容量で、次の給油の目安が出ます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>満タン法の計算</h2>
+    <p>満タン法は、前回満タンにしてから今回満タンにするまでに走った距離を、今回入れた給油量で割る方法です。実燃費は「走行距離 ÷ 給油量」で求めます。給油量は今回入った量だけを使い、前回の残りは含めません。</p>
+
+    <h3>ガソリン代と1kmあたりの費用</h3>
+    <p>今回のガソリン代は「給油量 × 単価」、1kmあたりの燃料費は「今回のガソリン代 ÷ 走行距離」です。100kmあたりは1kmあたりの100倍になります。単価は給油機の表示やレシートの金額を使ってください。</p>
+
+    <h3>給油間隔の目安</h3>
+    <p>満タンで走れる距離は「タンク容量 × 実燃費」、次の給油までの日数は「タンク容量 ÷ 今回の給油量 × 前回からの日数」で求めます。1日あたりの走行距離が変わると目安も変わるため、長距離の移動があった回は実際とずれます。</p>
+
+    <h3>満タン法の誤差</h3>
+    <p>給油ノズルが止まる位置、気温による燃料の膨張、タンク内の残量で、給油量は数％変わります。1回の結果だけでなく、数回分の平均で見ると安定します。カタログ燃費は試験条件の値で、街乗り・高速・渋滞・エアコン・積載で実燃費は変わります。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+    <a href="/percent/">割引価格の計算</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const distanceEl = document.getElementById('distance');
+  const fuelEl = document.getElementById('fuel');
+  const priceEl = document.getElementById('unitPrice');
+  const daysEl = document.getElementById('days');
+  const tankEl = document.getElementById('tank');
+  const statusEl = document.getElementById('status');
+  const summaryEl = document.getElementById('summary');
+  const paceEl = document.getElementById('paceNote');
+  const resetBtn = document.getElementById('resetBtn');
+  const out = {
+    kmPerL: document.getElementById('kmPerL'),
+    cost: document.getElementById('fuelCost'),
+    perKm: document.getElementById('costPerKm'),
+    next: document.getElementById('nextFill')
+  };
+
+  function parseNumber(raw) {
+    const s = String(raw)
+      .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .replace(/[．。]/g, '.')
+      .replace(/[，,]/g, '')
+      .replace(/[％%]/g, '')
+      .replace(/[¥￥]/g, '')
+      .replace(/\s+/g, '');
+    if (s === '') return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function yen(n) {
+    return Math.round(n).toLocaleString('ja-JP') + '円';
+  }
+
+  function num(n, digits) {
+    return n.toLocaleString('ja-JP', { maximumFractionDigits: digits });
+  }
+
+  function hideError() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function showError(message) {
+    statusEl.hidden = false;
+    statusEl.textContent = message;
+  }
+
+  function clear(message, pace) {
+    Object.values(out).forEach(el => {
+      el.textContent = '—';
+    });
+    summaryEl.textContent = message;
+    paceEl.textContent = pace || '';
+  }
+
+  function calc() {
+    const distance = parseNumber(distanceEl.value);
+    const fuel = parseNumber(fuelEl.value);
+    const unitPrice = parseNumber(priceEl.value);
+
+    if (distance === null || fuel === null || unitPrice === null) {
+      hideError();
+      clear('走行距離・給油量・単価を入れると計算します。', '');
+      return;
+    }
+    if (Number.isNaN(distance) || distance <= 0 || distance > 5000) {
+      showError('走行距離は0より大きく5,000kmまでで入力してください。');
+      clear('入力内容を確認してください。', '');
+      return;
+    }
+    if (Number.isNaN(fuel) || fuel <= 0 || fuel > 500) {
+      showError('給油量は0より大きく500Lまでで入力してください。');
+      clear('入力内容を確認してください。', '');
+      return;
+    }
+    if (Number.isNaN(unitPrice) || unitPrice < 0 || unitPrice > 1000) {
+      showError('ガソリン単価は0〜1,000円/Lの範囲で入力してください。');
+      clear('入力内容を確認してください。', '');
+      return;
+    }
+
+    const days = parseNumber(daysEl.value);
+    if (days !== null && (Number.isNaN(days) || days <= 0 || days > 365)) {
+      showError('前回からの日数は0より大きく365日までで入力してください。');
+      clear('入力内容を確認してください。', '');
+      return;
+    }
+    const tank = parseNumber(tankEl.value);
+    if (tank !== null && (Number.isNaN(tank) || tank <= 0 || tank > 1000)) {
+      showError('タンク容量は0より大きく1,000Lまでで入力してください。');
+      clear('入力内容を確認してください。', '');
+      return;
+    }
+    hideError();
+
+    const kmPerL = distance / fuel;
+    const fuelCost = fuel * unitPrice;
+    const costPerKm = fuelCost / distance;
+    const perDay = days === null ? null : distance / days;
+    const range = tank === null ? null : tank * kmPerL;
+    const daysPerTank = (tank !== null && days !== null) ? (tank / fuel) * days : null;
+
+    out.kmPerL.textContent = kmPerL.toFixed(1);
+    out.cost.textContent = yen(fuelCost);
+    out.perKm.textContent = costPerKm.toFixed(1) + '円';
+    out.next.textContent = daysPerTank === null ? '—' : Math.round(daysPerTank) + '日';
+
+    summaryEl.textContent = '実燃費は ' + kmPerL.toFixed(1) + 'km/L。今回の給油は ' +
+      num(fuel, 1) + 'L で ' + yen(fuelCost) + '、1kmあたり ' + costPerKm.toFixed(1) + '円です。';
+
+    const pace = [];
+    if (perDay !== null) {
+      pace.push('1日あたり ' + perDay.toFixed(1) + 'km 走っています。');
+    }
+    if (range !== null) {
+      pace.push('満タン' + num(tank, 1) + 'Lなら約' + num(range, 0) + 'km走れます。');
+    }
+    if (daysPerTank !== null) {
+      pace.push('このペースで次の給油まで約' + Math.round(daysPerTank) + '日です。');
+    }
+    if (perDay === null && range === null) {
+      pace.push('前回からの日数とタンク容量を入れると、給油間隔の目安が出ます。');
+    } else if (perDay === null) {
+      pace.push('前回からの日数を入れると、次の給油までの日数が出ます。');
+    } else if (range === null) {
+      pace.push('タンク容量を入れると、満タンで走れる距離が出ます。');
+    }
+    paceEl.textContent = pace.join(' ');
+  }
+
+  function resetAll() {
+    distanceEl.value = '512';
+    fuelEl.value = '36.4';
+    priceEl.value = '172';
+    daysEl.value = '14';
+    tankEl.value = '45';
+    calc();
+    distanceEl.focus();
+  }
+
+  [distanceEl, fuelEl, priceEl, daysEl, tankEl].forEach(el => {
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+
+  resetBtn.addEventListener('click', resetAll);
+
+  calc();
+})();
+</script>
+</body>
+</html>

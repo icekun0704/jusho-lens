@@ -32,6 +32,7 @@
     --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   body {
     margin: 0;
@@ -50,7 +51,12 @@
     outline-offset: 3px;
     border-radius: 2px;
   }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   .wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.5rem; }
+  section[id] { scroll-margin-top: 4.5rem; }
 
   header.site {
     position: sticky; top: 0; z-index: 10;
@@ -62,39 +68,71 @@
     display: flex; align-items: center; gap: 1.5rem;
     height: 3.5rem;
   }
-  .brand { display: flex; align-items: baseline; gap: 0.6rem; text-decoration: none; white-space: nowrap; }
+  .brand { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.45rem 0; text-decoration: none; white-space: nowrap; }
   .brand .jp { font-family: var(--serif); font-size: 1.15rem; letter-spacing: -0.01em; }
   .brand .en { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
   nav.site { margin-left: auto; display: flex; gap: 0.25rem; }
   nav.site a {
+    display: inline-flex; align-items: center; min-height: 2.75rem;
     text-decoration: none; color: var(--muted); font-size: 0.8125rem;
-    padding: 0.35rem 0.6rem; border-radius: 6px;
+    padding: 0 0.7rem; border-radius: 6px;
   }
-  nav.site a:hover { color: var(--ink); background: #efe9dd; }
+  @media (hover: hover) and (pointer: fine) {
+    nav.site a:hover { color: var(--ink); background: #efe9dd; }
+  }
 
-  .hero { padding: 5rem 0 4rem; }
-  .hero .rule { width: 2.5rem; height: 2px; background: var(--ox); margin: 0 0 1.75rem; }
+  .hero { padding: 3.75rem 0 2.5rem; }
+  .hero .rule { width: 2.5rem; height: 2px; background: var(--ox); margin: 0 0 1.5rem; }
   .hero h1 {
     margin: 0; font-family: var(--serif); font-weight: 500;
-    font-size: clamp(2rem, 5vw, 3.15rem); line-height: 1.28; letter-spacing: -0.02em;
+    font-size: clamp(1.9rem, 4.6vw, 2.85rem); line-height: 1.3; letter-spacing: -0.02em;
     text-wrap: balance;
   }
   .hero .lead {
-    margin: 1.5rem 0 0; max-width: 34rem;
-    font-size: 1rem; line-height: 1.9; color: #4a4952; text-wrap: pretty;
+    margin: 1.1rem 0 0; max-width: 33rem;
+    font-size: 0.9375rem; line-height: 1.9; color: #4a4952; text-wrap: pretty;
   }
   .hero .facts {
-    margin: 2.25rem 0 0; padding: 0; list-style: none;
-    display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem;
+    margin: 1.5rem 0 0; padding: 0; list-style: none;
+    display: flex; flex-wrap: wrap; gap: 0.35rem 1.5rem;
     font-size: 0.8125rem; color: var(--muted);
   }
-  .hero .facts li { display: flex; align-items: center; gap: 0.5rem; }
+  .hero .facts li { display: flex; align-items: center; gap: 0.45rem; }
   .hero .facts li::before {
-    content: ""; width: 0.4rem; height: 0.4rem; border-radius: 50%;
+    content: ""; width: 0.35rem; height: 0.35rem; border-radius: 50%;
     background: var(--ox); opacity: 0.75;
   }
 
-  section { padding: 3rem 0; }
+  .search {
+    margin: 1.75rem 0 0; max-width: 34rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    height: 3.25rem; padding: 0 0.5rem 0 0.9rem;
+    background: var(--card); border: 1px solid #cfc5b4; border-radius: 8px;
+  }
+  .search:focus-within { border-color: var(--ox); box-shadow: 0 0 0 3px rgba(122, 47, 39, 0.14); }
+  .search:has(input:focus-visible) { outline: 2px solid var(--ox); outline-offset: 2px; }
+  .search .icon { flex: none; width: 1.1rem; height: 1.1rem; color: var(--muted); }
+  .search input {
+    flex: 1; min-width: 0; height: 100%;
+    border: 0; background: none; color: var(--ink);
+    font: inherit; font-size: 1rem;
+    outline: none;
+  }
+  .search input::placeholder { color: #77757d; opacity: 1; }
+  .search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+  .search-clear {
+    flex: none; display: grid; place-items: center;
+    width: 2.75rem; height: 2.75rem; margin-left: auto;
+    border: 0; border-radius: 6px; background: transparent;
+    color: var(--muted); font-family: var(--sans); font-size: 1rem; line-height: 1;
+    cursor: pointer;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .search-clear:hover { background: #efe9dd; color: var(--ink); }
+  }
+  .search-note { margin: 0.6rem 0 0; font-size: 0.8125rem; color: var(--muted); }
+
+  section { padding: 2.5rem 0; }
   .section-head {
     display: flex; align-items: baseline; justify-content: space-between;
     gap: 1rem; border-bottom: 1px solid var(--rule); padding-bottom: 0.75rem;
@@ -103,41 +141,125 @@
     margin: 0; font-family: var(--serif); font-weight: 500;
     font-size: 1.375rem; letter-spacing: -0.01em;
   }
-  .section-head .note { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
-
-  .tool-group + .tool-group { margin-top: 0.5rem; }
-  .group-label {
-    margin: 0; padding: 1.5rem 0 0.25rem;
+  .section-head .note, .subhead .note {
     font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em;
-    text-transform: uppercase; color: var(--muted); font-weight: 500;
-    border-top: 1px solid var(--rule);
+    text-transform: uppercase; color: var(--muted);
   }
-  .tool-group:first-of-type .group-label { border-top: 0; padding-top: 0; }
 
-  .tools { margin-top: 0; }
-  .tool {
-    display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto;
-    gap: 1.25rem; align-items: start;
-    padding: 1.75rem 0.5rem; text-decoration: none;
-    border-bottom: 1px solid var(--rule);
-    transition: background 160ms ease;
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.25rem; }
+  .chip {
+    appearance: none; min-height: 2.75rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--card); color: var(--ink);
+    font: inherit; font-size: 0.8125rem; line-height: 1.2;
+    cursor: pointer;
+    transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
   }
-  .tool:hover { background: #f2ece0; }
-  .tool .no { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); padding-top: 0.3rem; }
-  .tool strong {
-    display: block; font-family: var(--serif); font-weight: 500;
-    font-size: 1.25rem; letter-spacing: -0.01em;
+  .chip[aria-pressed="true"] { background: var(--ox); border-color: var(--ox); color: #fff8f0; }
+  @media (hover: hover) and (pointer: fine) {
+    .chip[aria-pressed="false"]:hover { border-color: #b9ab95; background: #f2ece0; }
   }
-  .tool span.desc { display: block; margin-top: 0.3rem; font-size: 0.875rem; color: var(--muted); line-height: 1.8; }
-  .tool .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
-  .tool .tags i {
-    font-style: normal; font-family: var(--mono); font-size: 0.65rem;
-    color: #5a4a44; background: var(--mark); padding: 0.15rem 0.45rem; border-radius: 3px;
+
+  .featured { margin-top: 1.5rem; }
+  .subhead {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 1rem; margin-bottom: 0.6rem;
   }
-  .tool .arrow { color: var(--muted); font-size: 1.1rem; padding-top: 0.2rem; transition: transform 160ms ease; }
-  .tool:hover .arrow { transform: translateX(3px); color: var(--ox); }
-  .soon {
-    margin: 1.25rem 0 0; font-size: 0.8125rem; color: var(--muted);
+  .subhead h3 {
+    margin: 0; font-family: var(--serif); font-weight: 500;
+    font-size: 1.0625rem; letter-spacing: -0.01em;
+  }
+  .fav-list {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); border-radius: 8px;
+    overflow: hidden;
+  }
+  .fav {
+    display: flex; flex-direction: column; gap: 0.1rem;
+    min-height: 3rem; padding: 0.7rem 0.85rem;
+    background: var(--card); text-decoration: none;
+    transition: background 140ms ease;
+  }
+  .fav:focus-visible { outline-offset: -3px; }
+  .fav-name { font-family: var(--serif); font-size: 0.9375rem; font-weight: 500; line-height: 1.4; }
+  .fav-desc { font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
+  @media (hover: hover) and (pointer: fine) {
+    .fav:hover { background: #f5efe4; }
+  }
+
+  .result-count {
+    margin: 1.5rem 0 0.65rem;
+    font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.14em;
+    color: var(--muted);
+  }
+
+  .grid {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: 1fr; gap: 0.75rem;
+  }
+  .grid > li { display: flex; min-width: 0; }
+  .card {
+    display: flex; flex-direction: column; gap: 0.3rem;
+    width: 100%; height: 100%;
+    padding: 1rem 1rem 0.9rem;
+    background: var(--card); border: 1px solid var(--rule); border-radius: 8px;
+    text-decoration: none;
+    transition: border-color 160ms ease, background 160ms ease;
+  }
+  .card-cat {
+    font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+    color: var(--muted); line-height: 1.4;
+  }
+  .card-name {
+    font-family: var(--serif); font-weight: 500;
+    font-size: 1.0625rem; line-height: 1.4; letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+  .card-desc { font-size: 0.8125rem; line-height: 1.7; color: var(--muted); text-wrap: pretty; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: auto; padding-top: 0.6rem; }
+  .card-tags i {
+    font-style: normal; font-family: var(--mono); font-size: 0.6rem; line-height: 1.5;
+    color: #5a4a44; background: var(--mark); padding: 0.1rem 0.4rem; border-radius: 3px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover { border-color: #b9ab95; background: #f7f1e6; }
+  }
+
+  .empty {
+    margin: 0.5rem 0 0; padding: 2rem 1.25rem;
+    border: 1px dashed #c9bda9; border-radius: 8px; background: var(--card);
+    text-align: center;
+  }
+  .empty-title { margin: 0; font-family: var(--serif); font-size: 1.0625rem; font-weight: 500; text-wrap: pretty; }
+  .empty-hint { margin: 0.4rem 0 1rem; font-size: 0.8125rem; color: var(--muted); }
+  .empty-button {
+    min-height: 2.75rem; padding: 0.4rem 1.1rem;
+    border: 1px solid var(--ox); border-radius: 6px; background: transparent;
+    color: var(--ox); font: inherit; font-size: 0.8125rem; cursor: pointer;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .empty-button:hover { background: var(--ox); color: #fff8f0; }
+  }
+
+  .soon { margin: 1.25rem 0 0; font-size: 0.8125rem; color: var(--muted); }
+
+  .guide-list {
+    list-style: none; margin: 1.25rem 0 0; padding: 0;
+    display: grid; gap: 1px; background: var(--rule);
+    border-block: 1px solid var(--rule);
+  }
+  .guide-list a {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    min-height: 3.25rem; padding: 0.85rem 0.9rem;
+    background: var(--bg); text-decoration: none;
+    font-family: var(--serif); font-size: 1rem; line-height: 1.5;
+  }
+  .guide-list .go { flex: none; color: var(--muted); font-family: var(--sans); font-size: 0.9rem; transition: color 140ms ease; }
+  @media (hover: hover) and (pointer: fine) {
+    .guide-list a:hover { background: var(--card); }
+    .guide-list a:hover .go { color: var(--ox); }
   }
 
   .about-grid {
@@ -160,18 +282,6 @@
   .faq details[open] summary::after { content: "−"; }
   .faq p { margin: 0 0 1.1rem; padding: 0 0.25rem; font-size: 0.875rem; line-height: 1.9; color: var(--muted); max-width: 44rem; }
 
-  .contact {
-    margin-top: 2.5rem; padding: 1.5rem;
-    border: 1px solid var(--rule); border-radius: 10px; background: var(--card);
-    display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;
-  }
-  .contact p { margin: 0; font-size: 0.875rem; color: var(--muted); }
-  .contact a.button {
-    display: inline-flex; align-items: center; height: 2.25rem; padding: 0 1rem;
-    background: var(--ox); color: #fff8f0; text-decoration: none;
-    border-radius: 6px; font-size: 0.8125rem; font-weight: 500;
-  }
-
   .contact-form { margin-top: 2.5rem; padding: 1.75rem; border: 1px solid var(--rule); border-radius: 10px; background: var(--card); }
   .contact-form h3 { margin: 0 0 0.35rem; font-family: var(--serif); font-weight: 500; font-size: 1.125rem; }
   .contact-form .hint { margin: 0 0 1.25rem; font-size: 0.8125rem; color: var(--muted); }
@@ -182,7 +292,7 @@
   .contact-form input:focus, .contact-form textarea:focus { outline: 2px solid var(--ox); outline-offset: 1px; border-color: transparent; }
   .contact-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
   .contact-form .actions { margin-top: 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  .contact-form button { height: 2.25rem; padding: 0 1.1rem; border: 0; border-radius: 6px; background: var(--ox); color: #fff8f0; font: inherit; font-size: 0.8125rem; font-weight: 500; cursor: pointer; }
+  .contact-form button { height: 2.75rem; padding: 0 1.1rem; border: 0; border-radius: 6px; background: var(--ox); color: #fff8f0; font: inherit; font-size: 0.8125rem; font-weight: 500; cursor: pointer; }
   .contact-form button[disabled] { opacity: 0.6; cursor: default; }
   .contact-form .status { margin: 0; font-size: 0.8125rem; color: var(--muted); }
   .contact-form .status.ok { color: #3f6b3a; }
@@ -194,16 +304,37 @@
     padding: 2.5rem 0 3rem; font-size: 0.8125rem; color: var(--muted);
   }
   footer.site .cols { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between; }
-  footer.site a { color: var(--muted); text-decoration: none; margin-right: 1rem; }
-  footer.site a:hover { color: var(--ink); }
+  footer.site a {
+    display: inline-flex; align-items: center; min-height: 2.75rem;
+    color: var(--muted); text-decoration: none; margin-right: 1rem;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    footer.site a:hover { color: var(--ink); }
+  }
   footer.site .fine { margin-top: 1.5rem; max-width: 44rem; line-height: 1.9; }
 
+  @media (min-width: 34rem) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 52rem) {
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .fav-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .guide-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (min-width: 62rem) {
+    .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
   @media (max-width: 40rem) {
-    .hero { padding: 3.5rem 0 2.5rem; }
+    .hero { padding: 2.5rem 0 2rem; }
+    .hero .lead { font-size: 0.875rem; }
     nav.site a:not(:last-child) { display: none; }
-    .tool { grid-template-columns: 2rem minmax(0, 1fr); }
-    .tool .arrow { display: none; }
-    section { padding: 2.25rem 0; }
+    section { padding: 2rem 0; }
+    .fav-desc { display: none; }
+    .fav { min-height: 2.75rem; padding: 0.65rem 0.7rem; }
+    .fav-name { font-size: 0.875rem; }
+    .card { padding: 0.9rem 0.9rem 0.8rem; }
+    .search { height: 3rem; }
   }
 </style>
 </head>
@@ -230,6 +361,16 @@
     <p class="lead">
       住所の英語表記、書類の下書き、数字の突き合わせ。地味に時間を取られる作業のための、小さな道具を置いています。
     </p>
+    <form class="search" role="search" aria-label="道具を検索">
+      <svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M12.8 12.8 16.5 16.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <label class="sr-only" for="tool-search">道具を名前・説明・タグから探す</label>
+      <input id="tool-search" type="search" placeholder="道具をさがす（例：住所、BMI）" autocomplete="off" spellcheck="false" enterkeyhint="search">
+      <button type="button" class="search-clear" aria-label="検索を消す" hidden>×</button>
+    </form>
+    <noscript><p class="search-note">検索には JavaScript が必要です。下の一覧から選べます。</p></noscript>
     <ul class="facts">
       <li>登録不要</li>
       <li>入力は送信しません</li>
@@ -237,327 +378,350 @@
     </ul>
   </section>
 
-  <section id="tools">
+  <section id="tools" aria-labelledby="tools-title">
     <div class="section-head">
-      <h2>道具</h2>
+      <h2 id="tools-title">道具</h2>
       <span class="note">tools</span>
     </div>
-    <!-- TOOLS_START -->
-    <div class="tool-group">
-      <h3 class="group-label">住所・書類</h3>
-      <div class="tools">
-        <a class="tool" href="/jusho/">
-          <span class="no">01</span>
-          <span>
-            <strong>住所レンズ</strong>
-            <span class="desc">英語の住所を日本語に戻して、元の住所と一致するかを確かめる。</span>
-            <span class="tags"><i>住所</i><i>郵便番号</i><i>ローマ字</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/inshi/">
-          <span class="no">02</span>
-          <span>
-            <strong>印紙税計算</strong>
-            <span class="desc">文書種別と金額から収入印紙の税額を調べる。</span>
-            <span class="tags"><i>印紙</i><i>契約書</i><i>税</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-      </div>
+
+    <div class="chips" role="group" aria-label="カテゴリで絞り込む">
+      <button type="button" class="chip" data-cat="all" aria-pressed="true">すべて</button>
+      <button type="button" class="chip" data-cat="jusho" aria-pressed="false">住所・書類</button>
+      <button type="button" class="chip" data-cat="text" aria-pressed="false">テキスト</button>
+      <button type="button" class="chip" data-cat="file" aria-pressed="false">画像・ファイル</button>
+      <button type="button" class="chip" data-cat="money" aria-pressed="false">仕事・お金</button>
+      <button type="button" class="chip" data-cat="life" aria-pressed="false">暮らし・健康</button>
     </div>
-    <div class="tool-group">
-      <h3 class="group-label">テキスト</h3>
-      <div class="tools">
-        <a class="tool" href="/text/">
-          <span class="no">01</span>
-          <span>
-            <strong>文字数カウント</strong>
-            <span class="desc">文字・行・単語・原稿用紙換算・SNS上限をまとめて数える。</span>
-            <span class="tags"><i>文章</i><i>原稿</i><i>SNS</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/case/">
-          <span class="no">02</span>
-          <span>
-            <strong>文字種変換</strong>
-            <span class="desc">camelCase、snake_case、全角半角、ひらがなカタカナを一括変換。</span>
-            <span class="tags"><i>命名</i><i>全角</i><i>かな</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/kanji-number/">
-          <span class="no">03</span>
-          <span>
-            <strong>漢数字・大字変換</strong>
-            <span class="desc">算用数字を漢数字・大字に変換。領収書の金額欄に。</span>
-            <span class="tags"><i>漢数字</i><i>大字</i><i>領収書</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/urlcode/">
-          <span class="no">04</span>
-          <span>
-            <strong>URLエンコード</strong>
-            <span class="desc">URL用とフォーム用のエンコード・デコード。</span>
-            <span class="tags"><i>URL</i><i>エンコード</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/regex/">
-          <span class="no">05</span>
-          <span>
-            <strong>正規表現テスター</strong>
-            <span class="desc">パターンを試して、マッチとキャプチャを確認する。</span>
-            <span class="tags"><i>正規表現</i><i>開発</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/diff/">
-          <span class="no">06</span>
-          <span>
-            <strong>テキスト差分</strong>
-            <span class="desc">2つのテキストを行単位で比較する。</span>
-            <span class="tags"><i>差分</i><i>校正</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/csv/">
-          <span class="no">07</span>
-          <span>
-            <strong>CSV⇔JSON</strong>
-            <span class="desc">表形式のデータを相互に変換する。</span>
-            <span class="tags"><i>CSV</i><i>JSON</i><i>表</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/json/">
-          <span class="no">08</span>
-          <span>
-            <strong>JSON整形</strong>
-            <span class="desc">JSONの整形・圧縮・検証。</span>
-            <span class="tags"><i>JSON</i><i>開発</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/base64/">
-          <span class="no">09</span>
-          <span>
-            <strong>Base64変換</strong>
-            <span class="desc">テキストとファイルをBase64にする。</span>
-            <span class="tags"><i>Base64</i><i>変換</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
+
+    <section class="featured" aria-labelledby="fav-title" data-featured>
+      <div class="subhead">
+        <h3 id="fav-title">よく使う</h3>
+        <span class="note">shortcuts</span>
       </div>
+      <ul class="fav-list">
+        <!-- FEATURED_START -->
+        <li>
+          <a class="fav" href="/jusho/">
+            <span class="fav-name">住所レンズ</span>
+            <span class="fav-desc">英語の住所を照合</span>
+          </a>
+        </li>
+        <li>
+          <a class="fav" href="/text/">
+            <span class="fav-name">文字数カウント</span>
+            <span class="fav-desc">文字数とSNS上限</span>
+          </a>
+        </li>
+        <li>
+          <a class="fav" href="/image/">
+            <span class="fav-name">画像変換・圧縮</span>
+            <span class="fav-desc">WebP・JPEG・PNG</span>
+          </a>
+        </li>
+        <li>
+          <a class="fav" href="/tedori/">
+            <span class="fav-name">手取り給与の概算</span>
+            <span class="fav-desc">額面から手取り</span>
+          </a>
+        </li>
+        <li>
+          <a class="fav" href="/date/">
+            <span class="fav-name">日付計算・和暦</span>
+            <span class="fav-desc">年齢・期間・和暦</span>
+          </a>
+        </li>
+        <li>
+          <a class="fav" href="/password/">
+            <span class="fav-name">パスワード生成</span>
+            <span class="fav-desc">強い文字列を作る</span>
+          </a>
+        </li>
+        <!-- FEATURED_END -->
+      </ul>
+    </section>
+
+    <p class="result-count" role="status" aria-live="polite" data-count>32の道具</p>
+
+    <ul class="grid" data-grid>
+      <!-- TOOLS_START -->
+      <li class="cell" data-cat="jusho" data-key="住所レンズ 英語の住所を日本語に戻して、元の住所と照合する。 住所・書類 住所 郵便番号 ローマ字">
+        <a class="card" href="/jusho/">
+          <span class="card-cat">住所・書類</span>
+          <strong class="card-name">住所レンズ</strong>
+          <span class="card-desc">英語の住所を日本語に戻して、元の住所と照合する。</span>
+          <span class="card-tags"><i>住所</i><i>郵便番号</i><i>ローマ字</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="jusho" data-key="印紙税計算 文書の種類と金額から印紙税を調べる。 住所・書類 印紙 契約書 税">
+        <a class="card" href="/inshi/">
+          <span class="card-cat">住所・書類</span>
+          <strong class="card-name">印紙税計算</strong>
+          <span class="card-desc">文書の種類と金額から印紙税を調べる。</span>
+          <span class="card-tags"><i>印紙</i><i>契約書</i><i>税</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="文字数カウント 文字数と原稿用紙換算、SNSの上限を数える。 テキスト 文章 原稿 SNS">
+        <a class="card" href="/text/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">文字数カウント</strong>
+          <span class="card-desc">文字数と原稿用紙換算、SNSの上限を数える。</span>
+          <span class="card-tags"><i>文章</i><i>原稿</i><i>SNS</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="文字種変換 camelCase、全角半角、ひらがなカタカナを変換。 テキスト 命名 全角 かな">
+        <a class="card" href="/case/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">文字種変換</strong>
+          <span class="card-desc">camelCase、全角半角、ひらがなカタカナを変換。</span>
+          <span class="card-tags"><i>命名</i><i>全角</i><i>かな</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="漢数字・大字変換 金額を漢数字と大字に変換。領収書に。 テキスト 漢数字 大字 領収書">
+        <a class="card" href="/kanji-number/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">漢数字・大字変換</strong>
+          <span class="card-desc">金額を漢数字と大字に変換。領収書に。</span>
+          <span class="card-tags"><i>漢数字</i><i>大字</i><i>領収書</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="URLエンコード URL用とフォーム用のエンコード・デコード。 テキスト URL エンコード">
+        <a class="card" href="/urlcode/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">URLエンコード</strong>
+          <span class="card-desc">URL用とフォーム用のエンコード・デコード。</span>
+          <span class="card-tags"><i>URL</i><i>エンコード</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="正規表現テスター パターンのマッチとキャプチャを確認する。 テキスト 正規表現 開発">
+        <a class="card" href="/regex/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">正規表現テスター</strong>
+          <span class="card-desc">パターンのマッチとキャプチャを確認する。</span>
+          <span class="card-tags"><i>正規表現</i><i>開発</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="テキスト差分 2つのテキストを行単位で比較する。 テキスト 差分 校正">
+        <a class="card" href="/diff/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">テキスト差分</strong>
+          <span class="card-desc">2つのテキストを行単位で比較する。</span>
+          <span class="card-tags"><i>差分</i><i>校正</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="CSV⇔JSON CSVとJSONを相互に変換する。 テキスト CSV JSON 表">
+        <a class="card" href="/csv/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">CSV⇔JSON</strong>
+          <span class="card-desc">CSVとJSONを相互に変換する。</span>
+          <span class="card-tags"><i>CSV</i><i>JSON</i><i>表</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="JSON整形 JSONを整形・圧縮して検証する。 テキスト JSON 開発">
+        <a class="card" href="/json/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">JSON整形</strong>
+          <span class="card-desc">JSONを整形・圧縮して検証する。</span>
+          <span class="card-tags"><i>JSON</i><i>開発</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="Base64変換 テキストとファイルをBase64にする。 テキスト Base64 変換">
+        <a class="card" href="/base64/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">Base64変換</strong>
+          <span class="card-desc">テキストとファイルをBase64にする。</span>
+          <span class="card-tags"><i>Base64</i><i>変換</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="file" data-key="画像変換・圧縮 WebP/JPEG/PNG変換、リサイズ、一括保存。 画像・ファイル 画像 圧縮 WebP">
+        <a class="card" href="/image/">
+          <span class="card-cat">画像・ファイル</span>
+          <strong class="card-name">画像変換・圧縮</strong>
+          <span class="card-desc">WebP/JPEG/PNG変換、リサイズ、一括保存。</span>
+          <span class="card-tags"><i>画像</i><i>圧縮</i><i>WebP</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="file" data-key="証明写真作成 写真を規格の枠に合わせて証明写真にする。 画像・ファイル 証明写真 履歴書 L判">
+        <a class="card" href="/photo/">
+          <span class="card-cat">画像・ファイル</span>
+          <strong class="card-name">証明写真作成</strong>
+          <span class="card-desc">写真を規格の枠に合わせて証明写真にする。</span>
+          <span class="card-tags"><i>証明写真</i><i>履歴書</i><i>L判</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="file" data-key="gzip圧縮・解凍 テキストやファイルをgzipで圧縮・解凍する。 画像・ファイル gzip 圧縮">
+        <a class="card" href="/gzip/">
+          <span class="card-cat">画像・ファイル</span>
+          <strong class="card-name">gzip圧縮・解凍</strong>
+          <span class="card-desc">テキストやファイルをgzipで圧縮・解凍する。</span>
+          <span class="card-tags"><i>gzip</i><i>圧縮</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="file" data-key="ハッシュ生成 SHA-1/256/384/512をテキストとファイルから。 画像・ファイル ハッシュ SHA">
+        <a class="card" href="/hash/">
+          <span class="card-cat">画像・ファイル</span>
+          <strong class="card-name">ハッシュ生成</strong>
+          <span class="card-desc">SHA-1/256/384/512をテキストとファイルから。</span>
+          <span class="card-tags"><i>ハッシュ</i><i>SHA</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="file" data-key="RSA暗号化・復号 鍵生成・暗号化・復号をブラウザで試す。 画像・ファイル 暗号 RSA 学習">
+        <a class="card" href="/rsa/">
+          <span class="card-cat">画像・ファイル</span>
+          <strong class="card-name">RSA暗号化・復号</strong>
+          <span class="card-desc">鍵生成・暗号化・復号をブラウザで試す。</span>
+          <span class="card-tags"><i>暗号</i><i>RSA</i><i>学習</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="money" data-key="勤務時間・残業代 開始・終了・休憩から勤務時間と残業代を出す。 仕事・お金 勤務 残業 時給">
+        <a class="card" href="/worktime/">
+          <span class="card-cat">仕事・お金</span>
+          <strong class="card-name">勤務時間・残業代</strong>
+          <span class="card-desc">開始・終了・休憩から勤務時間と残業代を出す。</span>
+          <span class="card-tags"><i>勤務</i><i>残業</i><i>時給</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="money" data-key="時給・年収換算 時給・月収・年収を相互に換算する。 仕事・お金 時給 年収 月収">
+        <a class="card" href="/wage/">
+          <span class="card-cat">仕事・お金</span>
+          <strong class="card-name">時給・年収換算</strong>
+          <span class="card-desc">時給・月収・年収を相互に換算する。</span>
+          <span class="card-tags"><i>時給</i><i>年収</i><i>月収</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="money" data-key="手取り給与の概算 額面の給与から手取りを概算する。 仕事・お金 手取り 給与 概算">
+        <a class="card" href="/tedori/">
+          <span class="card-cat">仕事・お金</span>
+          <strong class="card-name">手取り給与の概算</strong>
+          <span class="card-desc">額面の給与から手取りを概算する。</span>
+          <span class="card-tags"><i>手取り</i><i>給与</i><i>概算</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="money" data-key="住宅ローン返済 毎月の返済額と総返済額を計算する。 仕事・お金 ローン 住宅 返済">
+        <a class="card" href="/loan/">
+          <span class="card-cat">仕事・お金</span>
+          <strong class="card-name">住宅ローン返済</strong>
+          <span class="card-desc">毎月の返済額と総返済額を計算する。</span>
+          <span class="card-tags"><i>ローン</i><i>住宅</i><i>返済</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="money" data-key="割り勘・消費税 税込・税抜と1人あたりの金額を出す。 仕事・お金 割り勘 消費税">
+        <a class="card" href="/split/">
+          <span class="card-cat">仕事・お金</span>
+          <strong class="card-name">割り勘・消費税</strong>
+          <span class="card-desc">税込・税抜と1人あたりの金額を出す。</span>
+          <span class="card-tags"><i>割り勘</i><i>消費税</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="単位変換 長さ・重さ・温度・面積・体積を換算する。 暮らし・健康 単位 換算">
+        <a class="card" href="/unit/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">単位変換</strong>
+          <span class="card-desc">長さ・重さ・温度・面積・体積を換算する。</span>
+          <span class="card-tags"><i>単位</i><i>換算</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="坪・平米・畳 住まいの広さを坪・平米・畳で換算する。 暮らし・健康 坪 平米 畳">
+        <a class="card" href="/tsubo/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">坪・平米・畳</strong>
+          <span class="card-desc">住まいの広さを坪・平米・畳で換算する。</span>
+          <span class="card-tags"><i>坪</i><i>平米</i><i>畳</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="日付計算・和暦 年齢・期間・加算・和暦をまとめて計算する。 暮らし・健康 日付 和暦 年齢">
+        <a class="card" href="/date/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">日付計算・和暦</strong>
+          <span class="card-desc">年齢・期間・加算・和暦をまとめて計算する。</span>
+          <span class="card-tags"><i>日付</i><i>和暦</i><i>年齢</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="年齢・学年・干支 生年月日から満年齢・学年・干支を出す。 暮らし・健康 年齢 学年 干支">
+        <a class="card" href="/age/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">年齢・学年・干支</strong>
+          <span class="card-desc">生年月日から満年齢・学年・干支を出す。</span>
+          <span class="card-tags"><i>年齢</i><i>学年</i><i>干支</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="睡眠時間計算 就寝・起床から睡眠時間と90分周期を出す。 暮らし・健康 睡眠 就寝 時間">
+        <a class="card" href="/sleep/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">睡眠時間計算</strong>
+          <span class="card-desc">就寝・起床から睡眠時間と90分周期を出す。</span>
+          <span class="card-tags"><i>睡眠</i><i>就寝</i><i>時間</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="出産予定日計算 最終月経日から出産予定日と週数を出す。 暮らし・健康 出産 予定日 産休">
+        <a class="card" href="/birth/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">出産予定日計算</strong>
+          <span class="card-desc">最終月経日から出産予定日と週数を出す。</span>
+          <span class="card-tags"><i>出産</i><i>予定日</i><i>産休</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="BMI・基礎代謝 BMIと1日の消費カロリーの目安を出す。 暮らし・健康 健康 BMI">
+        <a class="card" href="/bmi/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">BMI・基礎代謝</strong>
+          <span class="card-desc">BMIと1日の消費カロリーの目安を出す。</span>
+          <span class="card-tags"><i>健康</i><i>BMI</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="タイムゾーン変換 2つの地域の時刻を換算する。 暮らし・健康 時差 海外">
+        <a class="card" href="/timezone/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">タイムゾーン変換</strong>
+          <span class="card-desc">2つの地域の時刻を換算する。</span>
+          <span class="card-tags"><i>時差</i><i>海外</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="カラー・コントラスト HEX/RGB/HSL変換とコントラスト判定。 暮らし・健康 色 デザイン WCAG">
+        <a class="card" href="/color/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">カラー・コントラスト</strong>
+          <span class="card-desc">HEX/RGB/HSL変換とコントラスト判定。</span>
+          <span class="card-tags"><i>色</i><i>デザイン</i><i>WCAG</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="パスワード生成 端末内で強いパスワードを作る。 暮らし・健康 パスワード 安全">
+        <a class="card" href="/password/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">パスワード生成</strong>
+          <span class="card-desc">端末内で強いパスワードを作る。</span>
+          <span class="card-tags"><i>パスワード</i><i>安全</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="IPチェック 接続元のIP・地域・ブラウザを確認する。 暮らし・健康 IP 接続">
+        <a class="card" href="/ip/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">IPチェック</strong>
+          <span class="card-desc">接続元のIP・地域・ブラウザを確認する。</span>
+          <span class="card-tags"><i>IP</i><i>接続</i></span>
+        </a>
+      </li>
+      <!-- TOOLS_END -->
+    </ul>
+
+    <div class="empty" data-empty hidden>
+      <p class="empty-title">「<span data-term></span>」に合う道具が見つかりません。</p>
+      <p class="empty-hint">別の言葉で試すか、カテゴリを「すべて」に戻してください。</p>
+      <button type="button" class="empty-button" data-reset>すべての道具を表示</button>
     </div>
-    <div class="tool-group">
-      <h3 class="group-label">画像・ファイル</h3>
-      <div class="tools">
-        <a class="tool" href="/image/">
-          <span class="no">01</span>
-          <span>
-            <strong>画像変換・圧縮</strong>
-            <span class="desc">WebP/JPEG/PNGへの変換、リサイズ、一括ダウンロード。</span>
-            <span class="tags"><i>画像</i><i>圧縮</i><i>WebP</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/photo/">
-          <span class="no">02</span>
-          <span>
-            <strong>証明写真作成</strong>
-            <span class="desc">写真を規格枠に合わせて証明写真を作る。</span>
-            <span class="tags"><i>証明写真</i><i>履歴書</i><i>L判</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/gzip/">
-          <span class="no">03</span>
-          <span>
-            <strong>gzip圧縮・解凍</strong>
-            <span class="desc">テキストやファイルをgzipで圧縮・解凍する。</span>
-            <span class="tags"><i>gzip</i><i>圧縮</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/hash/">
-          <span class="no">04</span>
-          <span>
-            <strong>ハッシュ生成</strong>
-            <span class="desc">SHA-1/256/384/512をテキストとファイルから。</span>
-            <span class="tags"><i>ハッシュ</i><i>SHA</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/rsa/">
-          <span class="no">05</span>
-          <span>
-            <strong>RSA暗号化・復号</strong>
-            <span class="desc">鍵生成から暗号化・復号までブラウザで体験する。</span>
-            <span class="tags"><i>暗号</i><i>RSA</i><i>学習</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-      </div>
-    </div>
-    <div class="tool-group">
-      <h3 class="group-label">仕事・お金</h3>
-      <div class="tools">
-        <a class="tool" href="/worktime/">
-          <span class="no">01</span>
-          <span>
-            <strong>勤務時間・残業代</strong>
-            <span class="desc">開始・終了・休憩から勤務時間と残業代の目安。</span>
-            <span class="tags"><i>勤務</i><i>残業</i><i>時給</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/wage/">
-          <span class="no">02</span>
-          <span>
-            <strong>時給・年収換算</strong>
-            <span class="desc">時給・月収・年収を相互に換算する。</span>
-            <span class="tags"><i>時給</i><i>年収</i><i>月収</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/tedori/">
-          <span class="no">03</span>
-          <span>
-            <strong>手取り給与の概算</strong>
-            <span class="desc">額面から手取りの概算を計算する。</span>
-            <span class="tags"><i>手取り</i><i>給与</i><i>概算</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/loan/">
-          <span class="no">04</span>
-          <span>
-            <strong>住宅ローン返済</strong>
-            <span class="desc">月額返済と総返済額を計算する。</span>
-            <span class="tags"><i>ローン</i><i>住宅</i><i>返済</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/split/">
-          <span class="no">05</span>
-          <span>
-            <strong>割り勘・消費税</strong>
-            <span class="desc">税込・税抜と1人あたりの金額。</span>
-            <span class="tags"><i>割り勘</i><i>消費税</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-      </div>
-    </div>
-    <div class="tool-group">
-      <h3 class="group-label">暮らし・健康</h3>
-      <div class="tools">
-        <a class="tool" href="/unit/">
-          <span class="no">01</span>
-          <span>
-            <strong>単位変換</strong>
-            <span class="desc">長さ・重さ・温度・面積・体積・速度。</span>
-            <span class="tags"><i>単位</i><i>換算</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/tsubo/">
-          <span class="no">02</span>
-          <span>
-            <strong>坪・平米・畳</strong>
-            <span class="desc">住まいの広さを相互変換する。</span>
-            <span class="tags"><i>坪</i><i>平米</i><i>畳</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/date/">
-          <span class="no">03</span>
-          <span>
-            <strong>日付計算・和暦</strong>
-            <span class="desc">年齢、期間、加算、和暦変換。</span>
-            <span class="tags"><i>日付</i><i>和暦</i><i>年齢</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/age/">
-          <span class="no">04</span>
-          <span>
-            <strong>年齢・学年・干支</strong>
-            <span class="desc">生年月日から満年齢・学年・干支を計算。</span>
-            <span class="tags"><i>年齢</i><i>学年</i><i>干支</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/sleep/">
-          <span class="no">05</span>
-          <span>
-            <strong>睡眠時間計算</strong>
-            <span class="desc">就寝・起床から睡眠時間と90分周期。</span>
-            <span class="tags"><i>睡眠</i><i>就寝</i><i>時間</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/birth/">
-          <span class="no">06</span>
-          <span>
-            <strong>出産予定日計算</strong>
-            <span class="desc">最終月経日から予定日と週数を計算。</span>
-            <span class="tags"><i>出産</i><i>予定日</i><i>産休</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/bmi/">
-          <span class="no">07</span>
-          <span>
-            <strong>BMI・基礎代謝</strong>
-            <span class="desc">体格と消費カロリーの目安を計算する。</span>
-            <span class="tags"><i>健康</i><i>BMI</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/timezone/">
-          <span class="no">08</span>
-          <span>
-            <strong>タイムゾーン変換</strong>
-            <span class="desc">2つの地域の時刻を換算する。</span>
-            <span class="tags"><i>時差</i><i>海外</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/color/">
-          <span class="no">09</span>
-          <span>
-            <strong>カラー・コントラスト</strong>
-            <span class="desc">HEX/RGB/HSL変換とWCAG判定。</span>
-            <span class="tags"><i>色</i><i>デザイン</i><i>WCAG</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/password/">
-          <span class="no">10</span>
-          <span>
-            <strong>パスワード生成</strong>
-            <span class="desc">端末内で強度のある文字列を作る。</span>
-            <span class="tags"><i>パスワード</i><i>安全</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="tool" href="/ip/">
-          <span class="no">11</span>
-          <span>
-            <strong>IPチェック</strong>
-            <span class="desc">接続元のIP・地域・ブラウザ情報。</span>
-            <span class="tags"><i>IP</i><i>接続</i></span>
-          </span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </a>
-      </div>
-    </div>
+
     <p class="soon">新しい道具は、できたものからここに並べます。</p>
-    <!-- TOOLS_END -->
+  </section>
+
+  <section id="guides" aria-labelledby="guides-title">
+    <div class="section-head">
+      <h2 id="guides-title">使い方</h2>
+      <span class="note">guides</span>
+    </div>
+    <ul class="guide-list">
+      <li><a href="/guide/amazon/">Amazonの英語住所<span class="go" aria-hidden="true">→</span></a></li>
+      <li><a href="/guide/denshi/">電子帳簿保存法のファイル名<span class="go" aria-hidden="true">→</span></a></li>
+      <li><a href="/guide/invoice/">適格請求書の必須項目<span class="go" aria-hidden="true">→</span></a></li>
+    </ul>
   </section>
 
   <section id="about">
@@ -656,6 +820,84 @@
   </div>
 </footer>
 
+
+<script>
+(() => {
+  const form = document.querySelector('.search');
+  const input = document.getElementById('tool-search');
+  const clearButton = document.querySelector('.search-clear');
+  const chips = Array.from(document.querySelectorAll('.chip'));
+  const grid = document.querySelector('[data-grid]');
+  const cells = Array.from(document.querySelectorAll('.grid > li'));
+  const featured = document.querySelector('[data-featured]');
+  const count = document.querySelector('p[data-count]');
+  const empty = document.querySelector('[data-empty]');
+  const term = document.querySelector('[data-term]');
+  const reset = document.querySelector('[data-reset]');
+  if (!input || !grid) return;
+
+  const normalize = (value) => value.normalize('NFKC').toLowerCase();
+  const keys = cells.map((cell) => normalize(cell.dataset.key || ''));
+  let category = 'all';
+
+  form.addEventListener('submit', (event) => event.preventDefault());
+
+  const apply = () => {
+    const query = input.value.trim();
+    const terms = normalize(query).split(/\s+/).filter(Boolean);
+    let visible = 0;
+
+    cells.forEach((cell, index) => {
+      const matchCategory = category === 'all' || cell.dataset.cat === category;
+      const matchTerms = terms.every((part) => keys[index].includes(part));
+      const match = matchCategory && matchTerms;
+      cell.hidden = !match;
+      if (match) visible += 1;
+    });
+
+    const filtering = Boolean(query) || category !== 'all';
+    featured.hidden = filtering;
+    count.textContent = filtering ? `${visible}件` : `${cells.length}の道具`;
+    empty.hidden = visible !== 0;
+    if (visible === 0) term.textContent = query || 'このカテゴリ';
+    clearButton.hidden = !query;
+    grid.setAttribute('aria-label', filtering ? `絞り込み結果 ${visible}件` : '道具一覧');
+  };
+
+  input.addEventListener('input', apply);
+  input.addEventListener('search', apply);
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && input.value) {
+      input.value = '';
+      apply();
+    }
+  });
+
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      category = chip.dataset.cat;
+      chips.forEach((other) => other.setAttribute('aria-pressed', String(other === chip)));
+      apply();
+    });
+  });
+
+  clearButton.addEventListener('click', () => {
+    input.value = '';
+    apply();
+    input.focus();
+  });
+
+  reset.addEventListener('click', () => {
+    input.value = '';
+    category = 'all';
+    chips.forEach((chip) => chip.setAttribute('aria-pressed', String(chip.dataset.cat === 'all')));
+    apply();
+    input.focus();
+  });
+
+  apply();
+})();
+</script>
 
 <script>
 (() => {

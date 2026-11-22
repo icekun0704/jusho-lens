@@ -35,12 +35,12 @@ input[type="file"] { width: 100%; font: inherit; font-size: 0.8125rem; color: va
 <main class="wrap">
   <div class="page-head">
     <h1>Base64変換</h1>
-    <p class="lead">テキストやファイルをBase64に、Base64をテキストやファイルに変換します。日本語はUTF-8として扱い、処理はブラウザ内で完結します。</p>
+    <p class="lead">テキストやファイルを Base64 にして、元に戻せます。</p>
   </div>
 
   <section class="panel" id="tool">
     <h2>テキスト</h2>
-    <p class="hint">日本語は UTF-8 のバイト列として変換します。Base64 側は標準形式と URL-safe 形式のどちらも読み取れます。</p>
+    <p class="hint">日本語は UTF-8 として変換します。</p>
     <label class="check" for="urlSafe">
       <input type="checkbox" id="urlSafe">
       <span>URL-safe（+ を - に、/ を _ に置換し、末尾の = を除く。テキスト→Base64 に適用）</span>
@@ -85,7 +85,7 @@ input[type="file"] { width: 100%; font: inherit; font-size: 0.8125rem; color: va
     </div>
 
     <h2 style="margin-top:2rem">ファイル</h2>
-    <p class="hint">ファイルは読み込んだ順に処理し、進捗を表示します。data URL は「data:種類;base64,」で始まる文字列です。</p>
+    <p class="hint">data URL は「data:種類;base64,」で始まる文字列です。</p>
 
     <div class="grid-2" style="margin-top:1.1rem">
       <div class="stack">
@@ -132,13 +132,10 @@ input[type="file"] { width: 100%; font: inherit; font-size: 0.8125rem; color: va
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
-      <li>テキストを Base64 にするには、左の欄にテキストを入力して「変換」を押します。</li>
-      <li>Base64 をテキストに戻すには、右の欄に貼り付けて「変換」を押します。改行や空白、URL-safe 形式も受け付けます。</li>
-      <li>URL-safe にしたい場合は、変換前にチェックを入れます。チェックを変えると、表示中の結果も作り直されます。</li>
-      <li>ファイルは「ファイル → data URL」で選んで「変換」を押します。大きいファイルは進捗が表示されます。</li>
-      <li>data URL や Base64 からファイルを作るには、下の欄に貼り付け、ファイル名を入れて「ダウンロード」を押します。</li>
+      <li>左の欄にテキストを入れ、変換を押します。</li>
+      <li>右の欄に Base64 を貼り付けて戻します。</li>
+      <li>ファイルは選んでダウンロードするだけです。</li>
     </ol>
   </section>
 
@@ -150,15 +147,15 @@ input[type="file"] { width: 100%; font: inherit; font-size: 0.8125rem; color: va
   -->
 
   <section class="prose">
-    <h2>Base64とは</h2>
-    <p>Base64 は、任意のバイト列を A–Z、a–z、0–9、+、/ の 64 種類の文字で表す符号化方式です。3 バイトを 4 文字に対応させるため、データ量は元の約 1.33 倍になります。データをテキストとして扱う場面（data URL、メールの添付、JSON の一部など）で使われます。暗号化ではないため、誰でも元に戻せます。</p>
+    <h2>Base64 のしくみ</h2>
+    <p>Base64 は、バイト列を A–Z、a–z、0–9、+、/ の 64 文字で表す符号化方式です。3 バイトが 4 文字になるため、データ量は約 1.33 倍に増えます。data URL やメールの添付など、バイナリをテキストとして扱う場面で使います。暗号化ではないので、誰でも元に戻せます。</p>
 
     <h2>日本語と文字コード</h2>
-    <p>この道具は、文字列を UTF-8 のバイト列に変換してから Base64 にします。逆方向では、バイト列を UTF-8 として解釈します。そのため日本語も文字化けせずに往復します。Base64 の入力に改行や空白が含まれていても無視し、- と _ を使う URL-safe 形式もそのまま読み取ります。UTF-8 として解釈できないバイト列は、テキストではなくファイルとして扱ってください。</p>
+    <p>文字列は UTF-8 のバイト列にしてから変換するので、日本語も文字化けせずに往復します。Base64 側は改行や空白を無視し、- と _ を使う URL-safe 形式もそのまま読めます。UTF-8 として解釈できないデータは、テキストではなくファイルとして扱ってください。</p>
 
     <h2>URL-safe 形式と注意点</h2>
-    <p>URL-safe 形式では + を - に、/ を _ に置き換え、末尾の =（パディング）を除きます。URL やファイル名の一部に使う場合に適しています。data URL は標準の Base64 を前提とするため、この道具のファイル変換では URL-safe を適用しません。</p>
-    <p>Base64 はデータを隠すものではありません。機密情報を Base64 にしただけで安全になるわけではなく、変換しても内容は誰でも取り出せます。処理はすべてブラウザ内で行われ、入力した内容がサーバーに送信されることはありません。</p>
+    <p>URL-safe 形式は + を - に、/ を _ に置き換え、末尾の = を省いたものです。URL やファイル名に埋め込むときに使います。data URL は標準の Base64 を前提とするため、ファイル変換では URL-safe を適用しません。</p>
+    <p>Base64 にしても内容は隠せません。機密情報をそのまま貼らないでください。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">
