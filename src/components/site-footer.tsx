@@ -7,6 +7,7 @@ const LINKS = [
   { to: '/pricing', label: '料金' },
   { to: '/legal/privacy', label: 'プライバシー' },
   { to: '/legal/terms', label: '利用規約' },
+  { href: 'https://icekun.net/#contact', label: 'お問い合わせ' },
 ]
 
 export function SiteFooter() {
@@ -26,11 +27,17 @@ export function SiteFooter() {
             </p>
           </div>
           <nav className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm" aria-label="フッター">
-            {LINKS.map((l) => (
-              <Link key={l.to} to={l.to} className="text-muted-foreground hover:text-foreground">
-                {l.label}
-              </Link>
-            ))}
+            {LINKS.map((l) =>
+              'href' in l && l.href ? (
+                <a key={l.href} href={l.href} className="text-muted-foreground hover:text-foreground">
+                  {l.label}
+                </a>
+              ) : (
+                <Link key={l.to} to={l.to as string} className="text-muted-foreground hover:text-foreground">
+                  {l.label}
+                </Link>
+              ),
+            )}
           </nav>
         </div>
         <div className="mt-8 border-t border-border pt-5 text-xs leading-relaxed text-muted-foreground">

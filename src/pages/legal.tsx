@@ -1,5 +1,4 @@
 import { useParams } from 'react-router-dom'
-import { config } from '@/config'
 
 const PRIVACY = [
   {
@@ -29,9 +28,7 @@ const PRIVACY = [
   {
     h: 'お問い合わせ',
     p: [
-      config.contactEmail
-        ? `プライバシーに関するお問い合わせは ${config.contactEmail} までご連絡ください。`
-        : 'プライバシーに関するお問い合わせ先は準備中です。',
+      'お問い合わせは https://icekun.net/#contact のフォームからお願いします。ご記入いただいたお名前・返信先メールアドレス・内容は、返信と記録のために保存し、第三者には提供しません。削除をご希望の場合は、同じフォームからご連絡ください。',
     ],
   },
 ]

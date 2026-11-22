@@ -37,6 +37,21 @@ google.com, pub-1870128904709930, DIRECT, f08c47fec0942fa0
 
 AdSense のサイト登録は `icekun.net`（サブディレクトリやサブドメインを含めない）。
 
+## お問い合わせフォーム
+
+ルートの「お問い合わせ」は `contact.php` が受けます。メールアドレスはページに出ません。
+
+- 配置: `~/icekun.net/public_html/contact.php`（`bash tools/deploy-hub.sh` で送信）
+- 保存: `~/icekun.net/contact-submissions.jsonl`（Web ルートの外。1行1件の JSON）
+- 転送: `~/icekun.net/contact-recipient.txt` にメールアドレスを1行書くと、同じ内容を `mail()` で転送
+- 制限: 同一IPから10分に3件まで（Cloudflare の `CF-Connecting-IP` を使用）
+- 確認: `ssh xserver 'tail -n 20 ~/icekun.net/contact-submissions.jsonl'`
+
+```
+でんわ 03-0000-0000
+```
+のように書くと届きます。
+
 ## サブドメインに移す場合
 
 `jusho.icekun.net` にするなら:

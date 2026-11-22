@@ -6,6 +6,8 @@ export const config = {
   adsenseClient: 'ca-pub-1870128904709930',
   /** AdSense ad unit id for the in-page slot. */
   adsenseSlot: '',
+  /** Site root (the hub). The brand links here. */
+  hubUrl: 'https://icekun.net/',
   /** Shown on the legal page for privacy questions. */
   contactEmail: '',
 }
