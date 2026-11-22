@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -242,30 +241,31 @@ function ReversePanel({ dict, dictError }: { dict: Dictionary | null; dictError:
         ) : busy && !result ? (
           <p className="text-sm text-muted-foreground">変換しています…</p>
         ) : result && result.score > 0 ? (
-          <Card variant="plate" className="gap-3 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+          <Card variant="plate" className="gap-4 p-5">
+            <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">日本語の住所</p>
-                <p className="mt-1 font-serif text-lg leading-relaxed text-foreground">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">result</p>
+                <p className="mt-2 break-keep font-serif text-xl leading-relaxed text-foreground sm:text-2xl">
                   {result.japanese || '—'}
                 </p>
               </div>
               {confidence && (
-                <Badge variant={confidence.variant} className="shrink-0">
-                  一致度 {confidence.label}
-                </Badge>
+                <div className="shrink-0 rounded-sm border border-primary/35 px-3 py-1.5 text-center">
+                  <span className="block font-mono text-[9px] uppercase tracking-[0.18em] text-(--primary-text)">match</span>
+                  <span className="block font-serif text-lg leading-tight text-(--primary-text)">{confidence.label}</span>
+                </div>
               )}
             </div>
 
             <Separator />
 
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
-              <Field label="郵便番号" value={result.postalCode ? `〒${result.postalCode.slice(0, 3)}-${result.postalCode.slice(3)}` : ''} />
-              <Field label="都道府県" value={result.pref} />
-              <Field label="市区町村" value={result.city} />
-              <Field label="町名" value={result.town} />
-              <Field label="番地" value={result.block} />
-              <Field label="建物名" value={result.building} />
+            <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+              <FieldRow label="郵便番号" value={result.postalCode ? `〒${result.postalCode.slice(0, 3)}-${result.postalCode.slice(3)}` : ''} />
+              <FieldRow label="都道府県" value={result.pref} />
+              <FieldRow label="市区町村" value={result.city} />
+              <FieldRow label="町名" value={result.town} />
+              <FieldRow label="番地" value={result.block} />
+              <FieldRow label="建物名" value={result.building} />
             </dl>
 
             <IssueList issues={result.notes.map((n) => ({ level: 'error', message: n }))} />
@@ -288,11 +288,12 @@ function ReversePanel({ dict, dictError }: { dict: Dictionary | null; dictError:
   )
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function FieldRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className={cn('truncate', value ? 'text-foreground' : 'text-muted-foreground/60')}>
+    <div className="flex items-baseline gap-2">
+      <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
+      <span className="mb-1 flex-1 self-end border-b border-dotted border-border" aria-hidden="true" />
+      <dd className={cn('max-w-[62%] truncate text-right text-sm', value ? 'text-foreground' : 'text-muted-foreground/60')}>
         {value || '—'}
       </dd>
     </div>
@@ -611,7 +612,7 @@ function PostalPanel({ dict, dictError }: { dict: Dictionary | null; dictError: 
                 <li key={`${h.city}${h.town}`}>
                   <Card variant="plate" className="gap-2 p-4">
                     <p className="text-xs text-muted-foreground">日本語</p>
-                    <p className="font-serif text-lg leading-relaxed">{jp}</p>
+                    <p className="break-keep font-serif text-lg leading-relaxed">{jp}</p>
                     <Separator />
                     <p className="text-xs text-muted-foreground">英語</p>
                     <p className="break-words font-mono text-[13px] leading-relaxed">{en}</p>

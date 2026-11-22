@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文字数カウント｜道具箱</title>
+<meta name="description" content="文章を貼るだけで、文字数（空白込み・空白除く）、行数、段落数、英単語数、日本語文字数、読了時間（500字/分）、原稿用紙換算（400字詰め）をその場で表示。X（140字・280字）、Instagram（2,200字）、noteの目安と比べられます。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/text/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  fieldset.plain { border: 0; margin: 1.25rem 0 0; padding: 0; }
+  fieldset.plain legend { padding: 0 0 0.4rem; font-size: 0.75rem; color: var(--muted); }
+  fieldset.plain .row { gap: 0.5rem 1.5rem; }
+  table.limits th[scope="row"] { font-size: 0.8125rem; color: var(--ink); letter-spacing: 0; font-weight: 500; }
+  table.limits td:last-child { white-space: nowrap; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>文字数カウント</h1>
+    <p class="lead">貼り付けた文章の文字数・行数・段落数・読了時間・原稿用紙換算をその場で数えます。X・Instagram・noteの上限も並べて確認できます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <label class="field" for="src">
+      <span>テキスト</span>
+      <textarea id="src" rows="10" placeholder="ここに文章を貼り付けてください。入力はブラウザ内だけで処理されます。" spellcheck="false"></textarea>
+    </label>
+
+    <fieldset class="plain">
+      <legend>オプション</legend>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="optCollapse"> 連続する空白を1つに詰める</label>
+        <label class="check"><input type="checkbox" id="optNoNewline"> 改行を除いて数える</label>
+      </div>
+      <p class="hint" style="margin:0.5rem 0 0">オプションは数値の数え方だけを変えます。コピーされるのは入力した本文そのものです。</p>
+    </fieldset>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn" type="button" id="btnCopy">本文をコピー</button>
+      <button class="btn secondary" type="button" id="btnSample">サンプルを入れる</button>
+      <button class="btn ghost" type="button" id="btnClear">クリア</button>
+    </div>
+    <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
+
+    <div id="results" aria-live="polite" aria-atomic="false">
+      <div class="stats">
+        <div class="stat"><b id="stAll">0</b><span>文字数（空白込み）</span></div>
+        <div class="stat"><b id="stNoSpace">0</b><span>文字数（空白除く）</span></div>
+        <div class="stat"><b id="stLines">0</b><span>行数</span></div>
+        <div class="stat"><b id="stParas">0</b><span>段落数</span></div>
+        <div class="stat"><b id="stWords">0</b><span>英単語数</span></div>
+        <div class="stat"><b id="stJp">0</b><span>日本語文字数</span></div>
+        <div class="stat"><b id="stRead">0秒</b><span>読了時間（500字/分）</span></div>
+        <div class="stat"><b id="stSheets">0.0</b><span>原稿用紙（400字詰め・枚）</span></div>
+      </div>
+      <p class="hint" id="jpBreak" style="margin:0.5rem 0 0">ひらがな 0・カタカナ 0・漢字 0</p>
+
+      <h2 style="margin-top:1.75rem">SNSの文字数上限</h2>
+      <p class="hint">文字数（空白込み）と比べています。上限は変更されることがあるため、投稿前に各サービスの公式表示も確認してください。</p>
+      <table class="limits">
+        <caption class="sr-only">SNSごとの文字数上限と、入力した文章の残り文字数</caption>
+        <thead>
+          <tr><th scope="col">媒体</th><th scope="col">上限の目安</th><th scope="col">残り</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">X（日本語）</th><td>140字</td><td><span id="limXJa">残り 140字</span></td></tr>
+          <tr><th scope="row">X（英語）</th><td>280字</td><td><span id="limXEn">残り 280字</span></td></tr>
+          <tr><th scope="row">Instagram キャプション</th><td>2,200字</td><td><span id="limIg">残り 2,200字</span></td></tr>
+          <tr><th scope="row">note タイトル</th><td>25字前後</td><td><span id="limNote">残り 25字</span></td></tr>
+        </tbody>
+      </table>
+      <p class="hint">Xは日本語を1文字あたり2として数えるため、日本語の目安は140字です。noteは公式にタイトル15〜25文字程度がすすめられています。</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「テキスト」欄に文章を貼り付けるか、直接入力します。数値は入力のたびに更新されます。</li>
+      <li>必要なら「連続する空白を1つに詰める」「改行を除いて数える」をオンにします。数値の数え方だけが変わり、本文は変わりません。</li>
+      <li>文字数・行数・段落数・読了時間・原稿用紙換算と、SNSごとの残り文字数を確認します。上限を超えると赤字で表示されます。</li>
+      <li>「本文をコピー」で入力した文章をそのままコピーできます。「クリア」で欄を空にします。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>文字数カウントについて</h2>
+    <p>入力した文章をその場で数える道具です。文章は外部に送信されず、ページを閉じれば残りません。</p>
+
+    <h3>数え方</h3>
+    <p>「文字数（空白込み）」は改行を含むすべての文字を数えます。絵文字などはコードポイント単位で数えるため、複数の絵文字を組み合わせたものは複数文字として数えることがあります。「文字数（空白除く）」は半角・全角の空白、改行、タブを除いた数です。行数は改行で区切った行の数、段落数は空行で区切られたまとまりの数です。英単語数はラテン文字の単語を数え、日本語文字数はひらがな・カタカナ・漢字の合計です（長音符「ー」はカタカナに含めます）。</p>
+    <p>読了時間は1分500字を目安に、空白を除いた文字数から計算しています。原稿用紙換算は400字で1枚として、改行を除いた文字数を400で割った値です。</p>
+
+    <h3>SNSの上限</h3>
+    <p>X（旧Twitter）は280の重み付き文字数を上限とし、日本語などの文字は1文字を2として数えるため、日本語では約140字が目安です。Instagramのキャプションは2,200字、noteのタイトルは15〜25文字程度が公式にすすめられています。上限や数え方はサービス側で変更されることがあるため、投稿前には公式の表示も確認してください。</p>
+
+    <h3>オプションの違い</h3>
+    <p>「連続する空白を1つに詰める」は、連続した半角スペース・タブ・全角スペースを1つの半角スペースとして数えます。「改行を除いて数える」は改行を数値から外します。どちらも表示する数値だけを変え、コピーされる本文には影響しません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var src = document.getElementById('src');
+  var optCollapse = document.getElementById('optCollapse');
+  var optNoNewline = document.getElementById('optNoNewline');
+  var copyMsg = document.getElementById('copyMsg');
+  var jpBreak = document.getElementById('jpBreak');
+  var out = {
+    all: document.getElementById('stAll'),
+    noSpace: document.getElementById('stNoSpace'),
+    lines: document.getElementById('stLines'),
+    paras: document.getElementById('stParas'),
+    words: document.getElementById('stWords'),
+    jp: document.getElementById('stJp'),
+    read: document.getElementById('stRead'),
+    sheets: document.getElementById('stSheets')
+  };
+  var limits = [
+    { el: document.getElementById('limXJa'), max: 140 },
+    { el: document.getElementById('limXEn'), max: 280 },
+    { el: document.getElementById('limIg'), max: 2200 },
+    { el: document.getElementById('limNote'), max: 25 }
+  ];
+
+  var nf = new Intl.NumberFormat('ja-JP');
+  var HIRA = /[ぁ-ゟ]/;
+  var KATA = /[ァ-ヿ]/;
+  var KANJI = /[一-鿿々]/;
+  var SAMPLE = [
+    '道具箱は、日々の小さな手間を減らすための道具置き場です。',
+    '文章を書いていると、あと何文字か確かめたくなるときがあります。SNSの投稿、メールの下書き、原稿の締め切り。文字数を数えるためだけに別のアプリを開くのは、少し面倒です。',
+    'このページは、貼り付けた文章をその場で数えます。文字数、行数、段落数、英単語数、読了時間、原稿用紙換算。入力はブラウザの外に出ません。'
+  ].join('\n\n');
+
+  function measuredText(raw) {
+    var t = raw.replace(/\r\n?/g, '\n');
+    if (optCollapse.checked) t = t.replace(/[ \t\u3000]+/g, ' ');
+    if (optNoNewline.checked) t = t.replace(/\n/g, '');
+    return t;
+  }
+
+  function fmtDuration(sec) {
+    if (sec <= 0) return '0秒';
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    if (m === 0) return s + '秒';
+    return s === 0 ? m + '分' : m + '分' + s + '秒';
+  }
+
+  function update() {
+    var t = measuredText(src.value);
+    var chars = Array.from(t);
+    var total = chars.length;
+    var noSpace = 0;
+    var hira = 0;
+    var kata = 0;
+    var kanji = 0;
+    var newlines = 0;
+    var i;
+    var ch;
+
+    for (i = 0; i < chars.length; i++) {
+      ch = chars[i];
+      if (/\s/.test(ch)) {
+        if (ch === '\n') newlines++;
+      } else {
+        noSpace++;
+      }
+      if (HIRA.test(ch)) {
+        hira++;
+      } else if (KATA.test(ch)) {
+        kata++;
+      } else if (KANJI.test(ch)) {
+        kanji++;
+      }
+    }
+
+    var words = (t.match(/[A-Za-z]+(?:['’][A-Za-z]+)*/g) || []).length;
+    var lines = total === 0 ? 0 : t.split('\n').length;
+    var paras = t.split(/\n[ \t\u3000]*\n+/).filter(function (p) {
+      return p.trim() !== '';
+    }).length;
+    var readSec = noSpace === 0 ? 0 : Math.max(1, Math.round(noSpace * 60 / 500));
+
+    out.all.textContent = nf.format(total);
+    out.noSpace.textContent = nf.format(noSpace);
+    out.lines.textContent = nf.format(lines);
+    out.paras.textContent = nf.format(paras);
+    out.words.textContent = nf.format(words);
+    out.jp.textContent = nf.format(hira + kata + kanji);
+    out.read.textContent = fmtDuration(readSec);
+    out.sheets.textContent = ((total - newlines) / 400).toFixed(1);
+    jpBreak.textContent = 'ひらがな ' + nf.format(hira) +
+      '・カタカナ ' + nf.format(kata) +
+      '・漢字 ' + nf.format(kanji);
+
+    limits.forEach(function (lim) {
+      var left = lim.max - total;
+      if (left < 0) {
+        lim.el.textContent = nf.format(-left) + '字超過';
+        lim.el.className = 'warn';
+      } else {
+        lim.el.textContent = '残り ' + nf.format(left) + '字';
+        lim.el.className = '';
+      }
+    });
+  }
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function showMsg(text, cls) {
+    copyMsg.textContent = text;
+    copyMsg.className = cls;
+  }
+
+  src.addEventListener('input', update);
+  optCollapse.addEventListener('change', update);
+  optNoNewline.addEventListener('change', update);
+
+  document.getElementById('btnCopy').addEventListener('click', function () {
+    if (src.value === '') {
+      showMsg('コピーする本文がありません。', 'err');
+      return;
+    }
+    copyText(src.value).then(function (ok) {
+      if (ok) {
+        showMsg('本文をコピーしました。', 'ok');
+      } else {
+        showMsg('コピーできませんでした。本文を選択してコピーしてください。', 'err');
+      }
+    });
+  });
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    src.value = SAMPLE;
+    copyMsg.textContent = '';
+    update();
+    src.focus();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function () {
+    src.value = '';
+    copyMsg.textContent = '';
+    update();
+    src.focus();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

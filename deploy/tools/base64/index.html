@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base64変換｜道具箱</title>
+<meta name="description" content="テキストとBase64を相互変換するツール。日本語(UTF-8)に対応し、URL-safe形式、ファイルのdata URL化とデコード、コピーに対応。データは送信されません。">
+<link rel="canonical" href="https://icekun.net/base64/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+progress { width: 100%; height: 0.5rem; accent-color: var(--ox); }
+input[type="file"] { width: 100%; font: inherit; font-size: 0.8125rem; color: var(--muted); }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>Base64変換</h1>
+    <p class="lead">テキストやファイルをBase64に、Base64をテキストやファイルに変換します。日本語はUTF-8として扱い、処理はブラウザ内で完結します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>テキスト</h2>
+    <p class="hint">日本語は UTF-8 のバイト列として変換します。Base64 側は標準形式と URL-safe 形式のどちらも読み取れます。</p>
+    <label class="check" for="urlSafe">
+      <input type="checkbox" id="urlSafe">
+      <span>URL-safe（+ を - に、/ を _ に置換し、末尾の = を除く。テキスト→Base64 に適用）</span>
+    </label>
+
+    <div class="grid-2" style="margin-top:1.1rem">
+      <div class="stack">
+        <div class="field">
+          <label for="encIn"><span>テキスト → Base64</span></label>
+          <textarea id="encIn" placeholder="変換するテキストを入力"></textarea>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="encBtn">変換</button>
+          <button type="button" class="btn secondary" id="encCopy" disabled>コピー</button>
+          <button type="button" class="btn ghost" id="encSample">サンプル</button>
+          <button type="button" class="btn ghost" id="encClear">クリア</button>
+        </div>
+        <div class="field">
+          <label for="encOut"><span>Base64</span></label>
+          <textarea id="encOut" readonly></textarea>
+        </div>
+        <p class="hint" id="encMsg" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="stack">
+        <div class="field">
+          <label for="decIn"><span>Base64 → テキスト</span></label>
+          <textarea id="decIn" placeholder="Base64 を貼り付け"></textarea>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="decBtn">変換</button>
+          <button type="button" class="btn secondary" id="decCopy" disabled>コピー</button>
+          <button type="button" class="btn ghost" id="decSample">サンプル</button>
+          <button type="button" class="btn ghost" id="decClear">クリア</button>
+        </div>
+        <div class="field">
+          <label for="decOut"><span>テキスト</span></label>
+          <textarea id="decOut" readonly></textarea>
+        </div>
+        <p class="hint" id="decMsg" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <h2 style="margin-top:2rem">ファイル</h2>
+    <p class="hint">ファイルは読み込んだ順に処理し、進捗を表示します。data URL は「data:種類;base64,」で始まる文字列です。</p>
+
+    <div class="grid-2" style="margin-top:1.1rem">
+      <div class="stack">
+        <div class="field">
+          <label for="fileIn"><span>ファイル → data URL</span></label>
+          <input type="file" id="fileIn">
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="fileBtn">変換</button>
+          <button type="button" class="btn secondary" id="fileCopy" disabled>コピー</button>
+          <button type="button" class="btn ghost" id="fileClear">クリア</button>
+        </div>
+        <progress id="fileProg" max="1" value="0" hidden></progress>
+        <p class="hint" id="fileMsg" role="status" aria-live="polite"></p>
+        <div class="stats" id="fileStats" hidden>
+          <div class="stat"><b id="statOrig">—</b><span>元のサイズ</span></div>
+          <div class="stat"><b id="statB64">—</b><span>Base64 の長さ</span></div>
+          <div class="stat"><b id="statUrl">—</b><span>data URL の長さ</span></div>
+        </div>
+        <div class="field">
+          <label for="fileOut"><span>data URL</span></label>
+          <textarea id="fileOut" readonly placeholder="まだ変換していません"></textarea>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="field">
+          <label for="b64FileIn"><span>Base64 / data URL → ファイル</span></label>
+          <textarea id="b64FileIn" placeholder="Base64 または data:...;base64,... を貼り付け"></textarea>
+        </div>
+        <div class="field">
+          <label for="b64Name"><span>保存するファイル名（空なら download.bin）</span></label>
+          <input type="text" id="b64Name" placeholder="例: photo.png" autocomplete="off">
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="decFileBtn">ダウンロード</button>
+          <button type="button" class="btn ghost" id="decFileClear">クリア</button>
+        </div>
+        <progress id="decProg" max="1" value="0" hidden></progress>
+        <p class="hint" id="decFileMsg" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>テキストを Base64 にするには、左の欄にテキストを入力して「変換」を押します。</li>
+      <li>Base64 をテキストに戻すには、右の欄に貼り付けて「変換」を押します。改行や空白、URL-safe 形式も受け付けます。</li>
+      <li>URL-safe にしたい場合は、変換前にチェックを入れます。チェックを変えると、表示中の結果も作り直されます。</li>
+      <li>ファイルは「ファイル → data URL」で選んで「変換」を押します。大きいファイルは進捗が表示されます。</li>
+      <li>data URL や Base64 からファイルを作るには、下の欄に貼り付け、ファイル名を入れて「ダウンロード」を押します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>Base64とは</h2>
+    <p>Base64 は、任意のバイト列を A–Z、a–z、0–9、+、/ の 64 種類の文字で表す符号化方式です。3 バイトを 4 文字に対応させるため、データ量は元の約 1.33 倍になります。データをテキストとして扱う場面（data URL、メールの添付、JSON の一部など）で使われます。暗号化ではないため、誰でも元に戻せます。</p>
+
+    <h2>日本語と文字コード</h2>
+    <p>この道具は、文字列を UTF-8 のバイト列に変換してから Base64 にします。逆方向では、バイト列を UTF-8 として解釈します。そのため日本語も文字化けせずに往復します。Base64 の入力に改行や空白が含まれていても無視し、- と _ を使う URL-safe 形式もそのまま読み取ります。UTF-8 として解釈できないバイト列は、テキストではなくファイルとして扱ってください。</p>
+
+    <h2>URL-safe 形式と注意点</h2>
+    <p>URL-safe 形式では + を - に、/ を _ に置き換え、末尾の =（パディング）を除きます。URL やファイル名の一部に使う場合に適しています。data URL は標準の Base64 を前提とするため、この道具のファイル変換では URL-safe を適用しません。</p>
+    <p>Base64 はデータを隠すものではありません。機密情報を Base64 にしただけで安全になるわけではなく、変換しても内容は誰でも取り出せます。処理はすべてブラウザ内で行われ、入力した内容がサーバーに送信されることはありません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var urlSafe = document.getElementById('urlSafe');
+
+  var encIn = document.getElementById('encIn');
+  var encOut = document.getElementById('encOut');
+  var encBtn = document.getElementById('encBtn');
+  var encCopy = document.getElementById('encCopy');
+  var encSampleBtn = document.getElementById('encSample');
+  var encClear = document.getElementById('encClear');
+  var encMsg = document.getElementById('encMsg');
+
+  var decIn = document.getElementById('decIn');
+  var decOut = document.getElementById('decOut');
+  var decBtn = document.getElementById('decBtn');
+  var decCopy = document.getElementById('decCopy');
+  var decSampleBtn = document.getElementById('decSample');
+  var decClear = document.getElementById('decClear');
+  var decMsg = document.getElementById('decMsg');
+
+  var fileIn = document.getElementById('fileIn');
+  var fileBtn = document.getElementById('fileBtn');
+  var fileCopy = document.getElementById('fileCopy');
+  var fileClear = document.getElementById('fileClear');
+  var fileProg = document.getElementById('fileProg');
+  var fileMsg = document.getElementById('fileMsg');
+  var fileStats = document.getElementById('fileStats');
+  var fileOut = document.getElementById('fileOut');
+  var statOrig = document.getElementById('statOrig');
+  var statB64 = document.getElementById('statB64');
+  var statUrl = document.getElementById('statUrl');
+
+  var b64FileIn = document.getElementById('b64FileIn');
+  var b64Name = document.getElementById('b64Name');
+  var decFileBtn = document.getElementById('decFileBtn');
+  var decFileClear = document.getElementById('decFileClear');
+  var decProg = document.getElementById('decProg');
+  var decFileMsg = document.getElementById('decFileMsg');
+
+  var SAMPLE = '道具箱の Base64 変換テスト。Hello, world!\n日本語も UTF-8 として往復できます。';
+  var TEXT_LIMIT = 8000000;
+  var fileDataUrl = '';
+  var busyFile = false;
+  var busyDecode = false;
+
+  var EXT = {
+    'image/png': '.png',
+    'image/jpeg': '.jpg',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/svg+xml': '.svg',
+    'application/pdf': '.pdf',
+    'application/json': '.json',
+    'application/zip': '.zip',
+    'audio/mpeg': '.mp3',
+    'video/mp4': '.mp4',
+    'text/plain': '.txt',
+    'text/csv': '.csv',
+    'application/octet-stream': '.bin'
+  };
+
+  function setMsg(el, text, kind) {
+    el.textContent = text || '';
+    el.className = kind || 'hint';
+  }
+
+  function formatBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+    if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
+    return (n / 1073741824).toFixed(2) + ' GB';
+  }
+
+  function tick() {
+    return new Promise(function (resolve) { setTimeout(resolve, 0); });
+  }
+
+  function bytesToBase64(bytes) {
+    var bin = '';
+    var step = 0x8000;
+    for (var i = 0; i < bytes.length; i += step) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + step));
+    }
+    return btoa(bin);
+  }
+
+  function toUrlSafe(b64) {
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function normalizeBase64(input) {
+    var s = String(input).replace(/[\s　]+/g, '');
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    s = s.replace(/=+$/, '');
+    if (s === '') throw new Error('Base64 が空です。');
+    if (/[^A-Za-z0-9+/]/.test(s)) throw new Error('Base64 に使えない文字が含まれています。');
+    var rem = s.length % 4;
+    if (rem === 1) throw new Error('Base64 の長さが正しくありません。');
+    if (rem) s += new Array(5 - rem).join('=');
+    return s;
+  }
+
+  function base64ToBytesSync(input) {
+    var padded = normalizeBase64(input);
+    var bin;
+    try {
+      bin = atob(padded);
+    } catch (e) {
+      throw new Error('Base64 をデコードできませんでした。');
+    }
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  async function bytesToBase64Async(bytes, onProgress) {
+    if (!bytes.length) {
+      if (onProgress) onProgress(1);
+      return '';
+    }
+    var chunk = 3 * 0x40000;
+    var step = 0x8000;
+    var parts = [];
+    for (var i = 0; i < bytes.length; i += chunk) {
+      var end = Math.min(i + chunk, bytes.length);
+      var sub = bytes.subarray(i, end);
+      var bin = '';
+      for (var j = 0; j < sub.length; j += step) {
+        bin += String.fromCharCode.apply(null, sub.subarray(j, Math.min(j + step, sub.length)));
+      }
+      parts.push(btoa(bin));
+      if (onProgress) onProgress(end / bytes.length);
+      await tick();
+    }
+    return parts.join('');
+  }
+
+  async function base64ToBytesAsync(input, onProgress) {
+    var padded = normalizeBase64(input);
+    var chunk = 4 * 0x40000;
+    var parts = [];
+    var total = 0;
+    for (var i = 0; i < padded.length; i += chunk) {
+      var end = Math.min(i + chunk, padded.length);
+      var bin;
+      try {
+        bin = atob(padded.slice(i, end));
+      } catch (e) {
+        throw new Error('Base64 をデコードできませんでした。');
+      }
+      var bytes = new Uint8Array(bin.length);
+      for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+      parts.push(bytes);
+      total += bytes.length;
+      if (onProgress) onProgress(end / padded.length);
+      await tick();
+    }
+    var out = new Uint8Array(total);
+    var offset = 0;
+    for (var k = 0; k < parts.length; k++) {
+      out.set(parts[k], offset);
+      offset += parts[k].length;
+    }
+    return out;
+  }
+
+  function extFor(mime) {
+    return EXT[mime] || '.bin';
+  }
+
+  function copyText(text, msgEl, okMessage) {
+    if (!text) return;
+    function done() {
+      setMsg(msgEl, okMessage, 'ok');
+    }
+    function fallback() {
+      if (text.length > 2000000) {
+        setMsg(msgEl, 'コピーできませんでした。このサイズはブラウザの制限でコピーできない場合があります。', 'err');
+        return;
+      }
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      if (ok) done();
+      else setMsg(msgEl, 'コピーできませんでした。手動で選択してコピーしてください。', 'err');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function encodeText() {
+    var text = encIn.value;
+    if (!text) {
+      encOut.value = '';
+      encCopy.disabled = true;
+      setMsg(encMsg, 'テキストを入力してください。', 'warn');
+      return;
+    }
+    if (text.length > TEXT_LIMIT) {
+      setMsg(encMsg, 'テキストが長すぎます。ファイルとして扱ってください。', 'warn');
+      return;
+    }
+    try {
+      var bytes = new TextEncoder().encode(text);
+      var out = bytesToBase64(bytes);
+      if (urlSafe.checked) out = toUrlSafe(out);
+      encOut.value = out;
+      encCopy.disabled = false;
+      setMsg(encMsg, bytes.length.toLocaleString('ja-JP') + ' バイト → ' + out.length.toLocaleString('ja-JP') + ' 文字に変換しました。', 'ok');
+    } catch (e) {
+      encOut.value = '';
+      encCopy.disabled = true;
+      setMsg(encMsg, '変換できませんでした。', 'err');
+    }
+  }
+
+  function decodeText() {
+    var raw = decIn.value;
+    if (!raw.trim()) {
+      decOut.value = '';
+      decCopy.disabled = true;
+      setMsg(decMsg, 'Base64 を入力してください。', 'warn');
+      return;
+    }
+    if (raw.length > TEXT_LIMIT) {
+      setMsg(decMsg, '長すぎます。下の「Base64 / data URL → ファイル」を使ってください。', 'warn');
+      return;
+    }
+    try {
+      var bytes = base64ToBytesSync(raw);
+      var text;
+      try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      } catch (e) {
+        throw new Error('UTF-8 として解釈できませんでした。バイナリデータか、別の文字コードの可能性があります。');
+      }
+      decOut.value = text;
+      decCopy.disabled = false;
+      setMsg(decMsg, bytes.length.toLocaleString('ja-JP') + ' バイトのテキストに戻しました。', 'ok');
+    } catch (e) {
+      decOut.value = '';
+      decCopy.disabled = true;
+      setMsg(decMsg, (e && e.message) ? e.message : 'デコードできませんでした。', 'err');
+    }
+  }
+
+  async function encodeFile() {
+    if (busyFile) return;
+    var file = fileIn.files && fileIn.files[0];
+    if (!file) {
+      setMsg(fileMsg, 'ファイルを選んでください。', 'warn');
+      return;
+    }
+    busyFile = true;
+    fileBtn.disabled = true;
+    fileCopy.disabled = true;
+    fileProg.hidden = false;
+    fileProg.value = 0;
+    setMsg(fileMsg, '読み込んでいます…', 'hint');
+    try {
+      var bytes = new Uint8Array(await file.arrayBuffer());
+      var b64 = await bytesToBase64Async(bytes, function (ratio) { fileProg.value = ratio; });
+      var mime = file.type || 'application/octet-stream';
+      var url = 'data:' + mime + ';base64,' + b64;
+      fileDataUrl = url;
+      if (url.length > 1000000) {
+        fileOut.value = url.slice(0, 20000) + '\n…（長いため先頭 20,000 文字のみ表示しています。コピーは全体が対象です）';
+      } else {
+        fileOut.value = url;
+      }
+      statOrig.textContent = formatBytes(file.size);
+      statB64.textContent = b64.length.toLocaleString('ja-JP') + ' 文字';
+      statUrl.textContent = url.length.toLocaleString('ja-JP') + ' 文字';
+      fileStats.hidden = false;
+      fileCopy.disabled = false;
+      setMsg(fileMsg, formatBytes(file.size) + ' のファイルを data URL に変換しました。', 'ok');
+    } catch (e) {
+      fileDataUrl = '';
+      fileOut.value = '';
+      fileStats.hidden = true;
+      fileCopy.disabled = true;
+      setMsg(fileMsg, (e && e.message) ? e.message : '変換できませんでした。', 'err');
+    } finally {
+      busyFile = false;
+      fileBtn.disabled = false;
+      fileProg.hidden = true;
+    }
+  }
+
+  async function decodeFile() {
+    if (busyDecode) return;
+    var raw = b64FileIn.value.trim();
+    if (!raw) {
+      setMsg(decFileMsg, 'Base64 または data URL を貼り付けてください。', 'warn');
+      return;
+    }
+    busyDecode = true;
+    decFileBtn.disabled = true;
+    decProg.hidden = false;
+    decProg.value = 0;
+    setMsg(decFileMsg, 'デコードしています…', 'hint');
+    try {
+      var mime = 'application/octet-stream';
+      var data = raw;
+      var m = /^data:([^,]*),([\s\S]*)$/i.exec(raw);
+      if (m) {
+        var meta = m[1] || '';
+        data = m[2];
+        var parts = meta.split(';');
+        if (parts[0] && parts[0].indexOf('/') !== -1) mime = parts[0].toLowerCase();
+        var isBase64 = false;
+        for (var i = 1; i < parts.length; i++) {
+          if (parts[i].toLowerCase() === 'base64') isBase64 = true;
+        }
+        if (!isBase64) throw new Error('base64 形式の data URL ではありません。');
+      }
+      var bytes = await base64ToBytesAsync(data, function (ratio) { decProg.value = ratio; });
+      var blob = new Blob([bytes], { type: mime });
+      var name = b64Name.value.trim() || ('download' + extFor(mime));
+      name = name.replace(/[\\/:*?"<>|]/g, '_');
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+      setMsg(decFileMsg, formatBytes(bytes.length) + ' のファイル（' + name + '）を作成しました。', 'ok');
+    } catch (e) {
+      setMsg(decFileMsg, (e && e.message) ? e.message : 'デコードできませんでした。', 'err');
+    } finally {
+      busyDecode = false;
+      decFileBtn.disabled = false;
+      decProg.hidden = true;
+    }
+  }
+
+  encBtn.addEventListener('click', encodeText);
+  encCopy.addEventListener('click', function () {
+    copyText(encOut.value, encMsg, 'Base64 をコピーしました。');
+  });
+  encSampleBtn.addEventListener('click', function () {
+    encIn.value = SAMPLE;
+    encodeText();
+  });
+  encClear.addEventListener('click', function () {
+    encIn.value = '';
+    encOut.value = '';
+    encCopy.disabled = true;
+    setMsg(encMsg, '', 'hint');
+  });
+
+  decBtn.addEventListener('click', decodeText);
+  decCopy.addEventListener('click', function () {
+    copyText(decOut.value, decMsg, 'テキストをコピーしました。');
+  });
+  decSampleBtn.addEventListener('click', function () {
+    decIn.value = bytesToBase64(new TextEncoder().encode(SAMPLE));
+    decodeText();
+  });
+  decClear.addEventListener('click', function () {
+    decIn.value = '';
+    decOut.value = '';
+    decCopy.disabled = true;
+    setMsg(decMsg, '', 'hint');
+  });
+
+  urlSafe.addEventListener('change', function () {
+    if (encOut.value) encodeText();
+  });
+
+  fileBtn.addEventListener('click', encodeFile);
+  fileCopy.addEventListener('click', function () {
+    copyText(fileDataUrl, fileMsg, 'data URL 全体をコピーしました。');
+  });
+  fileClear.addEventListener('click', function () {
+    fileIn.value = '';
+    fileOut.value = '';
+    fileDataUrl = '';
+    fileStats.hidden = true;
+    fileCopy.disabled = true;
+    fileProg.hidden = true;
+    setMsg(fileMsg, '', 'hint');
+  });
+
+  decFileBtn.addEventListener('click', decodeFile);
+  decFileClear.addEventListener('click', function () {
+    b64FileIn.value = '';
+    b64Name.value = '';
+    decProg.hidden = true;
+    setMsg(decFileMsg, '', 'hint');
+  });
+})();
+</script>
+</body>
+</html>

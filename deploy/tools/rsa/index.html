@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSA暗号化・復号｜道具箱</title>
+<meta name="description" content="RSA-OAEP（SHA-256）の公開鍵暗号をブラウザ内で試せるツール。2048/3072/4096ビットの鍵生成、PEM形式の公開鍵で暗号化、秘密鍵で復号、Base64での受け渡しに対応。入力は送信されません。">
+<link rel="canonical" href="https://icekun.net/rsa/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>RSA暗号化・復号</h1>
+    <p class="lead">ブラウザ内で RSA-OAEP（SHA-256）の鍵生成・暗号化・復号を行うデモです。公開鍵と秘密鍵の PEM をそのまま貼り付けて試せます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>1. 鍵を生成</h2>
+    <p class="hint">RSA-OAEP（SHA-256）の鍵ペアを作ります。鍵はページのメモリ上にだけ保持し、送信も保存もしません。</p>
+    <div class="row">
+      <label class="field" style="max-width:12rem">
+        <span>鍵長</span>
+        <select id="rsa-bits">
+          <option value="2048" selected>2048 ビット</option>
+          <option value="3072">3072 ビット</option>
+          <option value="4096">4096 ビット</option>
+        </select>
+      </label>
+      <button class="btn" type="button" id="rsa-gen">鍵を生成</button>
+      <label class="check"><input type="checkbox" id="rsa-reveal"> 秘密鍵を表示する</label>
+    </div>
+    <p class="note" id="rsa-gen-msg" role="status" aria-live="polite" hidden></p>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <div>
+        <label class="field">
+          <span>公開鍵（SPKI, PEM）</span>
+          <textarea id="rsa-pub" rows="8" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
+        </label>
+        <div class="row" style="margin-top:0.5rem">
+          <button class="btn secondary" type="button" data-copy="rsa-pub" data-label="公開鍵">コピー</button>
+          <button class="btn secondary" type="button" data-dl="rsa-pub" data-name="public-key.pem" data-label="公開鍵">ダウンロード</button>
+        </div>
+      </div>
+      <div>
+        <label class="field">
+          <span>秘密鍵（PKCS#8, PEM）</span>
+          <textarea id="rsa-priv" rows="8" spellcheck="false" autocomplete="off" hidden></textarea>
+        </label>
+        <div class="result" id="rsa-priv-mask">鍵を生成すると、ここに秘密鍵（PKCS#8, PEM）が入ります。秘密鍵は「秘密鍵を表示する」にチェックを入れたときだけ表示されます。</div>
+        <div class="row" style="margin-top:0.5rem">
+          <button class="btn secondary" type="button" data-copy="rsa-priv" data-label="秘密鍵">コピー</button>
+          <button class="btn secondary" type="button" data-dl="rsa-priv" data-name="private-key.pem" data-label="秘密鍵">ダウンロード</button>
+        </div>
+      </div>
+    </div>
+    <p class="note" id="rsa-copy-msg" role="status" aria-live="polite" hidden></p>
+
+    <h2 style="margin-top:2rem">2. 公開鍵で暗号化</h2>
+    <p class="hint">公開鍵の PEM と平文を入れてください。暗号文は Base64 で出力します。鍵を生成した直後は、公開鍵が下の欄に自動で入っています。</p>
+    <label class="field">
+      <span>公開鍵（SPKI, PEM）</span>
+      <textarea id="rsa-enc-pub" rows="5" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
+    </label>
+    <label class="field" style="margin-top:0.75rem">
+      <span>平文（UTF-8）</span>
+      <textarea id="rsa-enc-text" rows="3" placeholder="暗号化したい文字列"></textarea>
+    </label>
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn" type="button" id="rsa-enc-btn">暗号化</button>
+      <span class="hint" id="rsa-enc-limit"></span>
+    </div>
+    <p class="note" id="rsa-enc-msg" role="status" aria-live="polite" hidden></p>
+    <div class="result" id="rsa-enc-out" aria-live="polite" hidden></div>
+    <div id="rsa-enc-actions" hidden>
+      <div class="row" style="margin-top:0.5rem">
+        <button class="btn secondary" type="button" data-copy="rsa-enc-out" data-label="暗号文">コピー</button>
+        <button class="btn secondary" type="button" data-dl="rsa-enc-out" data-name="ciphertext.txt" data-label="暗号文">ダウンロード</button>
+      </div>
+    </div>
+
+    <h2 style="margin-top:2rem">3. 秘密鍵で復号</h2>
+    <p class="hint">秘密鍵の PEM と Base64 の暗号文を入れます。直前に生成した鍵なら、秘密鍵の欄は空のままで復号できます。</p>
+    <label class="field">
+      <span>秘密鍵（PKCS#8, PEM）</span>
+      <textarea id="rsa-dec-priv" rows="5" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+    </label>
+    <label class="field" style="margin-top:0.75rem">
+      <span>暗号文（Base64）</span>
+      <textarea id="rsa-dec-ct" rows="4" spellcheck="false" autocomplete="off" placeholder="Base64 の文字列"></textarea>
+    </label>
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn" type="button" id="rsa-dec-btn">復号</button>
+    </div>
+    <p class="note" id="rsa-dec-msg" role="status" aria-live="polite" hidden></p>
+    <div class="result" id="rsa-dec-out" aria-live="polite" hidden></div>
+    <div id="rsa-dec-actions" hidden>
+      <div class="row" style="margin-top:0.5rem">
+        <button class="btn secondary" type="button" data-copy="rsa-dec-out" data-label="平文">コピー</button>
+        <button class="btn secondary" type="button" data-dl="rsa-dec-out" data-name="plaintext.txt" data-label="平文">ダウンロード</button>
+      </div>
+    </div>
+
+    <p class="note warn" style="margin-top:1.25rem">これは学習・確認用のデモです。本番の秘密情報の暗号化や秘密鍵の保管には使わないでください。鍵と入力はブラウザのメモリ上だけで扱い、送信・保存はしません。ページを閉じると失われます。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>鍵長（2048 / 3072 / 4096 ビット）を選び、「鍵を生成」を押します。4096 ビットは数秒かかることがあります。</li>
+      <li>公開鍵は「2. 公開鍵で暗号化」の欄に自動で入ります。秘密鍵を見るには「秘密鍵を表示する」にチェックを入れます。コピーとダウンロードは非表示のままでも使えます。</li>
+      <li>平文を入れて「暗号化」を押すと、Base64 の暗号文が出ます。</li>
+      <li>暗号文を「3. 秘密鍵で復号」に貼り、「復号」を押します。直前に生成した鍵なら秘密鍵の欄は空のままで構いません。</li>
+      <li>別の道具で作った鍵を使うときは、公開鍵（SPKI）と秘密鍵（PKCS#8）の PEM をそれぞれの欄に貼り付けます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>RSA暗号化・復号について</h2>
+    <p>RSA は公開鍵暗号の一つで、公開鍵で暗号化した内容は、対になる秘密鍵でしか復号できません。このページはブラウザの Web Crypto API にある RSA-OAEP（ハッシュ SHA-256）を使います。OAEP はパディング方式の一つで、同じ平文でも暗号化のたびに異なる暗号文になります。復号結果が同じ平文になるので、暗号文を比べても内容は推測できません。</p>
+    <p>RSA で一度に暗号化できるデータ量は鍵長から決まり、「鍵長（ビット）÷ 8 − 66 バイト」が上限です。2048 ビットなら 190 バイト、3072 ビットなら 318 バイト、4096 ビットなら 446 バイトまでです。長い文書は AES などの共通鍵暗号で暗号化し、その鍵だけを RSA で包む「ハイブリッド暗号」が一般的で、TLS もこの方式を使っています。</p>
+    <h2>鍵の形式</h2>
+    <p>公開鍵は SPKI（<code>-----BEGIN PUBLIC KEY-----</code>）、秘密鍵は PKCS#8（<code>-----BEGIN PRIVATE KEY-----</code>）の PEM 形式（RFC 7468）で入出力します。OpenSSL なら次のコマンドで作れます。</p>
+    <pre style="overflow-x:auto;background:#efe9dd;padding:0.75rem;border-radius:6px;font-family:var(--mono);font-size:0.75rem;line-height:1.8">openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private-key.pem
+openssl rsa -pubout -in private-key.pem -out public-key.pem</pre>
+    <p>暗号文は Base64 の文字列で受け渡します。改行や空白が混ざっていても、復号のときに無視します。</p>
+    <h2>注意</h2>
+    <p>このページは仕組みを確かめるためのデモです。本番の秘密情報の暗号化や、秘密鍵の保管には使わないでください。鍵と入力はブラウザのメモリ上だけで扱い、サーバーへ送信したり、localStorage などに保存したりしません。ページを閉じると失われます。Web Crypto API は HTTPS または localhost でのみ動作します。</p>
+    <p>PKCS#1 形式（<code>BEGIN RSA PRIVATE KEY</code>、<code>BEGIN RSA PUBLIC KEY</code>）と、パスフレーズ付きの秘密鍵（<code>BEGIN ENCRYPTED PRIVATE KEY</code>）には対応していません。パスフレーズ付きの鍵は、OpenSSL の <code>openssl pkcs8 -topk8 -nocrypt</code> で暗号化を外した PKCS#8 に変換してから使ってください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var ALGO = { name: 'RSA-OAEP', hash: 'SHA-256' };
+  var subtle = window.crypto && window.crypto.subtle ? window.crypto.subtle : null;
+  var encoder = new TextEncoder();
+  var decoder = new TextDecoder('utf-8');
+  var state = { keyPair: null };
+
+  function RsaError(message) {
+    this.name = 'RsaError';
+    this.message = message;
+  }
+  RsaError.prototype = Object.create(Error.prototype);
+
+  var $ = function (id) { return document.getElementById(id); };
+  var els = {
+    bits: $('rsa-bits'),
+    gen: $('rsa-gen'),
+    reveal: $('rsa-reveal'),
+    genMsg: $('rsa-gen-msg'),
+    pub: $('rsa-pub'),
+    priv: $('rsa-priv'),
+    privMask: $('rsa-priv-mask'),
+    copyMsg: $('rsa-copy-msg'),
+    encPub: $('rsa-enc-pub'),
+    encText: $('rsa-enc-text'),
+    encBtn: $('rsa-enc-btn'),
+    encLimit: $('rsa-enc-limit'),
+    encMsg: $('rsa-enc-msg'),
+    encOut: $('rsa-enc-out'),
+    encActions: $('rsa-enc-actions'),
+    decPriv: $('rsa-dec-priv'),
+    decCt: $('rsa-dec-ct'),
+    decBtn: $('rsa-dec-btn'),
+    decMsg: $('rsa-dec-msg'),
+    decOut: $('rsa-dec-out'),
+    decActions: $('rsa-dec-actions')
+  };
+
+  function setMsg(el, text, kind) {
+    el.textContent = text || '';
+    el.className = 'note' + (kind ? ' ' + kind : '');
+    el.hidden = !text;
+  }
+
+  function bytesToB64(bytes) {
+    var view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    var out = '';
+    var chunk = 0x8000;
+    for (var i = 0; i < view.length; i += chunk) {
+      out += String.fromCharCode.apply(null, view.subarray(i, i + chunk));
+    }
+    return btoa(out);
+  }
+
+  function b64ToBytes(b64) {
+    var raw = atob(b64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function normalizeB64(text) {
+    var raw = String(text).replace(/\s+/g, '');
+    if (!raw) return null;
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(raw)) return null;
+    if (raw.length % 4 === 1) return null;
+    var pad = (4 - (raw.length % 4)) % 4;
+    return raw + new Array(pad + 1).join('=');
+  }
+
+  function derToPem(der, label) {
+    var b64 = bytesToB64(der);
+    var lines = b64.match(/.{1,64}/g) || [b64];
+    return '-----BEGIN ' + label + '-----\n' + lines.join('\n') + '\n-----END ' + label + '-----\n';
+  }
+
+  function escapeRe(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function decodePem(pemText, kind) {
+    var text = String(pemText).replace(/\r\n?/g, '\n').trim();
+    if (!text) {
+      throw new RsaError(kind === 'public' ? '公開鍵が空です。' : '秘密鍵が空です。');
+    }
+    var begin = text.match(/-----BEGIN ([A-Z0-9 ]+)-----/);
+    if (!begin) {
+      throw new RsaError('PEM の BEGIN 行が見つかりません。-----BEGIN …----- の形式で貼り付けてください。');
+    }
+    var endRe = new RegExp('-----END ' + escapeRe(begin[1]) + '-----');
+    var end = text.match(endRe);
+    if (!end) {
+      throw new RsaError('PEM の END 行（-----END ' + begin[1] + '-----）が見つかりません。');
+    }
+    var bodyStart = begin.index + begin[0].length;
+    if (end.index <= bodyStart) {
+      throw new RsaError('PEM の BEGIN と END の順序が正しくありません。');
+    }
+    var norm = normalizeB64(text.slice(bodyStart, end.index));
+    if (!norm) {
+      throw new RsaError('PEM の中身が Base64 として正しくありません。');
+    }
+    var der;
+    try {
+      der = b64ToBytes(norm);
+    } catch (err) {
+      throw new RsaError('PEM の中身を Base64 として読み取れませんでした。');
+    }
+    if (!der.length) {
+      throw new RsaError('PEM の中身が空です。');
+    }
+    return { label: begin[1], der: der };
+  }
+
+  function checkLabel(label, kind) {
+    var expect = kind === 'public' ? 'PUBLIC KEY' : 'PRIVATE KEY';
+    if (label === expect) return;
+    if (kind === 'public' && label === 'RSA PUBLIC KEY') {
+      throw new RsaError('PKCS#1 形式の公開鍵（BEGIN RSA PUBLIC KEY）には対応していません。SPKI 形式（BEGIN PUBLIC KEY）を使ってください。');
+    }
+    if (kind === 'private' && label === 'RSA PRIVATE KEY') {
+      throw new RsaError('PKCS#1 形式の秘密鍵（BEGIN RSA PRIVATE KEY）には対応していません。PKCS#8 形式（BEGIN PRIVATE KEY）に変換してください。');
+    }
+    if (kind === 'private' && label === 'ENCRYPTED PRIVATE KEY') {
+      throw new RsaError('パスフレーズ付きの秘密鍵（BEGIN ENCRYPTED PRIVATE KEY）には対応していません。暗号化を外した PKCS#8（BEGIN PRIVATE KEY）を使ってください。');
+    }
+    if (kind === 'public' && label === 'PRIVATE KEY') {
+      throw new RsaError('秘密鍵が貼られています。公開鍵（BEGIN PUBLIC KEY）を貼り付けてください。');
+    }
+    if (kind === 'private' && label === 'PUBLIC KEY') {
+      throw new RsaError('公開鍵が貼られています。秘密鍵（BEGIN PRIVATE KEY）を貼り付けてください。');
+    }
+    throw new RsaError('この欄では ' + expect + ' の PEM を使います（現在は「' + label + '」）。');
+  }
+
+  async function importPublic(pemText) {
+    var pem = decodePem(pemText, 'public');
+    checkLabel(pem.label, 'public');
+    try {
+      return await subtle.importKey('spki', pem.der, ALGO, false, ['encrypt']);
+    } catch (err) {
+      throw new RsaError('公開鍵を読み込めませんでした。PEM が欠けているか、RSA 以外の鍵の可能性があります。');
+    }
+  }
+
+  async function importPrivate(pemText) {
+    var pem = decodePem(pemText, 'private');
+    checkLabel(pem.label, 'private');
+    try {
+      return await subtle.importKey('pkcs8', pem.der, ALGO, false, ['decrypt']);
+    } catch (err) {
+      throw new RsaError('秘密鍵を読み込めませんでした。PEM が欠けているか、RSA 以外の鍵の可能性があります。');
+    }
+  }
+
+  function syncReveal() {
+    var show = els.reveal.checked;
+    els.priv.hidden = !show;
+    els.privMask.hidden = show;
+  }
+
+  function updateMask() {
+    els.privMask.textContent = els.priv.value.trim()
+      ? '秘密鍵を生成しました（非表示）。表示するには「秘密鍵を表示する」にチェックを入れてください。コピーとダウンロードはこのままでも使えます。'
+      : '鍵を生成すると、ここに秘密鍵（PKCS#8, PEM）が入ります。秘密鍵は「秘密鍵を表示する」にチェックを入れたときだけ表示されます。';
+  }
+
+  function webCryptoMessage() {
+    return 'このブラウザでは Web Crypto API が使えません。HTTPS または localhost で開いてください。';
+  }
+
+  function generate() {
+    if (!subtle) {
+      setMsg(els.genMsg, webCryptoMessage(), 'err');
+      return;
+    }
+    var bits = Number(els.bits.value) || 2048;
+    els.gen.disabled = true;
+    setMsg(els.copyMsg, '');
+    setMsg(els.genMsg, 'RSA ' + bits + ' ビットの鍵を生成しています…（4096 ビットは数秒かかることがあります）', '');
+    subtle.generateKey(
+      { name: 'RSA-OAEP', modulusLength: bits, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+      true,
+      ['encrypt', 'decrypt']
+    ).then(function (pair) {
+      state.keyPair = pair;
+      return Promise.all([
+        subtle.exportKey('spki', pair.publicKey),
+        subtle.exportKey('pkcs8', pair.privateKey)
+      ]);
+    }).then(function (keys) {
+      els.pub.value = derToPem(keys[0], 'PUBLIC KEY');
+      els.priv.value = derToPem(keys[1], 'PRIVATE KEY');
+      els.encPub.value = els.pub.value;
+      updateMask();
+      var max = bits / 8 - 66;
+      els.encLimit.textContent = bits + ' ビットの鍵：暗号化できるのは最大 ' + max + ' バイト（UTF-8）まで。';
+      setMsg(els.genMsg, 'RSA ' + bits + ' ビットの鍵を生成しました。公開鍵は「2. 公開鍵で暗号化」に自動で入れています。秘密鍵はメモリ上にのみ保持し、表示・コピー・ダウンロードは上のボタンから行えます。', 'ok');
+    }).catch(function () {
+      setMsg(els.genMsg, '鍵の生成に失敗しました。もう一度お試しください。', 'err');
+    }).then(function () {
+      els.gen.disabled = false;
+    });
+  }
+
+  function encrypt() {
+    if (!subtle) {
+      setMsg(els.encMsg, webCryptoMessage(), 'err');
+      return;
+    }
+    setMsg(els.encMsg, '');
+    els.encBtn.disabled = true;
+    var plain = els.encText.value;
+    var keyPromise;
+    if (plain === '') {
+      setMsg(els.encMsg, '平文を入力してください。', 'err');
+      els.encBtn.disabled = false;
+      return;
+    }
+    if (els.encPub.value.trim()) {
+      keyPromise = importPublic(els.encPub.value);
+    } else if (state.keyPair) {
+      keyPromise = Promise.resolve(state.keyPair.publicKey);
+    } else {
+      setMsg(els.encMsg, '公開鍵を貼り付けるか、先に「1. 鍵を生成」で鍵を作ってください。', 'err');
+      els.encBtn.disabled = false;
+      return;
+    }
+    keyPromise.then(function (key) {
+      var bits = key.algorithm.modulusLength;
+      var max = bits / 8 - 66;
+      els.encLimit.textContent = bits + ' ビットの鍵：暗号化できるのは最大 ' + max + ' バイト（UTF-8）まで。';
+      var bytes = encoder.encode(plain);
+      if (bytes.length > max) {
+        throw new RsaError('この鍵（' + bits + ' ビット）で暗号化できるのは最大 ' + max + ' バイトまでです（現在 ' + bytes.length + ' バイト）。RSA の上限は鍵長で決まるため、長い文は共通鍵暗号と組み合わせてください。');
+      }
+      return subtle.encrypt({ name: 'RSA-OAEP' }, key, bytes).then(function (cipher) {
+        var b64 = bytesToB64(cipher);
+        els.encOut.textContent = b64;
+        els.encOut.hidden = false;
+        els.encActions.hidden = false;
+        setMsg(els.encMsg, '暗号化しました（' + bytes.length + ' バイト → Base64 ' + b64.length + ' 文字）。この暗号文を「3. 秘密鍵で復号」に貼り付けてください。', 'ok');
+      });
+    }).catch(function (e) {
+      els.encOut.hidden = true;
+      els.encOut.textContent = '';
+      els.encActions.hidden = true;
+      setMsg(els.encMsg, e instanceof RsaError ? e.message : '暗号化に失敗しました。公開鍵と入力を確認してください。', 'err');
+    }).then(function () {
+      els.encBtn.disabled = false;
+    });
+  }
+
+  function decrypt() {
+    if (!subtle) {
+      setMsg(els.decMsg, webCryptoMessage(), 'err');
+      return;
+    }
+    setMsg(els.decMsg, '');
+    els.decBtn.disabled = true;
+    var norm = normalizeB64(els.decCt.value);
+    if (!norm) {
+      setMsg(els.decMsg, '暗号文が Base64 として正しくありません。改行や空白は無視できますが、ほかの文字が混ざっていないか確認してください。', 'err');
+      els.decBtn.disabled = false;
+      return;
+    }
+    var cipher;
+    try {
+      cipher = b64ToBytes(norm);
+    } catch (err) {
+      setMsg(els.decMsg, '暗号文を Base64 として読み取れませんでした。', 'err');
+      els.decBtn.disabled = false;
+      return;
+    }
+    if (!cipher.length) {
+      setMsg(els.decMsg, '暗号文が空です。', 'err');
+      els.decBtn.disabled = false;
+      return;
+    }
+    var usedSession = false;
+    var keyPromise;
+    if (els.decPriv.value.trim()) {
+      keyPromise = importPrivate(els.decPriv.value);
+    } else if (state.keyPair) {
+      keyPromise = Promise.resolve(state.keyPair.privateKey);
+      usedSession = true;
+    } else {
+      setMsg(els.decMsg, '秘密鍵を貼り付けるか、先に「1. 鍵を生成」で鍵を作ってください。', 'err');
+      els.decBtn.disabled = false;
+      return;
+    }
+    keyPromise.then(function (key) {
+      return subtle.decrypt({ name: 'RSA-OAEP' }, key, cipher).then(function (plainBuf) {
+        var text = decoder.decode(plainBuf);
+        els.decOut.textContent = text;
+        els.decOut.hidden = false;
+        els.decActions.hidden = false;
+        setMsg(els.decMsg, '復号しました（' + cipher.length + ' バイト → ' + plainBuf.byteLength + ' バイト）。' + (usedSession ? '生成した鍵（メモリ上）を使いました。' : ''), 'ok');
+      });
+    }).catch(function (e) {
+      els.decOut.hidden = true;
+      els.decOut.textContent = '';
+      els.decActions.hidden = true;
+      setMsg(els.decMsg, e instanceof RsaError ? e.message : '復号に失敗しました。秘密鍵が暗号化に使った公開鍵と対になっているか、暗号文が欠けていないかを確認してください。', 'err');
+    }).then(function () {
+      els.decBtn.disabled = false;
+    });
+  }
+
+  function getText(id) {
+    var el = $(id);
+    if (!el) return '';
+    return el.tagName === 'TEXTAREA' ? el.value : el.textContent;
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function downloadText(name, text, type) {
+    var blob = new Blob([text], { type: type || 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('button[data-copy]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var label = btn.getAttribute('data-label') || '内容';
+      var text = getText(btn.getAttribute('data-copy'));
+      if (!text) {
+        setMsg(els.copyMsg, label + 'がまだありません。', 'warn');
+        return;
+      }
+      copyText(text).then(function (ok) {
+        setMsg(els.copyMsg, ok ? label + 'をコピーしました。' : 'コピーできませんでした。欄を選択して手動でコピーしてください。', ok ? 'ok' : 'err');
+      });
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('button[data-dl]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var label = btn.getAttribute('data-label') || '内容';
+      var text = getText(btn.getAttribute('data-dl'));
+      if (!text) {
+        setMsg(els.copyMsg, label + 'がまだありません。', 'warn');
+        return;
+      }
+      downloadText(btn.getAttribute('data-name') || 'download.txt', text, 'text/plain;charset=utf-8');
+      setMsg(els.copyMsg, label + 'をダウンロードしました。', 'ok');
+    });
+  });
+
+  els.gen.addEventListener('click', generate);
+  els.reveal.addEventListener('change', syncReveal);
+  els.encBtn.addEventListener('click', encrypt);
+  els.decBtn.addEventListener('click', decrypt);
+
+  syncReveal();
+  updateMask();
+  if (!subtle) {
+    setMsg(els.genMsg, webCryptoMessage(), 'warn');
+  }
+})();
+</script>
+</body>
+</html>

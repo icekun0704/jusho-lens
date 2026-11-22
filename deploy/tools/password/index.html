@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>パスワード生成｜道具箱</title>
+<meta name="description" content="長さ8〜64文字・最大20件のパスワードを端末内で生成します。crypto.getRandomValues と棄却サンプリングで偏りなく作り、エントロピー（bits）と強度の目安を表示。結果の送信・保存はありません。">
+<link rel="canonical" href="https://icekun.net/password/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  fieldset.plain { border: 0; margin: 1.25rem 0 0; padding: 0; }
+  fieldset.plain legend { padding: 0 0 0.4rem; font-size: 0.75rem; color: var(--muted); }
+  fieldset.plain .row { gap: 0.5rem 1.5rem; }
+  .pw-list { margin: 1rem 0 0; padding: 0; list-style: none; }
+  .pw-list li {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.5rem 0.6rem 0.5rem 0.8rem;
+    background: var(--bg); border: 1px solid var(--rule); border-radius: 8px;
+  }
+  .pw-list li + li { margin-top: 0.4rem; }
+  .pw-list code { flex: 1; font-family: var(--mono); font-size: 0.875rem; word-break: break-all; }
+  .pw-list .btn { flex: none; height: 1.9rem; padding: 0 0.7rem; font-size: 0.75rem; }
+  .stat b.weak { color: var(--warn); }
+  .stat b.strong { color: var(--ok); }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>パスワード生成</h1>
+    <p class="lead">長さと文字種を選んで、端末内だけでパスワードを作ります。エントロピー（bits）と強度の目安もその場で確認できます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="grid-2">
+      <div class="field">
+        <label for="len"><span>長さ（8〜64文字）</span></label>
+        <input type="range" id="len" min="8" max="64" step="1" value="16">
+        <p class="hint" style="margin:0.4rem 0 0"><output id="lenOut" for="len">16</output> 文字</p>
+      </div>
+      <div class="field">
+        <label for="count"><span>生成する数（1〜20）</span></label>
+        <input type="number" id="count" min="1" max="20" step="1" value="5" inputmode="numeric">
+      </div>
+    </div>
+
+    <fieldset class="plain">
+      <legend>文字種</legend>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="cLower" checked> 小文字（a-z）</label>
+        <label class="check"><input type="checkbox" id="cUpper" checked> 大文字（A-Z）</label>
+        <label class="check"><input type="checkbox" id="cDigit" checked> 数字（0-9）</label>
+        <label class="check"><input type="checkbox" id="cSymbol" checked> 記号（!@#$…）</label>
+      </div>
+      <div class="row" style="margin-top:0.6rem">
+        <label class="check"><input type="checkbox" id="cNoConfuse"> 紛らわしい文字（0 O 1 l I |）を除く</label>
+      </div>
+      <p class="hint" style="margin:0.6rem 0 0">記号は !@#$%^&amp;*()-_=+[]{};:,.?/ を使います。引用符とバックスラッシュは含みません。選んだ文字種は最低1文字ずつ入ります。</p>
+    </fieldset>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn" type="button" id="btnGen">生成する</button>
+      <button class="btn secondary" type="button" id="btnCopyAll" disabled>すべてコピー</button>
+    </div>
+    <p class="warn" id="genWarn" hidden></p>
+    <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
+
+    <div aria-live="polite">
+      <div class="stats">
+        <div class="stat"><b id="stEntropy">—</b><span>エントロピー（bits）</span></div>
+        <div class="stat"><b id="stPool">—</b><span>使える文字の数</span></div>
+        <div class="stat"><b id="stGrade">—</b><span>強度の目安</span></div>
+      </div>
+      <p class="note" id="strengthNote">文字種を1つ以上選ぶと、エントロピーと強度の目安を表示します。</p>
+    </div>
+
+    <ol class="pw-list" id="pwList" aria-live="polite"></ol>
+    <p class="hint" id="listHint" hidden></p>
+    <p class="note">パスワードはこの端末内で生成し、送信も保存もしません。ページを閉じると結果は消えます。コピーした内容はクリップボードに残るため、取り扱いに注意してください。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">生成はブラウザ内で処理され、結果はサーバーに送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>長さのスライダーを8〜64文字に合わせます。現在の長さはスライダーの下に表示されます。</li>
+      <li>使う文字種を選びます。すべて外すと生成できません。「紛らわしい文字を除く」で 0 O 1 l I | を候補から外せます。</li>
+      <li>生成する数を1〜20で指定します。設定を変えると自動で作り直されます。「生成する」で新しく作り直すこともできます。</li>
+      <li>各行の「コピー」で1件ずつ、「すべてコピー」で改行区切りの全件をコピーします。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>パスワード生成について</h2>
+    <p>長さと文字種を選ぶと、その場でパスワードを作ります。生成はブラウザ内の乱数だけで完結し、作ったパスワードをサーバーへ送ったり保存したりはしません。</p>
+
+    <h3>偏りのない生成</h3>
+    <p>乱数は <code>crypto.getRandomValues</code> から取得し、範囲外の値を作り直す棄却サンプリングで文字を選んでいます。偏りのある <code>Math.random</code> は使いません。文字種ごとに最低1文字を入れたうえで、同じ乱数を使って全体をシャッフルするため、選んだ文字種が結果に含まれないことはありません。</p>
+
+    <h3>エントロピーと強度の目安</h3>
+    <p>表示しているエントロピーは「長さ × log2(使える文字の数)」で計算した bits です。60 bits未満を弱い、60以上100未満を普通、100以上を強いとしています。16文字・4種なら約103 bitsです。これは文字の組み合わせを総当たりするのに必要な手間の目安で、パスワードの使い回しや、サービス側からの漏えいには効きません。</p>
+
+    <h3>記号と紛らわしい文字</h3>
+    <p>記号は <code>!@#$%^&amp;*()-_=+[]{};:,.?/</code> を使います。引用符やバックスラッシュは、入力先によって扱いが変わりやすいため含めていません。「紛らわしい文字を除く」を選ぶと、0・O・1・l・I・| を候補から外します。文字の種類が減るぶん、同じ長さでもエントロピーは少し下がります。</p>
+
+    <h3>保管について</h3>
+    <p>生成したパスワードはページを閉じると消えます。コピーした内容はクリップボードに残り、ほかのアプリから読める可能性があります。重要なパスワードはパスワードマネージャに保存し、サービスごとに別のものを使ってください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var SETS = {
+    lower: 'abcdefghijklmnopqrstuvwxyz',
+    upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    digit: '0123456789',
+    symbol: '!@#$%^&*()-_=+[]{};:,.?/'
+  };
+  var CONFUSING = /[0O1lI|]/g;
+
+  var lenInput = document.getElementById('len');
+  var lenOut = document.getElementById('lenOut');
+  var countInput = document.getElementById('count');
+  var boxes = {
+    lower: document.getElementById('cLower'),
+    upper: document.getElementById('cUpper'),
+    digit: document.getElementById('cDigit'),
+    symbol: document.getElementById('cSymbol')
+  };
+  var noConfuse = document.getElementById('cNoConfuse');
+  var btnGen = document.getElementById('btnGen');
+  var btnCopyAll = document.getElementById('btnCopyAll');
+  var genWarn = document.getElementById('genWarn');
+  var copyMsg = document.getElementById('copyMsg');
+  var list = document.getElementById('pwList');
+  var listHint = document.getElementById('listHint');
+  var stEntropy = document.getElementById('stEntropy');
+  var stPool = document.getElementById('stPool');
+  var stGrade = document.getElementById('stGrade');
+  var strengthNote = document.getElementById('strengthNote');
+
+  var cryptoObj = window.crypto || window.msCrypto;
+  var cryptoOK = !!(cryptoObj && typeof cryptoObj.getRandomValues === 'function');
+
+  function randomInt(n) {
+    var limit = Math.floor(4294967296 / n) * n;
+    var buf = new Uint32Array(1);
+    for (;;) {
+      cryptoObj.getRandomValues(buf);
+      if (buf[0] < limit) return buf[0] % n;
+    }
+  }
+
+  function selectedNames() {
+    return Object.keys(boxes).filter(function (name) {
+      return boxes[name].checked;
+    });
+  }
+
+  function charsFor(name) {
+    var s = SETS[name];
+    return noConfuse.checked ? s.replace(CONFUSING, '') : s;
+  }
+
+  function readLen() {
+    var v = parseInt(lenInput.value, 10);
+    if (!isFinite(v)) v = 16;
+    return Math.min(64, Math.max(8, v));
+  }
+
+  function readCount() {
+    var v = parseInt(countInput.value, 10);
+    if (!isFinite(v)) v = 5;
+    return Math.min(20, Math.max(1, v));
+  }
+
+  function gradeOf(bits) {
+    if (bits < 60) return { label: '弱い', cls: 'weak' };
+    if (bits < 100) return { label: '普通', cls: '' };
+    return { label: '強い', cls: 'strong' };
+  }
+
+  function currentState() {
+    var names = selectedNames();
+    var pool = '';
+    names.forEach(function (name) {
+      pool += charsFor(name);
+    });
+    return { names: names, pool: pool, len: readLen() };
+  }
+
+  function refresh() {
+    var s = currentState();
+    lenOut.textContent = String(s.len);
+
+    var bits = s.pool.length ? s.len * Math.log2(s.pool.length) : 0;
+    var g = gradeOf(bits);
+
+    if (s.pool.length === 0) {
+      stEntropy.textContent = '—';
+      stPool.textContent = '—';
+      stGrade.textContent = '—';
+      stGrade.className = '';
+      strengthNote.className = 'note';
+      strengthNote.textContent = '文字種を1つ以上選ぶと、エントロピーと強度の目安を表示します。';
+    } else {
+      stEntropy.textContent = bits.toFixed(1);
+      stPool.textContent = String(s.pool.length);
+      stGrade.textContent = g.label;
+      stGrade.className = g.cls;
+      strengthNote.className = g.cls === 'weak' ? 'warn' : 'note';
+      strengthNote.textContent = 'いまの設定は約 ' + bits.toFixed(1) + ' bits（' + g.label +
+        '）。60 bits未満が弱い、60以上100未満が普通、100以上が強いという目安です。' +
+        '文字の組み合わせを総当たりする手間の目安で、使い回しや漏えいには効果がありません。';
+    }
+
+    btnGen.disabled = !cryptoOK || s.pool.length === 0;
+
+    if (!cryptoOK) {
+      genWarn.hidden = false;
+      genWarn.textContent = 'この環境では安全な乱数（crypto.getRandomValues）を利用できないため生成できません。別のブラウザでお試しください。';
+    } else if (s.pool.length === 0) {
+      genWarn.hidden = false;
+      genWarn.textContent = '文字種を1つ以上選んでください。';
+    } else {
+      genWarn.hidden = true;
+      genWarn.textContent = '';
+    }
+
+    return s;
+  }
+
+  function makePassword(len, pool, names) {
+    var chars = [];
+    names.forEach(function (name) {
+      var set = charsFor(name);
+      chars.push(set[randomInt(set.length)]);
+    });
+    while (chars.length < len) {
+      chars.push(pool[randomInt(pool.length)]);
+    }
+    for (var i = chars.length - 1; i > 0; i--) {
+      var j = randomInt(i + 1);
+      var tmp = chars[i];
+      chars[i] = chars[j];
+      chars[j] = tmp;
+    }
+    return chars.join('');
+  }
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function showMsg(text, cls) {
+    copyMsg.textContent = text;
+    copyMsg.className = cls;
+  }
+
+  function row(pw, index) {
+    var li = document.createElement('li');
+    var code = document.createElement('code');
+    code.textContent = pw;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn secondary';
+    btn.textContent = 'コピー';
+    btn.setAttribute('aria-label', 'パスワード' + (index + 1) + 'をコピー');
+    btn.addEventListener('click', function () {
+      copyText(pw).then(function (ok) {
+        if (ok) {
+          showMsg('パスワード' + (index + 1) + 'をコピーしました。', 'ok');
+        } else {
+          showMsg('コピーできませんでした。パスワードを選択してコピーしてください。', 'err');
+        }
+      });
+    });
+    li.appendChild(code);
+    li.appendChild(btn);
+    return li;
+  }
+
+  function regenerate() {
+    var s = refresh();
+    list.textContent = '';
+    copyMsg.textContent = '';
+
+    if (!cryptoOK || s.pool.length === 0) {
+      btnCopyAll.disabled = true;
+      listHint.hidden = false;
+      listHint.textContent = !cryptoOK ?
+        '安全な乱数が使えないため、パスワードは生成できません。' :
+        '文字種を1つ以上選ぶと生成できます。';
+      return;
+    }
+
+    var n = readCount();
+    if (String(n) !== countInput.value) countInput.value = String(n);
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < n; i++) {
+      frag.appendChild(row(makePassword(s.len, s.pool, s.names), i));
+    }
+    list.appendChild(frag);
+    btnCopyAll.disabled = false;
+    listHint.hidden = true;
+    listHint.textContent = '';
+  }
+
+  var timer = 0;
+  function scheduleRegenerate() {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(regenerate, 80);
+  }
+
+  lenInput.addEventListener('input', function () {
+    lenOut.textContent = String(readLen());
+    refresh();
+    scheduleRegenerate();
+  });
+
+  countInput.addEventListener('change', function () {
+    countInput.value = String(readCount());
+    regenerate();
+  });
+
+  Object.keys(boxes).forEach(function (name) {
+    boxes[name].addEventListener('change', function () {
+      refresh();
+      scheduleRegenerate();
+    });
+  });
+
+  noConfuse.addEventListener('change', function () {
+    refresh();
+    scheduleRegenerate();
+  });
+
+  btnGen.addEventListener('click', regenerate);
+
+  btnCopyAll.addEventListener('click', function () {
+    var codes = list.querySelectorAll('code');
+    if (codes.length === 0) return;
+    var lines = Array.prototype.map.call(codes, function (code) {
+      return code.textContent;
+    });
+    copyText(lines.join('\n')).then(function (ok) {
+      if (ok) {
+        showMsg(codes.length + '件をコピーしました。', 'ok');
+      } else {
+        showMsg('コピーできませんでした。パスワードを選択してコピーしてください。', 'err');
+      }
+    });
+  });
+
+  regenerate();
+})();
+</script>
+</body>
+</html>

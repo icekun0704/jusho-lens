@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { AddressTool } from '@/components/address-tool'
-import { ArrowRightLinearIcon, ShieldCheckLinearIcon } from '@/components/icons'
+import { ArrowRightLinearIcon } from '@/components/icons'
 import { Separator } from '@/components/ui/separator'
 import { AdSlot } from '@/components/ad-slot'
 
@@ -73,7 +73,8 @@ export function HomePage() {
     <div className="mx-auto max-w-6xl px-5">
       <section className="grid gap-10 py-10 lg:grid-cols-2 lg:items-start lg:py-14">
         <div className="lg:pt-1">
-          <h1 className="font-serif text-[1.9rem] leading-[1.24] tracking-tight text-foreground sm:text-[2.3rem]">
+          <div className="mb-6 h-px w-12 bg-primary" aria-hidden="true" />
+          <h1 className="font-serif text-[1.95rem] leading-[1.22] tracking-tight text-foreground sm:text-[2.5rem]">
             その英語住所、
             <br />
             日本の住所に戻せますか。
@@ -82,20 +83,20 @@ export function HomePage() {
             Amazonの自動翻訳、Wiseの登録住所、ビザの申請書。英語の住所を貼り付けると、元の日本の住所と一致度を返します。
           </p>
 
-          <ul className="mt-7 space-y-2.5 text-sm text-foreground/85">
-            <li className="flex items-start gap-2">
-              <ShieldCheckLinearIcon className="mt-0.5 size-4 shrink-0 text-(--primary-text)" aria-hidden="true" />
-              入力した住所はブラウザの外に出ません
-            </li>
-            <li className="flex items-start gap-2">
-              <ShieldCheckLinearIcon className="mt-0.5 size-4 shrink-0 text-(--primary-text)" aria-hidden="true" />
-              日本郵便の公式データから作った 119,051 町域の辞書
-            </li>
-            <li className="flex items-start gap-2">
-              <ShieldCheckLinearIcon className="mt-0.5 size-4 shrink-0 text-(--primary-text)" aria-hidden="true" />
-              登録不要・すべて無料
-            </li>
-          </ul>
+          <dl className="mt-8 grid grid-cols-1 gap-x-6 gap-y-4 border-t border-border pt-5 sm:grid-cols-3">
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">送信</dt>
+              <dd className="mt-1 text-sm leading-relaxed text-foreground/85">入力はブラウザの外に出ません</dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">辞書</dt>
+              <dd className="mt-1 text-sm leading-relaxed text-foreground/85">119,051 町域（日本郵便）</dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">料金</dt>
+              <dd className="mt-1 text-sm leading-relaxed text-foreground/85">すべて無料</dd>
+            </div>
+          </dl>
         </div>
 
         <AddressTool />

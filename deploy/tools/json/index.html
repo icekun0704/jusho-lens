@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JSON整形｜道具箱</title>
+<meta name="description" content="JSONをブラウザ内で整形・圧縮・検証するツール。2スペースの整形、キーのソート、構文エラーの行・列と該当箇所の表示、コピーとダウンロードに対応。入力はサーバーに送信されません。">
+<link rel="canonical" href="https://icekun.net/json/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>JSON整形</h1>
+    <p class="lead">JSON を2スペースで整形、または1行に圧縮します。構文エラーは行・列と該当箇所を表示します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <label class="field">
+      <span>JSON</span>
+      <textarea id="json-in" rows="12" spellcheck="false" autocomplete="off" placeholder='{"name":"道具箱","tools":["rsa","json"]}'></textarea>
+    </label>
+
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn" type="button" id="json-pretty">整形（2スペース）</button>
+      <button class="btn secondary" type="button" id="json-min">圧縮</button>
+      <button class="btn secondary" type="button" id="json-validate">検証</button>
+      <label class="check"><input type="checkbox" id="json-sort"> キーをソート</label>
+    </div>
+
+    <div class="row" style="margin-top:0.5rem">
+      <button class="btn ghost" type="button" id="json-sample">サンプル</button>
+      <button class="btn ghost" type="button" id="json-clear">クリア</button>
+      <span class="hint" id="json-count" style="margin-left:auto">0 文字 / 0 バイト</span>
+    </div>
+
+    <p class="note" id="json-msg" role="status" aria-live="polite" hidden></p>
+    <div class="result err" id="json-err" role="alert" hidden></div>
+    <div class="result" id="json-out" aria-live="polite" style="max-height:32rem;overflow:auto" hidden></div>
+    <div id="json-actions" hidden>
+      <div class="row" style="margin-top:0.5rem">
+        <button class="btn secondary" type="button" id="json-copy">コピー</button>
+        <button class="btn secondary" type="button" id="json-dl">ダウンロード（.json）</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>入力欄に JSON を貼り付けるか、「サンプル」を押します。</li>
+      <li>「整形（2スペース）」で読みやすく、「圧縮」で空白を除いた1行にします。「検証」は構文が正しいかだけを確認します。</li>
+      <li>「キーをソート」を入れると、オブジェクトのキーを辞書順に並べ替えます。配列の要素の順序は変わりません。</li>
+      <li>結果は「コピー」でクリップボードへ、「ダウンロード（.json）」でファイルに保存できます。</li>
+      <li>不正な JSON のときは、行・列と該当箇所の前後を表示します。「クリア」で入力と結果を空にできます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>JSON整形について</h2>
+    <p>JSON（JavaScript Object Notation）は RFC 8259 で定義されたテキスト形式で、Web API の応答や設定ファイルで広く使われます。このツールは入力を <code>JSON.parse</code> で読み、2スペースのインデントで整形するか、空白を除いて1行に圧縮します。整形は差分の確認や目視での点検に、圧縮はファイルサイズを抑えたいときに使います。処理はすべてブラウザ内で完結し、入力は送信されません。</p>
+    <h2>構文エラーの表示</h2>
+    <p>不正な JSON を渡すと、行・列と該当箇所の前後を表示します。ブラウザの <code>JSON.parse</code> が返すエラーメッセージは実装ごとに異なるため、このツールは独自の簡易スキャナで最初のエラー位置を推定しています。完全な構文解析ではないため、表示される位置は目安としてください。全角の引用符（<code>“ ”</code>）や、見えない BOM が先頭に付いたファイルも、エラーとして検出します。</p>
+    <h2>知っておきたい制限</h2>
+    <ul>
+      <li>数値は JavaScript の倍精度浮動小数として扱うため、16 桁を超える整数は精度が落ちる場合があります（<code>9007199254740993</code> など）。金額や ID は文字列で扱うのが安全です。</li>
+      <li>同じキーが重複した場合、後の値だけが残ります。</li>
+      <li>コメント（<code>//</code>）と末尾のカンマは JSON の仕様にないため、エラーになります。</li>
+      <li>入力の上限は 2 MB です。超えた場合は処理を中止するので、ファイルを分けてください。</li>
+    </ul>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var LIMIT = 2 * 1024 * 1024;
+  var encoder = new TextEncoder();
+  var SAMPLE = '{"site":"道具箱","tools":[{"slug":"rsa","name":"RSA暗号化・復号"},{"slug":"json","name":"JSON整形"}],"meta":{"lang":"ja","ok":true,"count":2,"note":null}}';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var els = {
+    input: $('json-in'),
+    pretty: $('json-pretty'),
+    min: $('json-min'),
+    validate: $('json-validate'),
+    sort: $('json-sort'),
+    sample: $('json-sample'),
+    clear: $('json-clear'),
+    count: $('json-count'),
+    msg: $('json-msg'),
+    err: $('json-err'),
+    out: $('json-out'),
+    actions: $('json-actions'),
+    copy: $('json-copy'),
+    dl: $('json-dl')
+  };
+
+  var outText = '';
+  var outName = 'data.json';
+  var countTimer = 0;
+
+  function setMsg(text, kind) {
+    els.msg.textContent = text || '';
+    els.msg.className = 'note' + (kind ? ' ' + kind : '');
+    els.msg.hidden = !text;
+  }
+
+  function clearErr() {
+    els.err.hidden = true;
+    els.err.textContent = '';
+  }
+
+  function showErr(text) {
+    els.err.textContent = text;
+    els.err.hidden = false;
+  }
+
+  function hideOut() {
+    outText = '';
+    els.out.hidden = true;
+    els.out.textContent = '';
+    els.actions.hidden = true;
+  }
+
+  function setOut(text, name) {
+    outText = text;
+    outName = name;
+    els.out.textContent = text;
+    els.out.hidden = false;
+    els.actions.hidden = false;
+  }
+
+  function updateCount() {
+    var value = els.input.value;
+    var chars = value.length;
+    var bytes = encoder.encode(value).length;
+    var text = chars.toLocaleString('ja-JP') + ' 文字 / ' + bytes.toLocaleString('ja-JP') + ' バイト（' + (bytes / 1024).toFixed(1) + ' KB）';
+    if (bytes > LIMIT) {
+      text += ' — 上限の 2 MB を超えています';
+      els.count.style.color = 'var(--warn)';
+    } else {
+      els.count.style.color = '';
+    }
+    els.count.textContent = text;
+  }
+
+  function scheduleCount() {
+    clearTimeout(countTimer);
+    countTimer = setTimeout(updateCount, 120);
+  }
+
+  function sortReplacer(key, value) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      var sorted = {};
+      Object.keys(value).sort().forEach(function (k) {
+        sorted[k] = value[k];
+      });
+      return sorted;
+    }
+    return value;
+  }
+
+  function validateMessage(data) {
+    if (data === null) return '有効な JSON です（null）。';
+    if (Array.isArray(data)) return '有効な JSON です（配列・要素 ' + data.length + ' 個）。';
+    var t = typeof data;
+    if (t === 'object') return '有効な JSON です（オブジェクト・キー ' + Object.keys(data).length + ' 個）。';
+    if (t === 'string') return '有効な JSON です（文字列）。';
+    if (t === 'number') return '有効な JSON です（数値）。';
+    if (t === 'boolean') return '有効な JSON です（真偽値）。';
+    return '有効な JSON です。';
+  }
+
+  function locateJsonError(src) {
+    var i = 0;
+    var n = src.length;
+
+    function fail(pos, msg) {
+      throw { jsonPos: pos, jsonMsg: msg };
+    }
+    function ws() {
+      while (i < n) {
+        var c = src.charCodeAt(i);
+        if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) i++;
+        else break;
+      }
+    }
+    function isDigit(c) {
+      return c >= 0x30 && c <= 0x39;
+    }
+    function parseString() {
+      var start = i;
+      i++;
+      while (i < n) {
+        var c = src[i];
+        if (c === '"') { i++; return; }
+        if (c === '\\') {
+          i++;
+          if (i >= n) fail(i, '文字列が途中で終わっています。');
+          var e = src[i];
+          if (e === '"' || e === '\\' || e === '/' || e === 'b' || e === 'f' || e === 'n' || e === 'r' || e === 't') {
+            i++;
+            continue;
+          }
+          if (e === 'u') {
+            var hex = src.slice(i + 1, i + 5);
+            if (!/^[0-9a-fA-F]{4}$/.test(hex)) fail(i - 1, '\\u の後ろには 4 桁の 16 進数が必要です。');
+            i += 5;
+            continue;
+          }
+          fail(i, '「\\' + e + '」は使えないエスケープです。');
+        }
+        if (src.charCodeAt(i) < 0x20) fail(i, '文字列の中に改行や制御文字があります（\\n などでエスケープしてください）。');
+        i++;
+      }
+      fail(start, '文字列の閉じ引用符（"）がありません。');
+    }
+    function parseNumber() {
+      if (src[i] === '-') i++;
+      if (src[i] === '0') {
+        i++;
+      } else if (isDigit(src.charCodeAt(i))) {
+        while (isDigit(src.charCodeAt(i))) i++;
+      } else {
+        fail(i, '数値の形式が正しくありません。');
+      }
+      if (src[i] === '.') {
+        i++;
+        if (!isDigit(src.charCodeAt(i))) fail(i, '小数点の後ろに数字がありません。');
+        while (isDigit(src.charCodeAt(i))) i++;
+      }
+      if (src[i] === 'e' || src[i] === 'E') {
+        i++;
+        if (src[i] === '+' || src[i] === '-') i++;
+        if (!isDigit(src.charCodeAt(i))) fail(i, '指数の後ろに数字がありません。');
+        while (isDigit(src.charCodeAt(i))) i++;
+      }
+    }
+    function parseArray() {
+      i++;
+      ws();
+      if (src[i] === ']') { i++; return; }
+      while (true) {
+        parseValue();
+        ws();
+        if (src[i] === ',') {
+          i++;
+          ws();
+          if (src[i] === ']') fail(i, '配列の末尾にカンマがあります。JSON では末尾のカンマを使えません。');
+          continue;
+        }
+        if (src[i] === ']') { i++; return; }
+        if (i >= n) fail(i, '配列の閉じ括弧（]）がありません。');
+        fail(i, '配列の要素と要素の間にはカンマが必要です。');
+      }
+    }
+    function parseObject() {
+      i++;
+      ws();
+      if (src[i] === '}') { i++; return; }
+      while (true) {
+        ws();
+        if (i >= n) fail(i, 'オブジェクトの閉じ括弧（}）がありません。');
+        if (src[i] !== '"') fail(i, 'キーは引用符（"）で囲む必要があります。');
+        parseString();
+        ws();
+        if (i >= n) fail(i, 'オブジェクトの閉じ括弧（}）がありません。');
+        if (src[i] !== ':') fail(i, 'キーの後ろにはコロン（:）が必要です。');
+        i++;
+        parseValue();
+        ws();
+        if (src[i] === ',') {
+          i++;
+          ws();
+          if (src[i] === '}') fail(i, 'オブジェクトの末尾にカンマがあります。JSON では末尾のカンマを使えません。');
+          continue;
+        }
+        if (src[i] === '}') { i++; return; }
+        if (i >= n) fail(i, 'オブジェクトの閉じ括弧（}）がありません。');
+        fail(i, 'プロパティとプロパティの間にはカンマが必要です。');
+      }
+    }
+    function parseValue() {
+      ws();
+      if (i >= n) fail(i, '値が途中で終わっています。');
+      var c = src[i];
+      if (c === '{') { parseObject(); return; }
+      if (c === '[') { parseArray(); return; }
+      if (c === '"') { parseString(); return; }
+      if (c === '-' || isDigit(src.charCodeAt(i))) { parseNumber(); return; }
+      if (src.startsWith('true', i)) { i += 4; return; }
+      if (src.startsWith('false', i)) { i += 5; return; }
+      if (src.startsWith('null', i)) { i += 4; return; }
+      fail(i, '「' + c + '」は値として使えません。');
+    }
+
+    try {
+      parseValue();
+      ws();
+      if (i < n) fail(i, 'JSON の値の後ろに余分な文字があります。');
+      return null;
+    } catch (e) {
+      if (e && typeof e.jsonPos === 'number') return { pos: e.jsonPos, msg: e.jsonMsg };
+      return null;
+    }
+  }
+
+  function formatError(src, pos, message) {
+    var before = src.slice(0, pos);
+    var line = before.split('\n').length;
+    var lineStart = before.lastIndexOf('\n') + 1;
+    var col = pos - lineStart + 1;
+    var lineEnd = src.indexOf('\n', pos);
+    if (lineEnd === -1) lineEnd = src.length;
+    var rawLine = src.slice(lineStart, lineEnd).replace(/\r$/, '');
+    var caretAt = pos - lineStart;
+    var MAX = 72;
+    var start = 0;
+    var end = rawLine.length;
+    if (rawLine.length > MAX) {
+      start = Math.max(0, caretAt - 28);
+      end = Math.min(rawLine.length, start + MAX);
+      if (end - start < MAX) start = Math.max(0, end - MAX);
+    }
+    var snippet = rawLine.slice(start, end);
+    var caret = caretAt - start;
+    var expanded = 0;
+    for (var k = 0; k < caret && k < snippet.length; k++) {
+      expanded += snippet[k] === '\t' ? 4 : 1;
+    }
+    snippet = snippet.replace(/\t/g, '    ');
+    caret = expanded;
+    if (start > 0) {
+      snippet = '…' + snippet;
+      caret += 1;
+    }
+    if (end < rawLine.length) snippet += '…';
+    var caretLine = new Array(Math.max(0, caret) + 1).join(' ') + '^';
+    return '構文エラー（' + line + ' 行 ' + col + ' 列目）: ' + message + '\n' + snippet + '\n' + caretLine;
+  }
+
+  function overLimit() {
+    var bytes = encoder.encode(els.input.value).length;
+    if (bytes > LIMIT) {
+      setMsg('入力が上限の 2 MB を超えています（現在 ' + (bytes / 1048576).toFixed(2) + ' MB）。処理を中止しました。ファイルを分けて処理してください。', 'warn');
+      clearErr();
+      return true;
+    }
+    return false;
+  }
+
+  function process(mode) {
+    clearErr();
+    var text = els.input.value;
+    if (!text.trim()) {
+      setMsg('入力が空です。JSON を貼り付けるか、「サンプル」を押してください。', 'warn');
+      hideOut();
+      return;
+    }
+    if (overLimit()) {
+      hideOut();
+      return;
+    }
+    var data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      hideOut();
+      setMsg('JSON として読み取れませんでした。', 'err');
+      var found = locateJsonError(text);
+      if (found) {
+        showErr(formatError(text, found.pos, found.msg));
+      } else {
+        showErr('構文エラー: ' + (e && e.message ? e.message : '不明なエラー'));
+      }
+      return;
+    }
+
+    if (mode === 'validate') {
+      hideOut();
+      setMsg(validateMessage(data), 'ok');
+      return;
+    }
+
+    var replacer = els.sort.checked ? sortReplacer : undefined;
+    var result;
+    try {
+      result = mode === 'pretty'
+        ? JSON.stringify(data, replacer, 2)
+        : JSON.stringify(data, replacer);
+    } catch (e2) {
+      setMsg('出力を作れませんでした。' + (e2 && e2.message ? e2.message : ''), 'err');
+      hideOut();
+      return;
+    }
+    if (typeof result !== 'string') {
+      setMsg('この JSON はテキストとして出力できません。', 'err');
+      hideOut();
+      return;
+    }
+    setOut(result, mode === 'pretty' ? 'formatted.json' : 'minified.json');
+    setMsg(
+      mode === 'pretty'
+        ? '整形しました（' + text.length.toLocaleString('ja-JP') + ' 文字 → ' + result.length.toLocaleString('ja-JP') + ' 文字）。'
+        : '圧縮しました（' + text.length.toLocaleString('ja-JP') + ' 文字 → ' + result.length.toLocaleString('ja-JP') + ' 文字）。',
+      'ok'
+    );
+  }
+
+  function insertSample() {
+    try {
+      els.input.value = JSON.stringify(JSON.parse(SAMPLE), null, 2);
+    } catch (e) {
+      els.input.value = SAMPLE;
+    }
+    hideOut();
+    clearErr();
+    setMsg('サンプルを入れました。「整形（2スペース）」か「圧縮」を押して試せます。', '');
+    updateCount();
+    els.input.focus();
+  }
+
+  function clearAll() {
+    els.input.value = '';
+    hideOut();
+    clearErr();
+    setMsg('');
+    updateCount();
+    els.input.focus();
+  }
+
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallbackCopy(text); });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  els.input.addEventListener('input', function () {
+    scheduleCount();
+    clearErr();
+    hideOut();
+    setMsg('');
+  });
+
+  els.pretty.addEventListener('click', function () { process('pretty'); });
+  els.min.addEventListener('click', function () { process('min'); });
+  els.validate.addEventListener('click', function () { process('validate'); });
+  els.sample.addEventListener('click', insertSample);
+  els.clear.addEventListener('click', clearAll);
+
+  els.copy.addEventListener('click', function () {
+    if (!outText) {
+      setMsg('コピーする出力がありません。先に整形か圧縮を実行してください。', 'warn');
+      return;
+    }
+    copyText(outText).then(function (ok) {
+      if (ok) {
+        setMsg('出力をコピーしました。', 'ok');
+      } else {
+        setMsg('コピーできませんでした。結果欄を選択して手動でコピーしてください。', 'err');
+      }
+    });
+  });
+
+  els.dl.addEventListener('click', function () {
+    if (!outText) {
+      setMsg('ダウンロードする出力がありません。先に整形か圧縮を実行してください。', 'warn');
+      return;
+    }
+    var blob = new Blob([outText], { type: 'application/json;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = outName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    setMsg(outName + ' をダウンロードしました。', 'ok');
+  });
+
+  updateCount();
+})();
+</script>
+</body>
+</html>

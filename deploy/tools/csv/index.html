@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV⇔JSON変換｜道具箱</title>
+<meta name="description" content="CSVとJSONを双方向に変換。ヘッダー行の有無、カンマ・タブ区切り、引用符やセル内改行に対応し、JSONは配列・オブジェクト・入れ子も扱います。サンプル・コピー・ダウンロード付き。2MBまで、入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/csv/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  fieldset.plain { border: 0; margin: 0 0 0.25rem; padding: 0; }
+  fieldset.plain legend { padding: 0 0 0.4rem; font-size: 0.75rem; color: var(--muted); }
+  fieldset.plain .row { gap: 0.5rem 1.5rem; }
+  [hidden] { display: none !important; }
+  #headerWrap { align-self: end; min-height: 2.35rem; }
+  #out[readonly] { background: #f4efe4; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>CSV⇔JSON変換</h1>
+    <p class="lead">CSVをJSONに、JSONをCSVに変換します。引用符で囲んだカンマ・改行・引用符を含むセルも、CSVの規則に沿って正しく扱います。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <fieldset class="plain">
+      <legend>変換の向き</legend>
+      <div class="row">
+        <label class="check"><input type="radio" name="mode" value="c2j" checked> CSV → JSON</label>
+        <label class="check"><input type="radio" name="mode" value="j2c"> JSON → CSV</label>
+      </div>
+    </fieldset>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <label class="field" for="delim">
+        <span>区切り文字</span>
+        <select id="delim">
+          <option value="," selected>カンマ（,）</option>
+          <option value="tab">タブ</option>
+        </select>
+      </label>
+      <label class="check" id="headerWrap">
+        <input type="checkbox" id="hasHeader" checked> 1行目をヘッダー行として使う
+      </label>
+    </div>
+    <p class="hint" id="optHint" style="margin:0.5rem 0 0"></p>
+
+    <label class="field" for="src" style="margin-top:1.25rem">
+      <span id="srcLabel">CSV</span>
+      <textarea id="src" rows="10" spellcheck="false"></textarea>
+    </label>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn" type="button" id="btnConvert">変換する</button>
+      <button class="btn secondary" type="button" id="btnSample">サンプル</button>
+      <button class="btn secondary" type="button" id="btnCopy">結果をコピー</button>
+      <button class="btn secondary" type="button" id="btnDownload">ダウンロード</button>
+      <button class="btn ghost" type="button" id="btnClear">クリア</button>
+    </div>
+    <p class="hint" style="margin:0.6rem 0 0">入力は2MBまで。UTF-8として読み込みます。行数・列数は変換結果の数です（CSV→JSONではヘッダー行を除く）。</p>
+    <p class="err" id="errMsg" role="alert"></p>
+    <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
+    <p class="sr-only" id="live" role="status" aria-live="polite"></p>
+
+    <label class="field" for="out" style="margin-top:1rem">
+      <span id="outLabel">JSON</span>
+      <textarea id="out" rows="12" readonly spellcheck="false"></textarea>
+    </label>
+
+    <div class="stats">
+      <div class="stat"><b id="stRows">0</b><span>行数</span></div>
+      <div class="stat"><b id="stCols">0</b><span>列数</span></div>
+      <div class="stat"><b id="stIn">0 B</b><span>入力サイズ</span></div>
+      <div class="stat"><b id="stOut">0 B</b><span>出力サイズ</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「変換の向き」で CSV → JSON か JSON → CSV を選びます。選ぶと見本のデータが切り替わります。</li>
+      <li>CSV → JSON では「区切り文字」を選び、必要なら「1行目をヘッダー行として使う」をオンにします。オフの場合は各行が配列になります。</li>
+      <li>上の欄にデータを貼り付けるか、「サンプル」で見本を入れます。入力は変換のたびに自動で反映され、「変換する」または Ctrl+Enter（Macは ⌘+Enter）でも実行できます。</li>
+      <li>下の欄に変換結果が出ます。「結果をコピー」でクリップボードへ、「ダウンロード」でファイルに保存します。CSVはExcel向けにUTF-8（BOM付き）・CRLFで保存します。</li>
+      <li>エラーが出たときは、引用符の閉じ忘れやJSONの形を確認してください。2MBを超える入力は分割して変換します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>CSV⇔JSON変換について</h2>
+    <p>CSVは表をカンマで区切って並べたテキスト、JSONは配列やオブジェクトを構造として表すテキストです。この道具は2つの形式をブラウザ内で相互に変換します。入力した内容は送信されず、ページを閉じれば残りません。</p>
+
+    <h3>CSVの書式</h3>
+    <p>CSVの一般的な仕様はRFC 4180（2005年公開）にまとめられています。セルに区切り文字・引用符・改行を含めるときは、セル全体をダブルクォートで囲みます。セルの中にダブルクォートを入れたいときは、二重に書いてエスケープします（<code>"特売"</code> は <code>"メモ: ""特売"" です"</code>）。行の区切りはCRLFまたはLFで、この道具はどちらも読み分けます。</p>
+    <p>Excelが保存するCSVはShift_JISのことがあり、UTF-8として読むと文字化けします。その場合はExcel側で「CSV UTF-8」形式で保存し直してください。この道具が書き出すCSVはUTF-8で、Excelが文字コードを判別できるようBOMを付けています。</p>
+
+    <h3>JSONとの違い</h3>
+    <p>CSVのセルはすべて文字列として扱われ、数値・真偽値・nullの区別がありません。CSV → JSONでは値を文字列のまま出力するため、先頭が0の郵便番号や電話番号、桁の多いIDが壊れません。数値として使いたい場合は、変換後に受け取る側で型を変換してください。</p>
+    <p>JSON → CSVでは、オブジェクトの配列はキーをヘッダー行にして出力し、配列の配列はそのまま出力します。値がオブジェクトや配列に入れ子になっている場合は、その部分をJSON文字列にして1つのセルに収めます。オブジェクト・配列・単一の値が混在した配列は、形をそろえるようエラーにしています。</p>
+
+    <h3>変換のルールと制限</h3>
+    <p>CSV → JSONでヘッダーを使うとき、空の見出しは <code>column1</code> のような名前になり、重複する見出しには <code>_2</code> などの連番を付けます。データ行がヘッダーより多い場合は、余った列に <code>column5</code> のような名前を追加します。空行は読み飛ばします。</p>
+    <p>入力の上限は2MBです。それを超えると変換せずにエラーを表示します。行数・列数そのものには固定の上限を設けていませんが、ブラウザのメモリの範囲で動作します。大量のデータは分割して変換してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var src = $('src');
+  var out = $('out');
+  var delimEl = $('delim');
+  var hasHeaderEl = $('hasHeader');
+  var headerWrap = $('headerWrap');
+  var srcLabel = $('srcLabel');
+  var outLabel = $('outLabel');
+  var optHint = $('optHint');
+  var errEl = $('errMsg');
+  var copyMsg = $('copyMsg');
+  var live = $('live');
+  var modeEls = document.querySelectorAll('input[name="mode"]');
+  var btnCopy = $('btnCopy');
+  var btnDownload = $('btnDownload');
+  var stats = {
+    rows: $('stRows'),
+    cols: $('stCols'),
+    inSize: $('stIn'),
+    outSize: $('stOut')
+  };
+
+  var nf = new Intl.NumberFormat('ja-JP');
+  var MAX_BYTES = 2 * 1024 * 1024;
+  var timer = 0;
+  var lastOutput = '';
+  var lastMode = 'c2j';
+
+  var CSV_SAMPLE = [
+    '商品,数量,単価,備考',
+    'りんご,3,150,"青森産, 訳あり"',
+    'みかん,10,80,',
+    '"バナナ",2,120,"メモ: ""特売"" です"',
+    '"牛乳",1,210,"2行目の',
+    'メモ"'
+  ].join('\n');
+
+  var JSON_SAMPLE = JSON.stringify([
+    { '商品': 'りんご', '数量': '3', '単価': '150', '備考': '青森産, 訳あり' },
+    { '商品': 'みかん', '数量': '10', '単価': '80', '備考': '' },
+    { '商品': 'バナナ', '数量': '2', '単価': '120', '備考': 'メモ: "特売" です' },
+    { '商品': '牛乳', '数量': '1', '単価': '210', '備考': '2行目の\nメモ' }
+  ], null, 2);
+
+  function getMode() {
+    for (var i = 0; i < modeEls.length; i++) {
+      if (modeEls[i].checked) return modeEls[i].value;
+    }
+    return 'c2j';
+  }
+
+  function delimChar() {
+    return delimEl.value === 'tab' ? '\t' : ',';
+  }
+
+  function byteSize(s) {
+    try {
+      return new Blob([s]).size;
+    } catch (e) {
+      return s.length;
+    }
+  }
+
+  function fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+    return (b / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function parseCSV(text, delim) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+    var rows = [];
+    var row = [];
+    var field = '';
+    var inQuotes = false;
+    var quoteStartLine = 1;
+    var line = 1;
+    var i = 0;
+
+    while (i < text.length) {
+      var c = text.charAt(i);
+
+      if (inQuotes) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') {
+            field += '"';
+            i += 2;
+            continue;
+          }
+          inQuotes = false;
+          i++;
+          var n = text.charAt(i);
+          if (n !== '' && n !== delim && n !== '\r' && n !== '\n') {
+            throw new Error(line + '行目: 引用符を閉じた直後に、区切り文字でも改行でもない文字があります。セル全体を1組の引用符で囲んでください。');
+          }
+          continue;
+        }
+        if (c === '\n') line++;
+        field += c;
+        i++;
+        continue;
+      }
+
+      if (c === '"' && field === '') {
+        inQuotes = true;
+        quoteStartLine = line;
+        i++;
+        continue;
+      }
+      if (c === delim) {
+        row.push(field);
+        field = '';
+        i++;
+        continue;
+      }
+      if (c === '\r') {
+        if (text.charAt(i + 1) === '\n') i++;
+        row.push(field);
+        field = '';
+        rows.push(row);
+        row = [];
+        line++;
+        i++;
+        continue;
+      }
+      if (c === '\n') {
+        row.push(field);
+        field = '';
+        rows.push(row);
+        row = [];
+        line++;
+        i++;
+        continue;
+      }
+      field += c;
+      i++;
+    }
+
+    if (inQuotes) {
+      throw new Error(quoteStartLine + '行目: 引用符（"）が閉じられていません。');
+    }
+
+    row.push(field);
+    rows.push(row);
+
+    if (rows.length > 0) {
+      var last = rows[rows.length - 1];
+      if (last.length === 1 && last[0] === '') rows.pop();
+    }
+
+    return rows.filter(function (r) {
+      return !(r.length === 1 && r[0] === '');
+    });
+  }
+
+  function csvToJSON(text, delim, hasHeader) {
+    var rows = parseCSV(text, delim);
+    if (rows.length === 0) {
+      throw new Error('CSVにデータがありません。');
+    }
+
+    var maxCols = 0;
+    rows.forEach(function (r) {
+      if (r.length > maxCols) maxCols = r.length;
+    });
+
+    if (!hasHeader) {
+      return { value: rows, rows: rows.length, cols: maxCols };
+    }
+
+    var seen = Object.create(null);
+    var header = rows[0].map(function (h, i) {
+      var base = String(h).trim();
+      if (base === '') base = 'column' + (i + 1);
+      var name = base;
+      var n = 1;
+      while (Object.prototype.hasOwnProperty.call(seen, name)) {
+        n += 1;
+        name = base + '_' + n;
+      }
+      seen[name] = 1;
+      return name;
+    });
+
+    for (var c = header.length; c < maxCols; c++) {
+      var extBase = 'column' + (c + 1);
+      var ext = extBase;
+      var en = 1;
+      while (Object.prototype.hasOwnProperty.call(seen, ext)) {
+        en += 1;
+        ext = extBase + '_' + en;
+      }
+      seen[ext] = 1;
+      header.push(ext);
+    }
+
+    var data = rows.slice(1).map(function (r) {
+      var obj = Object.create(null);
+      for (var j = 0; j < header.length; j++) {
+        obj[header[j]] = r[j] === undefined ? '' : r[j];
+      }
+      return obj;
+    });
+
+    return { value: data, rows: data.length, cols: header.length };
+  }
+
+  function cellToText(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint') return String(v);
+    return JSON.stringify(v);
+  }
+
+  function cellToCSV(s, delim) {
+    var needQuote = s.indexOf('"') >= 0 ||
+      s.indexOf(delim) >= 0 ||
+      s.indexOf('\n') >= 0 ||
+      s.indexOf('\r') >= 0 ||
+      /^\s|\s$/.test(s);
+    if (needQuote) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function rowsToCSV(rows, delim) {
+    return rows.map(function (r) {
+      return r.map(function (c) {
+        return cellToCSV(cellToText(c), delim);
+      }).join(delim);
+    }).join('\r\n');
+  }
+
+  function jsonToCSV(text, delim) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+    var data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      throw new Error('JSONを読み取れません。' + (e && e.message ? ' ' + e.message : ''));
+    }
+
+    if (data === null || typeof data !== 'object') {
+      throw new Error('JSONの配列、またはオブジェクトの配列を入力してください。');
+    }
+    if (!Array.isArray(data)) data = [data];
+    if (data.length === 0) {
+      throw new Error('JSONの配列が空です。');
+    }
+
+    var allObjects = data.every(function (v) {
+      return v !== null && typeof v === 'object' && !Array.isArray(v);
+    });
+    var allArrays = data.every(function (v) {
+      return Array.isArray(v);
+    });
+    var allPrimitives = data.every(function (v) {
+      return v === null || typeof v !== 'object';
+    });
+
+    var rows;
+    var cols;
+
+    if (allObjects) {
+      var keys = [];
+      data.forEach(function (obj) {
+        Object.keys(obj).forEach(function (k) {
+          if (keys.indexOf(k) < 0) keys.push(k);
+        });
+      });
+      if (keys.length === 0) {
+        throw new Error('オブジェクトにキーがありません。');
+      }
+      rows = [keys].concat(data.map(function (obj) {
+        return keys.map(function (k) {
+          return cellToText(obj[k]);
+        });
+      }));
+      cols = keys.length;
+    } else if (allArrays) {
+      cols = 0;
+      data.forEach(function (arr) {
+        if (arr.length > cols) cols = arr.length;
+      });
+      if (cols === 0) {
+        throw new Error('配列の配列が空です。');
+      }
+      rows = data.map(function (arr) {
+        var r = arr.map(cellToText);
+        while (r.length < cols) r.push('');
+        return r;
+      });
+    } else if (allPrimitives) {
+      cols = 1;
+      rows = data.map(function (v) {
+        return [cellToText(v)];
+      });
+    } else {
+      throw new Error('オブジェクト・配列・単一の値が混在しています。形をそろえてください。');
+    }
+
+    return { text: rowsToCSV(rows, delim), rows: rows.length, cols: cols };
+  }
+
+  function setStats(rows, cols, inBytes, outBytes) {
+    stats.rows.textContent = nf.format(rows);
+    stats.cols.textContent = nf.format(cols);
+    stats.inSize.textContent = fmtBytes(inBytes);
+    stats.outSize.textContent = fmtBytes(outBytes);
+  }
+
+  function clearStats() {
+    stats.rows.textContent = '—';
+    stats.cols.textContent = '—';
+    stats.inSize.textContent = '—';
+    stats.outSize.textContent = '—';
+  }
+
+  function fail(msg) {
+    errEl.textContent = msg;
+    errEl.className = 'err';
+    out.value = '';
+    lastOutput = '';
+    clearStats();
+    btnCopy.disabled = true;
+    btnDownload.disabled = true;
+    live.textContent = '変換できませんでした。';
+  }
+
+  function convert() {
+    clearTimeout(timer);
+
+    var mode = getMode();
+    var delim = delimChar();
+    var text = src.value;
+
+    copyMsg.textContent = '';
+    copyMsg.className = '';
+
+    if (text.trim() === '') {
+      fail('変換する内容がありません。データを貼り付けるか、「サンプル」を押してください。');
+      return;
+    }
+
+    if (text.length > MAX_BYTES || byteSize(text) > MAX_BYTES) {
+      fail('入力が2MBを超えています（' + fmtBytes(byteSize(text)) + '）。分割して変換してください。');
+      return;
+    }
+
+    try {
+      var result;
+      if (mode === 'c2j') {
+        var parsed = csvToJSON(text, delim, hasHeaderEl.checked);
+        result = JSON.stringify(parsed.value, null, 2);
+        lastOutput = result;
+        out.value = result;
+        lastMode = 'c2j';
+        setStats(parsed.rows, parsed.cols, byteSize(text), byteSize(result));
+        live.textContent = '変換しました。' + parsed.rows + '行、' + parsed.cols + '列のJSONです。';
+      } else {
+        var built = jsonToCSV(text, delim);
+        lastOutput = built.text;
+        out.value = built.text;
+        lastMode = 'j2c';
+        setStats(built.rows, built.cols, byteSize(text), byteSize(built.text));
+        live.textContent = '変換しました。' + built.rows + '行、' + built.cols + '列のCSVです。';
+      }
+
+      errEl.textContent = '';
+      errEl.className = 'err';
+      btnCopy.disabled = false;
+      btnDownload.disabled = false;
+    } catch (e) {
+      fail(e && e.message ? e.message : '変換できませんでした。');
+    }
+  }
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function pad2(n) {
+    return n < 10 ? '0' + n : String(n);
+  }
+
+  function updateForMode() {
+    var isC2J = getMode() === 'c2j';
+    srcLabel.textContent = isC2J ? 'CSV' : 'JSON';
+    outLabel.textContent = isC2J ? 'JSON' : 'CSV';
+    headerWrap.hidden = !isC2J;
+    hasHeaderEl.disabled = !isC2J;
+    optHint.textContent = isC2J
+      ? 'ヘッダー行を使うと、列名をキーにしたオブジェクトの配列を出力します。使わない場合は各行を配列として出力します。空の見出しや重複する見出しは自動で名前を付けます。'
+      : 'オブジェクトの配列はキーをヘッダー行にして出力します。配列の配列はそのまま出力し、入れ子の値はJSON文字列として1つのセルに入れます。';
+  }
+
+  function onModeChange() {
+    var mode = getMode();
+    var prevSample = mode === 'c2j' ? JSON_SAMPLE : CSV_SAMPLE;
+    var nextSample = mode === 'c2j' ? CSV_SAMPLE : JSON_SAMPLE;
+    if (src.value.trim() === '' || src.value === prevSample) {
+      src.value = nextSample;
+    }
+    copyMsg.textContent = '';
+    updateForMode();
+    convert();
+  }
+
+  for (var i = 0; i < modeEls.length; i++) {
+    modeEls[i].addEventListener('change', onModeChange);
+  }
+
+  delimEl.addEventListener('change', convert);
+  hasHeaderEl.addEventListener('change', convert);
+
+  src.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(convert, 220);
+  });
+
+  src.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      convert();
+    }
+  });
+
+  $('btnConvert').addEventListener('click', convert);
+
+  $('btnSample').addEventListener('click', function () {
+    src.value = getMode() === 'c2j' ? CSV_SAMPLE : JSON_SAMPLE;
+    copyMsg.textContent = '';
+    convert();
+    src.focus();
+  });
+
+  $('btnClear').addEventListener('click', function () {
+    clearTimeout(timer);
+    src.value = '';
+    out.value = '';
+    lastOutput = '';
+    errEl.textContent = '';
+    copyMsg.textContent = '';
+    clearStats();
+    btnCopy.disabled = true;
+    btnDownload.disabled = true;
+    live.textContent = '';
+    src.focus();
+  });
+
+  btnCopy.addEventListener('click', function () {
+    if (!lastOutput) {
+      copyMsg.textContent = 'コピーできる結果がありません。先に変換してください。';
+      copyMsg.className = 'err';
+      return;
+    }
+    copyText(lastOutput).then(function (ok) {
+      if (ok) {
+        copyMsg.textContent = '変換結果をコピーしました。';
+        copyMsg.className = 'ok';
+      } else {
+        copyMsg.textContent = 'コピーできませんでした。下の欄を選択してコピーしてください。';
+        copyMsg.className = 'err';
+      }
+    });
+  });
+
+  btnDownload.addEventListener('click', function () {
+    if (!lastOutput) {
+      copyMsg.textContent = 'ダウンロードできる結果がありません。先に変換してください。';
+      copyMsg.className = 'err';
+      return;
+    }
+
+    var isJson = lastMode === 'c2j';
+    var content = lastOutput;
+    var mime = isJson ? 'application/json' : 'text/csv';
+    if (!isJson) content = String.fromCharCode(0xFEFF) + content;
+
+    var blob = new Blob([content], { type: mime + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var d = new Date();
+    var stamp = d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) +
+      '-' + pad2(d.getHours()) + pad2(d.getMinutes());
+    a.href = url;
+    a.download = 'icekun-' + stamp + (isJson ? '.json' : '.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+
+    copyMsg.textContent = (isJson ? 'JSON' : 'CSV') + 'ファイルのダウンロードを開始しました。';
+    copyMsg.className = 'ok';
+  });
+
+  src.value = CSV_SAMPLE;
+  updateForMode();
+  convert();
+})();
+</script>
+</body>
+</html>

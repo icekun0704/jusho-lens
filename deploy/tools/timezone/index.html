@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>タイムゾーン変換｜道具箱</title>
+<meta name="description" content="2つのタイムゾーンを選び、現在時刻と指定した日時を換算します。UTCオフセット、時差、日付の跨ぎを表示。東京・ロンドン・ニューヨークなど主要都市はプリセットから選べ、夏時間にも対応します。入力はブラウザ内で処理します。">
+<link rel="canonical" href="https://icekun.net/timezone/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  input[type="date"], input[type="time"] {
+    width: 100%; padding: 0.6rem 0.7rem; min-height: 2.6rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.875rem; line-height: 1.7;
+  }
+  .tool-block + .tool-block { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .tool-block h2 { margin: 0 0 0.25rem; }
+  .tool-block h3 { margin: 1.5rem 0 0.4rem; font-size: 0.9375rem; font-weight: 600; }
+  .tool-block h3:first-of-type { margin-top: 1rem; }
+  #tool .stats { margin-top: 0; }
+  #tool .stat b { font-size: 1.375rem; }
+  .presets .btn { height: 2rem; padding: 0 0.8rem; }
+  @media (max-width: 40rem) {
+    #tool .stat b { font-size: 1.2rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>タイムゾーン変換</h1>
+    <p class="lead">2つのタイムゾーンを選び、現在時刻と指定した日時を換算します。オフセット・時差・日付の跨ぎも確認できます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+
+    <div class="tool-block">
+      <h2>タイムゾーンを選ぶ</h2>
+      <p class="hint">変換元と変換先を選ぶと、下の現在時刻と指定日時の換算が更新されます。</p>
+      <div class="grid-2">
+        <label class="field" for="fromTZ"><span>変換元のタイムゾーン</span><select id="fromTZ"></select></label>
+        <label class="field" for="toTZ"><span>変換先のタイムゾーン</span><select id="toTZ"></select></label>
+      </div>
+      <div class="row" style="margin-top:0.75rem">
+        <button class="btn secondary" type="button" id="swapTZ">変換元と変換先を入れ替える</button>
+      </div>
+      <h3>よく使う組み合わせ</h3>
+      <div class="row presets">
+        <button class="btn ghost preset" type="button" data-from="Asia/Tokyo" data-to="UTC">日本 → UTC</button>
+        <button class="btn ghost preset" type="button" data-from="Asia/Tokyo" data-to="America/New_York">日本 → ニューヨーク</button>
+        <button class="btn ghost preset" type="button" data-from="Asia/Tokyo" data-to="Europe/London">日本 → ロンドン</button>
+        <button class="btn ghost preset" type="button" data-from="Asia/Tokyo" data-to="America/Los_Angeles">日本 → ロサンゼルス</button>
+      </div>
+      <p class="err" id="tzFatal" hidden></p>
+      <p class="hint" id="tzListNote" style="margin:0.5rem 0 0"></p>
+    </div>
+
+    <div class="tool-block">
+      <h2>現在時刻</h2>
+      <p class="hint">端末の時計が示す現在の時刻を、選んだ2つのタイムゾーンで表示します。1秒ごとに更新します。</p>
+      <div class="grid-2">
+        <div class="stat"><b id="nowFromTime">--:--:--</b><span id="nowFromLabel">変換元</span></div>
+        <div class="stat"><b id="nowToTime">--:--:--</b><span id="nowToLabel">変換先</span></div>
+      </div>
+      <p class="hint" id="nowOffset" style="margin:0.75rem 0 0"></p>
+      <p class="note" id="tzDiff"></p>
+    </div>
+
+    <div class="tool-block">
+      <h2>指定した日時の換算</h2>
+      <p class="hint">入力した日時は「変換元のタイムゾーン」の壁時計として扱います。</p>
+      <div class="grid-2">
+        <label class="field" for="whenDate"><span>日付</span><input type="date" id="whenDate"></label>
+        <label class="field" for="whenTime"><span>時刻</span><input type="time" id="whenTime" step="60"></label>
+      </div>
+      <div class="row" style="margin-top:0.75rem">
+        <button class="btn secondary" type="button" id="whenNow">現在時刻を入れる</button>
+      </div>
+      <div class="grid-2" style="margin-top:1rem" aria-live="polite" aria-atomic="true">
+        <div class="stat"><b id="whenFromTime">—</b><span id="whenFromLabel">変換元</span></div>
+        <div class="stat"><b id="whenToTime">—</b><span id="whenToLabel">変換先</span></div>
+      </div>
+      <div class="result" id="whenDetail">日付と時刻を選ぶと換算します。</div>
+      <p class="note" id="whenNote"></p>
+      <p class="warn" id="whenWarn" hidden></p>
+    </div>
+
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。時刻は端末の時計を基準にします。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「変換元のタイムゾーン」と「変換先のタイムゾーン」を選びます。最初は端末のタイムゾーンと UTC が入っています。</li>
+      <li>「よく使う組み合わせ」のボタンを押すと、その2つのタイムゾーンに一度に切り替わります。「変換元と変換先を入れ替える」で逆方向にもできます。</li>
+      <li>「現在時刻」の欄で、選んだ2つの地域の現在時刻・日付・UTCオフセット・時差を確認できます。</li>
+      <li>「指定した日時の換算」で日付と時刻を入力します。入力は変換元の現地時刻として解釈され、変換先の日時とUTC、日付の跨ぎが表示されます。</li>
+      <li>「現在時刻を入れる」を押すと、変換元の現在日時が入力欄に入ります。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>タイムゾーン変換について</h2>
+    <p>2つのタイムゾーンを選ぶと、現在時刻と、指定した日時の換算を表示します。時刻は端末の時計と、ブラウザの Intl API が持つタイムゾーンデータで計算し、入力は外部に送信しません。</p>
+
+    <h3>UTCオフセットと夏時間</h3>
+    <p>UTCオフセットは、その時点で有効な値を表示します。ロンドンやニューヨークなど夏時間（DST）を採用している地域では、夏時間の期間にオフセットが1時間変わります。インドの +05:30、ネパールの +05:45 のように、30分・45分単位の地域にも対応しています。</p>
+    <p>夏時間の切り替えで存在しない時刻を指定した場合は、実際の時刻に補正し、その旨を表示します。切り替えの日時や規則は、ブラウザが内蔵するタイムゾーンデータに依存します。</p>
+
+    <h3>時差と日付の跨ぎ</h3>
+    <p>時差は2つのオフセットの差で求めます。時差が大きい組み合わせでは、変換先の日付が翌日または前日になります。結果では、変換元と変換先の日付を比べて「翌日」「前日」と日数を表示します。</p>
+    <p>入力した日時は、変換元の地域の壁時計（現地時刻）として扱います。変換元と変換先を入れ替えると、同じ入力でも指す瞬間が変わるため、必要なら「現在時刻を入れる」で入れ直してください。</p>
+
+    <h3>タイムゾーンの一覧</h3>
+    <p>主要都市はプリセットから選べます。それ以外の地域は、ブラウザが対応していれば IANA のタイムゾーン一覧から選べます。一覧の取得に対応していないブラウザでは、主要都市のみ表示します。地域名や夏時間の規則は、ブラウザの更新に伴って変わることがあります。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  var WDJ = ['日', '月', '火', '水', '木', '金', '土'];
+  var CURATED = [
+    ['Asia/Tokyo', '東京（日本）'],
+    ['Asia/Seoul', 'ソウル（韓国）'],
+    ['Asia/Shanghai', '上海（中国）'],
+    ['Asia/Hong_Kong', '香港'],
+    ['Asia/Singapore', 'シンガポール'],
+    ['Asia/Bangkok', 'バンコク（タイ）'],
+    ['Asia/Kolkata', 'デリー（インド）'],
+    ['Asia/Dubai', 'ドバイ（アラブ首長国連邦）'],
+    ['Europe/London', 'ロンドン（イギリス）'],
+    ['Europe/Paris', 'パリ（フランス）'],
+    ['Europe/Berlin', 'ベルリン（ドイツ）'],
+    ['Europe/Moscow', 'モスクワ（ロシア）'],
+    ['America/New_York', 'ニューヨーク（アメリカ東部）'],
+    ['America/Chicago', 'シカゴ（アメリカ中部）'],
+    ['America/Denver', 'デンバー（アメリカ山岳部）'],
+    ['America/Los_Angeles', 'ロサンゼルス（アメリカ西部）'],
+    ['America/Sao_Paulo', 'サンパウロ（ブラジル）'],
+    ['Pacific/Honolulu', 'ホノルル（ハワイ）'],
+    ['Australia/Sydney', 'シドニー（オーストラリア東部）'],
+    ['Pacific/Auckland', 'オークランド（ニュージーランド）'],
+    ['UTC', 'UTC（協定世界時）']
+  ];
+  var LABELS = {};
+  for (var ci = 0; ci < CURATED.length; ci++) LABELS[CURATED[ci][0]] = CURATED[ci][1];
+
+  var supportsTZ = true;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: 'UTC' });
+  } catch (e) {
+    supportsTZ = false;
+  }
+  if (!supportsTZ) {
+    var fatal = $('tzFatal');
+    fatal.hidden = false;
+    fatal.textContent = 'このブラウザは Intl のタイムゾーン機能に対応していないため、変換を実行できません。ブラウザを更新してから開き直してください。';
+    ['fromTZ', 'toTZ', 'whenDate', 'whenTime', 'whenNow', 'swapTZ'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.disabled = true;
+    });
+    var pre = document.querySelectorAll('.preset');
+    for (var pi = 0; pi < pre.length; pi++) pre[pi].disabled = true;
+    return;
+  }
+
+  var fmtCache = {};
+  function dtfFor(tz) {
+    if (!fmtCache[tz]) {
+      fmtCache[tz] = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hourCycle: 'h23'
+      });
+    }
+    return fmtCache[tz];
+  }
+
+  function partsAt(tz, date) {
+    var parts = dtfFor(tz).formatToParts(date);
+    var out = {};
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i].type !== 'literal') out[parts[i].type] = parts[i].value;
+    }
+    var h = parseInt(out.hour, 10);
+    if (h === 24) h = 0;
+    return {
+      y: parseInt(out.year, 10),
+      m: parseInt(out.month, 10),
+      d: parseInt(out.day, 10),
+      h: h,
+      mi: parseInt(out.minute, 10),
+      s: parseInt(out.second, 10)
+    };
+  }
+
+  function offsetMin(tz, date) {
+    var p = partsAt(tz, date);
+    var asUTC = Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi, p.s);
+    var ms = Math.floor(date.getTime() / 1000) * 1000;
+    return Math.round((asUTC - ms) / 60000);
+  }
+
+  function fmtOffset(min) {
+    var sign = min < 0 ? '-' : '+';
+    var a = Math.abs(min);
+    return 'UTC' + sign + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
+  }
+
+  function weekdayOf(p) { return new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay(); }
+  function fmtDate(p) { return p.y + '年' + p.m + '月' + p.d + '日（' + WDJ[weekdayOf(p)] + '）'; }
+  function fmtTime(p) { return pad2(p.h) + ':' + pad2(p.mi); }
+  function fmtTimeS(p) { return fmtTime(p) + ':' + pad2(p.s); }
+  function zoneLabel(tz) { return LABELS[tz] || tz.replace(/_/g, ' '); }
+  function dayNo(p) { return Math.floor(Date.UTC(p.y, p.m - 1, p.d) / 86400000); }
+
+  function allZones() {
+    if (typeof Intl.supportedValuesOf !== 'function') return [];
+    try { return Intl.supportedValuesOf('timeZone') || []; } catch (e) { return []; }
+  }
+
+  function deviceZone() {
+    var tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { tz = ''; }
+    if (!tz) return '';
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: tz });
+      return tz;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function makeOpt(value, text) {
+    var o = document.createElement('option');
+    o.value = value;
+    o.textContent = text;
+    return o;
+  }
+
+  function setSel(sel, v) {
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === v) {
+        sel.value = v;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function fillSelect(sel, selected) {
+    sel.textContent = '';
+    var device = deviceZone();
+    if (device) {
+      var g0 = document.createElement('optgroup');
+      g0.label = 'この端末';
+      g0.appendChild(makeOpt(device, '端末のタイムゾーン — ' + device));
+      sel.appendChild(g0);
+    }
+    var g1 = document.createElement('optgroup');
+    g1.label = '主要都市';
+    for (var i = 0; i < CURATED.length; i++) {
+      if (CURATED[i][0] === device) continue;
+      g1.appendChild(makeOpt(CURATED[i][0], CURATED[i][1] + ' — ' + CURATED[i][0]));
+    }
+    sel.appendChild(g1);
+
+    var full = allZones();
+    if (full.length) {
+      var seen = {};
+      if (device) seen[device] = true;
+      for (var j = 0; j < CURATED.length; j++) seen[CURATED[j][0]] = true;
+      var g2 = document.createElement('optgroup');
+      g2.label = 'すべてのタイムゾーン';
+      for (var k = 0; k < full.length; k++) {
+        var id = full[k];
+        if (seen[id]) continue;
+        seen[id] = true;
+        g2.appendChild(makeOpt(id, id));
+      }
+      sel.appendChild(g2);
+    }
+
+    if (selected && !setSel(sel, selected)) sel.selectedIndex = 0;
+  }
+
+  if (!allZones().length) {
+    $('tzListNote').textContent = 'このブラウザは全タイムゾーンの一覧取得に対応していないため、主要都市のみ表示しています。';
+  }
+
+  var device = deviceZone();
+  var defFrom = device || 'Asia/Tokyo';
+  var defTo = defFrom === 'UTC' ? 'Asia/Tokyo' : 'UTC';
+  fillSelect($('fromTZ'), defFrom);
+  fillSelect($('toTZ'), defTo);
+  if ($('fromTZ').value !== defFrom) setSel($('fromTZ'), 'Asia/Tokyo');
+  if ($('toTZ').value !== defTo) setSel($('toTZ'), 'UTC');
+
+  function makeInstant(y, mo, d, h, mi, tz) {
+    var target = Date.UTC(y, mo - 1, d, h, mi, 0);
+    var o1 = offsetMin(tz, new Date(target));
+    var t = target - o1 * 60000;
+    var o2 = offsetMin(tz, new Date(t));
+    if (o2 !== o1) t = target - o2 * 60000;
+    return new Date(t);
+  }
+
+  function parseDateValue(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    return { y: +m[1], m: +m[2], d: +m[3] };
+  }
+
+  function parseTimeValue(v) {
+    var m = /^(\d{2}):(\d{2})/.exec(v || '');
+    if (!m) return null;
+    var h = +m[1];
+    var mi = +m[2];
+    if (h > 23 || mi > 59) return null;
+    return { h: h, mi: mi };
+  }
+
+  function diffText(fromOff, toOff) {
+    var diff = toOff - fromOff;
+    if (diff === 0) return '2つのタイムゾーンに時差はありません。';
+    var a = Math.abs(diff);
+    var h = Math.floor(a / 60);
+    var m = a % 60;
+    return '時差は ' + h + '時間' + (m ? m + '分' : '') + '（変換先が' + (diff > 0 ? '進んで' : '遅れて') + 'います）。';
+  }
+
+  function updateWhen() {
+    var tzF = $('fromTZ').value;
+    var tzT = $('toTZ').value;
+    var dp = parseDateValue($('whenDate').value);
+    var tp = parseTimeValue($('whenTime').value);
+    var detail = $('whenDetail');
+    var warn = $('whenWarn');
+    var note = $('whenNote');
+    warn.hidden = true;
+    if (!dp || !tp) {
+      $('whenFromTime').textContent = '—';
+      $('whenFromLabel').textContent = '変換元';
+      $('whenToTime').textContent = '—';
+      $('whenToLabel').textContent = '変換先';
+      detail.textContent = '日付と時刻を選ぶと換算します。';
+      note.textContent = '';
+      return;
+    }
+
+    var inst = makeInstant(dp.y, dp.m, dp.d, tp.h, tp.mi, tzF);
+    var fromP = partsAt(tzF, inst);
+    var toP = partsAt(tzT, inst);
+    var fromOff = offsetMin(tzF, inst);
+    var toOff = offsetMin(tzT, inst);
+
+    var exact = fromP.y === dp.y && fromP.m === dp.m && fromP.d === dp.d &&
+      fromP.h === tp.h && fromP.mi === tp.mi;
+
+    $('whenFromTime').textContent = fmtTime(fromP);
+    $('whenFromLabel').textContent = fmtDate(fromP) + '・' + fmtOffset(fromOff);
+    $('whenToTime').textContent = fmtTime(toP);
+    $('whenToLabel').textContent = fmtDate(toP) + '・' + fmtOffset(toOff);
+
+    var dd = dayNo(toP) - dayNo(fromP);
+    var dayText;
+    if (dd === 0) dayText = '変換先も同じ日付です。';
+    else if (dd === 1) dayText = '変換先は翌日です（+1日）。';
+    else if (dd === -1) dayText = '変換先は前日です（-1日）。';
+    else dayText = '変換先は' + Math.abs(dd) + '日' + (dd > 0 ? '後' : '前') + 'です（' + (dd > 0 ? '+' : '-') + Math.abs(dd) + '日）。';
+
+    var utc = inst.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    detail.textContent =
+      '変換元（' + tzF + '）: ' + fmtDate(fromP) + ' ' + fmtTime(fromP) + ' ' + fmtOffset(fromOff) + '\n' +
+      '変換先（' + tzT + '）: ' + fmtDate(toP) + ' ' + fmtTime(toP) + ' ' + fmtOffset(toOff) + '\n' +
+      'UTC: ' + utc;
+    note.textContent = '入力した日時は変換元の壁時計として扱います。' + dayText + ' ' + diffText(fromOff, toOff);
+
+    if (!exact) {
+      warn.hidden = false;
+      warn.textContent = '指定した時刻は夏時間の切り替えにより存在しないため、実際の時刻に補正して表示しています。';
+    }
+  }
+
+  function tick() {
+    var now = new Date();
+    var tzF = $('fromTZ').value;
+    var tzT = $('toTZ').value;
+    var fp = partsAt(tzF, now);
+    var tp = partsAt(tzT, now);
+    var fo = offsetMin(tzF, now);
+    var to = offsetMin(tzT, now);
+    $('nowFromTime').textContent = fmtTimeS(fp);
+    $('nowFromLabel').textContent = fmtDate(fp) + '・' + fmtOffset(fo);
+    $('nowToTime').textContent = fmtTimeS(tp);
+    $('nowToLabel').textContent = fmtDate(tp) + '・' + fmtOffset(to);
+    $('nowOffset').textContent = '現在のオフセット: 変換元 ' + fmtOffset(fo) + ' ／ 変換先 ' + fmtOffset(to) + '。夏時間の期間中は値が変わります。';
+    $('tzDiff').textContent = diffText(fo, to);
+  }
+
+  function updateAll() {
+    tick();
+    updateWhen();
+  }
+
+  function setWhenNow() {
+    var p = partsAt($('fromTZ').value, new Date());
+    $('whenDate').value = p.y + '-' + pad2(p.m) + '-' + pad2(p.d);
+    $('whenTime').value = fmtTime(p);
+    updateWhen();
+  }
+
+  $('fromTZ').addEventListener('change', updateAll);
+  $('toTZ').addEventListener('change', updateAll);
+  $('swapTZ').addEventListener('click', function () {
+    var a = $('fromTZ').value;
+    $('fromTZ').value = $('toTZ').value;
+    $('toTZ').value = a;
+    updateAll();
+  });
+  $('whenDate').addEventListener('input', updateWhen);
+  $('whenDate').addEventListener('change', updateWhen);
+  $('whenTime').addEventListener('input', updateWhen);
+  $('whenTime').addEventListener('change', updateWhen);
+  $('whenNow').addEventListener('click', setWhenNow);
+
+  var presets = document.querySelectorAll('.preset');
+  for (var pi = 0; pi < presets.length; pi++) {
+    presets[pi].addEventListener('click', function () {
+      var f = this.getAttribute('data-from');
+      var t = this.getAttribute('data-to');
+      if (setSel($('fromTZ'), f) && setSel($('toTZ'), t)) updateAll();
+    });
+  }
+
+  tick();
+  setWhenNow();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>

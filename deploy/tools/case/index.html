@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文字種変換（camelCase・snake_case・全角半角）｜道具箱</title>
+<meta name="description" content="camelCase・PascalCase・snake_case・kebab-case・CONSTANT_CASEへの変換と、大文字・小文字、全角英数と半角英数の相互変換、ひらがなとカタカナの相互変換を、1つの入力からまとめて表示します。結果はそれぞれコピーできます。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/case/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  table.results { margin-top: 1.25rem; }
+  table.results th[scope="row"] { font-size: 0.8125rem; color: var(--ink); letter-spacing: 0; }
+  table.results th[scope="row"] .hint { display: block; margin-top: 0.1rem; font-size: 0.7rem; font-weight: 400; }
+  table.results td:nth-child(3) { width: 1%; white-space: nowrap; text-align: right; }
+  table.results output { font-family: var(--mono); }
+  table.results output.empty { color: var(--muted); }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>文字種変換</h1>
+    <p class="lead">1つの文字列から、命名規則11種類の変換結果をまとめて作ります。各行のコピーボタンで、必要な形式だけを取り出せます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <label class="field" for="src">
+      <span>変換する文字列</span>
+      <textarea id="src" rows="4" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </label>
+    <p class="hint" style="margin:0.5rem 0 0">スペース・アンダースコア・ハイフン・英字の大文字小文字の切り替わりを、単語の区切りとして扱います。</p>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn" type="button" id="btnCopyAll">すべてコピー</button>
+      <button class="btn secondary" type="button" id="btnSample">サンプルを入れる</button>
+      <button class="btn ghost" type="button" id="btnClear">クリア</button>
+    </div>
+    <p class="ok" id="msg" role="status" aria-live="polite"></p>
+
+    <table class="results">
+      <caption class="sr-only">入力した文字列を11種類の形式に変換した結果</caption>
+      <thead>
+        <tr>
+          <th scope="col">形式</th>
+          <th scope="col">結果</th>
+          <th scope="col"><span class="sr-only">コピー</span></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「変換する文字列」欄に、変換したい単語や識別子を入力します。結果は入力のたびに更新されます。</li>
+      <li>表の「結果」列に、camelCase・PascalCase・snake_case・kebab-case・CONSTANT_CASE・大文字・小文字・全角半角・かな変換の11種類が並びます。</li>
+      <li>必要な行の「コピー」を押すと、その形式の文字列だけがクリップボードに入ります。「すべてコピー」は「形式: 結果」の一覧をまとめてコピーします。</li>
+      <li>「サンプルを入れる」で動作を確認できます。「クリア」で入力と結果を空にします。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>文字種変換について</h2>
+    <p>プログラムの識別子やファイル名では、単語の区切り方を揃えるために命名規則が使われます。この道具は、入力した文字列を単語に分け、代表的な11種類の形式へ一括で変換します。処理はブラウザ内だけで完結し、入力内容は送信されません。</p>
+
+    <h3>単語の分け方</h3>
+    <p>英単語の区切りとして、スペース、アンダースコア、ハイフンを扱います。加えて、<code>getHTTPResponse</code> のような連結文字列は、小文字から大文字への切り替わりと、連続する大文字の末尾で分割し、<code>get</code>・<code>HTTP</code>・<code>Response</code> とみなします。camelCase は先頭の語を小文字にして残りの語の頭を大文字にし、PascalCase はすべての語の頭を大文字にします。snake_case と kebab-case は小文字を <code>_</code> と <code>-</code> で、CONSTANT_CASE は大文字を <code>_</code> で連結します。</p>
+    <p>この分割はスペルや意味を理解するものではなく、文字の並びだけを見る簡易的な判定です。すべて大文字の略語は先頭だけ大文字に整えられ、日本語や記号だけの語はそのまま残ります。変換結果が意図どおりかは、表を見て確認してください。</p>
+
+    <h3>全角・半角の変換</h3>
+    <p>全角英数→半角は、Unicode の全角形（U+FF01〜U+FF5E）を、対応する半角の ASCII 文字（U+0021〜U+007E）へ置き換えます。半角英数→全角はその逆です。英数字だけでなく、全角の記号も半角の記号へ、半角の記号も全角の記号へ変換します。全角スペース（U+3000）と半角スペースは、どちらの変換でも変更しません。半角カタカナ（U+FF61〜U+FF9F）は対象外です。</p>
+
+    <h3>ひらがな・カタカナの変換</h3>
+    <p>ひらがなとカタカナは、Unicode 上で多くが 0x60 の差で対応しています。この道具は、ひらがな U+3041〜U+3096 と繰り返し記号 ゝゞ をカタカナへ、カタカナ U+30A1〜U+30F6 と繰り返し記号 ヽヾ をひらがなへ変換します。長音符「ー」は共通の文字なので変更しません。ヷ・ヸ・ヹ・ヺ は対応するひらがながないため、そのまま残ります。半角カタカナは変換しません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var src = document.getElementById('src');
+  var msg = document.getElementById('msg');
+  var rows = document.getElementById('rows');
+
+  function wordsOf(raw) {
+    var s = String(raw).trim();
+    if (s === '') return [];
+    s = s.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+    s = s.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+    s = s.replace(/[_\-]+/g, ' ');
+    s = s.replace(/\s+/g, ' ').trim();
+    return s === '' ? [] : s.split(' ');
+  }
+  function cap(w) {
+    if (w === '') return '';
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }
+  function lower(w) { return w.toLowerCase(); }
+  function upper(w) { return w.toUpperCase(); }
+  function toHalf(s) {
+    return s.replace(/[！-～]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+    });
+  }
+  function toFull(s) {
+    return s.replace(/[!-~]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) + 0xFEE0);
+    });
+  }
+  function hiraToKata(s) {
+    return s.replace(/[ぁ-ゖゝゞ]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) + 0x60);
+    });
+  }
+  function kataToHira(s) {
+    return s.replace(/[ァ-ヶヽヾ]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) - 0x60);
+    });
+  }
+
+  var KINDS = [
+    { id: 'camel', label: 'camelCase', desc: '先頭小文字・区切りなし', run: function (s) {
+      return wordsOf(s).map(function (w, i) {
+        return i === 0 ? w.toLowerCase() : cap(w);
+      }).join('');
+    } },
+    { id: 'pascal', label: 'PascalCase', desc: '各語の先頭を大文字・区切りなし', run: function (s) {
+      return wordsOf(s).map(cap).join('');
+    } },
+    { id: 'snake', label: 'snake_case', desc: '小文字を _ で連結', run: function (s) {
+      return wordsOf(s).map(lower).join('_');
+    } },
+    { id: 'kebab', label: 'kebab-case', desc: '小文字を - で連結', run: function (s) {
+      return wordsOf(s).map(lower).join('-');
+    } },
+    { id: 'constant', label: 'CONSTANT_CASE', desc: '大文字を _ で連結', run: function (s) {
+      return wordsOf(s).map(upper).join('_');
+    } },
+    { id: 'upper', label: '大文字', desc: '英字をすべて大文字に', run: function (s) { return s.toUpperCase(); } },
+    { id: 'lower', label: '小文字', desc: '英字をすべて小文字に', run: function (s) { return s.toLowerCase(); } },
+    { id: 'half', label: '全角英数→半角', desc: '全角の英数字・記号を半角に', run: toHalf },
+    { id: 'full', label: '半角英数→全角', desc: '半角の英数字・記号を全角に', run: toFull },
+    { id: 'hira2kata', label: 'ひらがな→カタカナ', desc: 'ひらがなをカタカナに', run: hiraToKata },
+    { id: 'kata2hira', label: 'カタカナ→ひらがな', desc: 'カタカナをひらがなに', run: kataToHira }
+  ];
+
+  var SAMPLE = 'get HTTP response 200 ＡＢＣ ひらがな カタカナ';
+  var current = Object.create(null);
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function showMsg(text, cls) {
+    msg.textContent = text;
+    msg.className = cls;
+  }
+
+  var outEls = Object.create(null);
+
+  function buildRows() {
+    KINDS.forEach(function (k) {
+      var tr = document.createElement('tr');
+
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = k.label;
+      var note = document.createElement('span');
+      note.className = 'hint';
+      note.textContent = k.desc;
+      th.appendChild(note);
+
+      var tdVal = document.createElement('td');
+      tdVal.className = 'mono';
+      var out = document.createElement('output');
+      out.id = 'out-' + k.id;
+      out.textContent = '—';
+      out.className = 'empty';
+      tdVal.appendChild(out);
+      outEls[k.id] = out;
+
+      var tdBtn = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn ghost';
+      btn.textContent = 'コピー';
+      btn.setAttribute('aria-label', k.label + ' の結果をコピー');
+      btn.addEventListener('click', function () {
+        var val = current[k.id];
+        if (!val) {
+          showMsg('コピーする結果がありません。先に文字列を入力してください。', 'err');
+          return;
+        }
+        copyText(val).then(function (ok) {
+          if (ok) {
+            showMsg(k.label + ' をコピーしました。', 'ok');
+          } else {
+            showMsg('コピーできませんでした。結果を選択してコピーしてください。', 'err');
+          }
+        });
+      });
+      tdBtn.appendChild(btn);
+
+      tr.appendChild(th);
+      tr.appendChild(tdVal);
+      tr.appendChild(tdBtn);
+      rows.appendChild(tr);
+    });
+  }
+
+  function update() {
+    var raw = src.value;
+    var hasInput = raw.trim() !== '';
+    KINDS.forEach(function (k) {
+      var val = '';
+      if (hasInput) {
+        try {
+          val = k.run(raw);
+        } catch (e) {
+          val = '';
+        }
+      }
+      current[k.id] = hasInput ? val : '';
+      var out = outEls[k.id];
+      if (!hasInput) {
+        out.textContent = '—';
+        out.className = 'empty';
+      } else if (val === '') {
+        out.textContent = '（空）';
+        out.className = 'empty';
+      } else {
+        out.textContent = val;
+        out.className = '';
+      }
+    });
+    if (msg.className === 'ok') showMsg('', '');
+  }
+
+  src.addEventListener('input', update);
+
+  document.getElementById('btnCopyAll').addEventListener('click', function () {
+    if (src.value.trim() === '') {
+      showMsg('コピーする結果がありません。先に文字列を入力してください。', 'err');
+      return;
+    }
+    var lines = KINDS.map(function (k) {
+      return k.label + ': ' + current[k.id];
+    });
+    copyText(lines.join('\n')).then(function (ok) {
+      if (ok) {
+        showMsg('11種類の結果をまとめてコピーしました。', 'ok');
+      } else {
+        showMsg('コピーできませんでした。結果を選択してコピーしてください。', 'err');
+      }
+    });
+  });
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    src.value = SAMPLE;
+    showMsg('', '');
+    update();
+    src.focus();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function () {
+    src.value = '';
+    showMsg('', '');
+    update();
+    src.focus();
+  });
+
+  buildRows();
+  update();
+})();
+</script>
+</body>
+</html>

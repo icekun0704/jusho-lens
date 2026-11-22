@@ -105,7 +105,16 @@
   }
   .section-head .note { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
 
-  .tools { margin-top: 0.5rem; }
+  .tool-group + .tool-group { margin-top: 0.5rem; }
+  .group-label {
+    margin: 0; padding: 1.5rem 0 0.25rem;
+    font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--muted); font-weight: 500;
+    border-top: 1px solid var(--rule);
+  }
+  .tool-group:first-of-type .group-label { border-top: 0; padding-top: 0; }
+
+  .tools { margin-top: 0; }
   .tool {
     display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto;
     gap: 1.25rem; align-items: start;
@@ -233,18 +242,218 @@
       <h2>道具</h2>
       <span class="note">tools</span>
     </div>
-    <div class="tools">
-      <a class="tool" href="/jusho/">
-        <span class="no">01</span>
-        <span>
-          <strong>住所レンズ</strong>
-          <span class="desc">英語の住所を日本語に戻して、元の住所と一致するかを確かめる。日本語→英語の用途別出力、郵便番号の逆引き、氏名のローマ字も。</span>
-          <span class="tags"><i>住所</i><i>郵便番号</i><i>ローマ字</i><i>CSV一括</i></span>
-        </span>
-        <span class="arrow" aria-hidden="true">→</span>
-      </a>
+    <!-- TOOLS_START -->
+    <div class="tool-group">
+      <h3 class="group-label">住所・書類</h3>
+      <div class="tools">
+        <a class="tool" href="/jusho/">
+          <span class="no">01</span>
+          <span>
+            <strong>住所レンズ</strong>
+            <span class="desc">英語の住所を日本語に戻して、元の住所と一致するかを確かめる。</span>
+            <span class="tags"><i>住所</i><i>郵便番号</i><i>ローマ字</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+    <div class="tool-group">
+      <h3 class="group-label">テキスト</h3>
+      <div class="tools">
+        <a class="tool" href="/text/">
+          <span class="no">01</span>
+          <span>
+            <strong>文字数カウント</strong>
+            <span class="desc">文字・行・単語・原稿用紙換算・SNS上限をまとめて数える。</span>
+            <span class="tags"><i>文章</i><i>原稿</i><i>SNS</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/case/">
+          <span class="no">02</span>
+          <span>
+            <strong>文字種変換</strong>
+            <span class="desc">camelCase、snake_case、全角半角、ひらがなカタカナを一括変換。</span>
+            <span class="tags"><i>命名</i><i>全角</i><i>かな</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/urlcode/">
+          <span class="no">03</span>
+          <span>
+            <strong>URLエンコード</strong>
+            <span class="desc">URL用とフォーム用のエンコード・デコード。</span>
+            <span class="tags"><i>URL</i><i>エンコード</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/regex/">
+          <span class="no">04</span>
+          <span>
+            <strong>正規表現テスター</strong>
+            <span class="desc">パターンを試して、マッチとキャプチャを確認する。</span>
+            <span class="tags"><i>正規表現</i><i>開発</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/diff/">
+          <span class="no">05</span>
+          <span>
+            <strong>テキスト差分</strong>
+            <span class="desc">2つのテキストを行単位で比較する。</span>
+            <span class="tags"><i>差分</i><i>校正</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/csv/">
+          <span class="no">06</span>
+          <span>
+            <strong>CSV⇔JSON</strong>
+            <span class="desc">表形式のデータを相互に変換する。</span>
+            <span class="tags"><i>CSV</i><i>JSON</i><i>表</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/json/">
+          <span class="no">07</span>
+          <span>
+            <strong>JSON整形</strong>
+            <span class="desc">JSONの整形・圧縮・検証。</span>
+            <span class="tags"><i>JSON</i><i>開発</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/base64/">
+          <span class="no">08</span>
+          <span>
+            <strong>Base64変換</strong>
+            <span class="desc">テキストとファイルをBase64にする。</span>
+            <span class="tags"><i>Base64</i><i>変換</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+    <div class="tool-group">
+      <h3 class="group-label">画像・ファイル</h3>
+      <div class="tools">
+        <a class="tool" href="/image/">
+          <span class="no">01</span>
+          <span>
+            <strong>画像変換・圧縮</strong>
+            <span class="desc">WebP/JPEG/PNGへの変換、リサイズ、一括ダウンロード。</span>
+            <span class="tags"><i>画像</i><i>圧縮</i><i>WebP</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/gzip/">
+          <span class="no">02</span>
+          <span>
+            <strong>gzip圧縮・解凍</strong>
+            <span class="desc">テキストやファイルをgzipで圧縮・解凍する。</span>
+            <span class="tags"><i>gzip</i><i>圧縮</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/hash/">
+          <span class="no">03</span>
+          <span>
+            <strong>ハッシュ生成</strong>
+            <span class="desc">SHA-1/256/384/512をテキストとファイルから。</span>
+            <span class="tags"><i>ハッシュ</i><i>SHA</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/rsa/">
+          <span class="no">04</span>
+          <span>
+            <strong>RSA暗号化・復号</strong>
+            <span class="desc">鍵生成から暗号化・復号までブラウザで体験する。</span>
+            <span class="tags"><i>暗号</i><i>RSA</i><i>学習</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+    <div class="tool-group">
+      <h3 class="group-label">計算・暮らし</h3>
+      <div class="tools">
+        <a class="tool" href="/unit/">
+          <span class="no">01</span>
+          <span>
+            <strong>単位変換</strong>
+            <span class="desc">長さ・重さ・温度・面積・体積・速度。</span>
+            <span class="tags"><i>単位</i><i>換算</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/bmi/">
+          <span class="no">02</span>
+          <span>
+            <strong>BMI・基礎代謝</strong>
+            <span class="desc">体格と消費カロリーの目安を計算する。</span>
+            <span class="tags"><i>健康</i><i>BMI</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/date/">
+          <span class="no">03</span>
+          <span>
+            <strong>日付計算・和暦</strong>
+            <span class="desc">年齢、期間、加算、和暦変換。</span>
+            <span class="tags"><i>日付</i><i>和暦</i><i>年齢</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/timezone/">
+          <span class="no">04</span>
+          <span>
+            <strong>タイムゾーン変換</strong>
+            <span class="desc">2つの地域の時刻を換算する。</span>
+            <span class="tags"><i>時差</i><i>海外</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/split/">
+          <span class="no">05</span>
+          <span>
+            <strong>割り勘・消費税</strong>
+            <span class="desc">税込・税抜と1人あたりの金額。</span>
+            <span class="tags"><i>割り勘</i><i>消費税</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/color/">
+          <span class="no">06</span>
+          <span>
+            <strong>カラー・コントラスト</strong>
+            <span class="desc">HEX/RGB/HSL変換とWCAG判定。</span>
+            <span class="tags"><i>色</i><i>デザイン</i><i>WCAG</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/password/">
+          <span class="no">07</span>
+          <span>
+            <strong>パスワード生成</strong>
+            <span class="desc">端末内で強度のある文字列を作る。</span>
+            <span class="tags"><i>パスワード</i><i>安全</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool" href="/ip/">
+          <span class="no">08</span>
+          <span>
+            <strong>IPチェック</strong>
+            <span class="desc">接続元のIP・地域・ブラウザ情報。</span>
+            <span class="tags"><i>IP</i><i>接続</i></span>
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
     </div>
     <p class="soon">新しい道具は、できたものからここに並べます。</p>
+    <!-- TOOLS_END -->
   </section>
 
   <section id="about">

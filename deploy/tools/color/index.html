@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カラー変換・コントラスト｜道具箱</title>
+<meta name="description" content="HEX・RGB・HSL を相互変換するカラーツール。文字色と背景色のコントラスト比を WCAG 2.1 の相対輝度から計算し、通常テキストと大きなテキストの AA・AAA 合否を表示します。明るさ違いの色見本とコピーにも対応。">
+<link rel="canonical" href="https://icekun.net/color/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .triple { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+  .label-sm { display: block; margin: 0 0 0.35rem; font-size: 0.75rem; color: var(--muted); }
+  input[type="color"] {
+    width: 100%; height: 2.4rem; padding: 0.15rem;
+    border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); cursor: pointer;
+  }
+  input[aria-invalid="true"] { border-color: var(--err); }
+  .preview {
+    margin-top: 1rem; min-height: 7.5rem; padding: 0.9rem 1rem;
+    border: 1px solid var(--rule); border-radius: 10px;
+    display: flex; align-items: flex-end;
+  }
+  .preview span { font-size: 0.8125rem; letter-spacing: 0.02em; }
+  .swatch-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem; }
+  .swatch {
+    padding: 0; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden;
+    background: var(--bg); font: inherit; cursor: pointer;
+  }
+  .swatch .chip { display: block; height: 2.4rem; border-bottom: 1px solid var(--rule); }
+  .swatch code {
+    display: block; padding: 0.3rem 0.15rem; text-align: center;
+    font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+  }
+  .swatch:hover { border-color: var(--ox); }
+  .pickrow { display: flex; gap: 0.5rem; align-items: center; }
+  .pickrow input[type="color"] { width: 3.25rem; flex: none; }
+  .sample { margin-top: 1rem; padding: 1rem 1.1rem; border: 1px solid var(--rule); border-radius: 10px; }
+  .note:empty, .err:empty { display: none; }
+  .stat b.ok, .stat b.err { margin-top: 0; }
+  @media (max-width: 32rem) {
+    .swatch-grid { gap: 0.4rem; }
+    .swatch code { padding: 0.3rem 0; font-size: 0.55rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>カラー変換・コントラスト</h1>
+    <p class="lead">HEX・RGB・HSL を相互に変換し、文字色と背景色のコントラスト比を WCAG 2.1 の基準で確かめられます。明暗の見本から色を選ぶこともできます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>色を変換する</h2>
+    <p class="hint">HEX・RGB・HSL のどれかを変えると、ほかの形式とプレビューが連動して更新されます。</p>
+
+    <div class="grid-2">
+      <label class="field">
+        <span>HEX</span>
+        <input id="hex" type="text" value="#7a2f27" maxlength="7" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="field">
+        <span>カラーピッカー</span>
+        <input id="picker" type="color" value="#7a2f27">
+      </label>
+    </div>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <div>
+        <p class="hint" id="rgbHint" style="margin:0 0 0.35rem">RGB（0〜255）</p>
+        <div class="triple">
+          <label class="field"><span>R</span><input id="r" type="number" min="0" max="255" step="1" inputmode="numeric" value="122" aria-label="赤（R）" aria-describedby="rgbHint"></label>
+          <label class="field"><span>G</span><input id="g" type="number" min="0" max="255" step="1" inputmode="numeric" value="47" aria-label="緑（G）" aria-describedby="rgbHint"></label>
+          <label class="field"><span>B</span><input id="b" type="number" min="0" max="255" step="1" inputmode="numeric" value="39" aria-label="青（B）" aria-describedby="rgbHint"></label>
+        </div>
+      </div>
+      <div>
+        <p class="hint" id="hslHint" style="margin:0 0 0.35rem">HSL（H 0〜360 / S・L 0〜100%）</p>
+        <div class="triple">
+          <label class="field"><span>H</span><input id="h" type="number" min="0" max="360" step="1" inputmode="numeric" value="6" aria-label="色相（H）" aria-describedby="hslHint"></label>
+          <label class="field"><span>S</span><input id="s" type="number" min="0" max="100" step="1" inputmode="numeric" value="52" aria-label="彩度（S）" aria-describedby="hslHint"></label>
+          <label class="field"><span>L</span><input id="l" type="number" min="0" max="100" step="1" inputmode="numeric" value="32" aria-label="明度（L）" aria-describedby="hslHint"></label>
+        </div>
+      </div>
+    </div>
+    <p class="err" id="inputError" role="status" aria-live="polite"></p>
+
+    <div class="preview" id="preview" style="background-color:#7a2f27;color:#fff8f0" aria-hidden="true">
+      <span class="mono" id="previewHex">#7a2f27</span>
+    </div>
+
+    <div style="margin-top:1.25rem">
+      <p class="hint" style="margin:0 0 0.4rem">明るくした色</p>
+      <div class="swatch-grid" id="tints"></div>
+      <p class="hint" style="margin:1rem 0 0.4rem">暗くした色</p>
+      <div class="swatch-grid" id="shades"></div>
+      <p class="hint" style="margin:0.5rem 0 0">見本を押すと、その色を上の入力に反映します。</p>
+    </div>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn" type="button" data-copy="hex">HEX をコピー</button>
+      <button class="btn secondary" type="button" data-copy="rgb">RGB をコピー</button>
+      <button class="btn secondary" type="button" data-copy="hsl">HSL をコピー</button>
+    </div>
+    <p class="note" id="status" role="status" aria-live="polite"></p>
+
+    <p class="note">画面やディスプレイの設定によって色の見え方は異なります。印刷物や実機での最終確認をおすすめします。</p>
+  </section>
+
+  <section class="panel" id="contrast">
+    <h2>コントラスト比</h2>
+    <p class="hint">文字色と背景色を指定すると、WCAG 2.1 の相対輝度からコントラスト比を計算します。合否は色だけでなく、文字でも表示します。</p>
+
+    <div class="grid-2">
+      <div>
+        <label class="label-sm" for="tcHex">文字色</label>
+        <div class="pickrow">
+          <input id="tcPicker" type="color" value="#6b6a72" aria-label="文字色をカラーピッカーで選ぶ">
+          <input id="tcHex" type="text" value="#6b6a72" maxlength="7" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="err" id="tcError" role="status" aria-live="polite"></p>
+      </div>
+      <div>
+        <label class="label-sm" for="bgHex">背景色</label>
+        <div class="pickrow">
+          <input id="bgPicker" type="color" value="#f7f3ea" aria-label="背景色をカラーピッカーで選ぶ">
+          <input id="bgHex" type="text" value="#f7f3ea" maxlength="7" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="err" id="bgError" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="sample" id="sample" style="color:#6b6a72;background-color:#f7f3ea">
+      <p style="margin:0;font-size:1rem;line-height:1.8">通常サイズの文字です。本文の読みやすさを確認するための見本です。</p>
+      <p style="margin:0.5rem 0 0;font-size:1.5rem;line-height:1.4;font-weight:600">大きな見出しの文字</p>
+    </div>
+
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn secondary" type="button" id="swap">文字色と背景色を入れ替える</button>
+    </div>
+    <p class="note" id="contrastStatus" role="status" aria-live="polite"></p>
+
+    <div aria-live="polite" aria-atomic="true">
+      <p class="result large" id="ratio">—</p>
+      <p class="note" id="summary"></p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="checkAA">—</b><span>通常テキスト AA（4.5:1 以上）</span></div>
+      <div class="stat"><b id="checkAAA">—</b><span>通常テキスト AAA（7:1 以上）</span></div>
+      <div class="stat"><b id="checkLargeAA">—</b><span>大きなテキスト AA（3:1 以上）</span></div>
+      <div class="stat"><b id="checkLargeAAA">—</b><span>大きなテキスト AAA（4.5:1 以上）</span></div>
+    </div>
+    <p class="hint" style="margin:0.75rem 0 0">WCAG 2.1 の「大きなテキスト」は、24px 以上、または 18.66px 以上の太字を指します。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>HEX・RGB・HSL のいずれかを入力すると、残りの形式とプレビューが連動して更新されます。</li>
+      <li>カラーピッカーでも色を選べます。</li>
+      <li>「明るくした色」「暗くした色」の見本を押すと、その色が入力に反映されます。</li>
+      <li>「HEX をコピー」などのボタンで、その形式の表記をクリップボードにコピーできます。</li>
+      <li>コントラスト比では、文字色と背景色をそれぞれ指定します。比率と AA・AAA の合否が表示されます。「文字色と背景色を入れ替える」で 2 色を交換できます。</li>
+      <li>表示される色は環境によって異なるため、最終確認は実機で行ってください。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>カラー変換・コントラストについて</h2>
+    <p>このページでは、色を HEX・RGB・HSL の 3 つの形式で相互に変換し、文字色と背景色のコントラスト比を計算します。計算はすべてブラウザ内で完結し、入力した値は送信されません。</p>
+
+    <h3>HEX・RGB・HSL の関係</h3>
+    <p>HEX は赤・緑・青の各成分を 16 進数 2 桁で並べた表記です。<code>#rrggbb</code> の 6 桁は各成分 0〜255 を表し、約 1677 万色を区別できます。3 桁の <code>#rgb</code> は各桁を 2 回繰り返した省略形で、<code>#f0c</code> は <code>#ff00cc</code> と同じ色です。</p>
+    <p>RGB は光の三原色の加算混合で、3 つの値がすべて 0 なら黒、すべて 255 なら白になります。HSL は色相 H（0〜360 の角度）、彩度 S（0〜100%）、明度 L（0〜100%）で表します。H は 0 が赤、120 が緑、240 が青で、360 と 0 は同じ位置です。L が 0 なら黒、100 なら白になります。</p>
+    <p>本ツールは sRGB を前提とし、各成分を 8 ビット（0〜255）として計算します。CMYK や Display P3 などの色域変換は行いません。</p>
+
+    <h3>コントラスト比の求め方</h3>
+    <p>コントラスト比は、WCAG 2.1 が定める相対輝度から計算します。各成分を 0〜1 に直し、0.03928 以下なら 12.92 で割り、それより大きければ <code>((c + 0.055) / 1.055) ^ 2.4</code> を適用します。得られた値に赤 0.2126・緑 0.7152・青 0.0722 の重みを付けて足したものが相対輝度です。</p>
+    <p>2 色の相対輝度を L1・L2（L1 が大きい方）とすると、比は <code>(L1 + 0.05) / (L2 + 0.05)</code> になります。同じ色なら 1:1、黒と白なら約 21:1 です。</p>
+    <p>WCAG 2.1 の基準は、通常テキストが AA 4.5:1・AAA 7:1、大きなテキストが AA 3:1・AAA 4.5:1 です。ここでいう大きなテキストは、18pt（24px）以上、または 14pt（約 18.66px）以上の太字を指します。本ツールは比を小数第 2 位に丸め、表示と同じ値で合否を判定しています。</p>
+
+    <h3>色の明暗と見え方</h3>
+    <p>「明るくした色」は白、「暗くした色」は黒を、現在の色に 15〜75% の割合で混ぜて作っています。HSL の明度を直接動かすのではなく RGB で混ぜるため、段階ごとの色の変化がなめらかになります。</p>
+    <p>同じ HEX 値でも、ディスプレイの機種や輝度、周囲の明るさ、色覚の特性によって見え方は異なります。印刷物の色は紙とインクでも変わります。色の最終確認は、実際に使う画面や印刷物で行ってください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---- helpers ----
+  const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+
+  const toHex = (rgb) =>
+    '#' +
+    [rgb.r, rgb.g, rgb.b]
+      .map((channel) => Math.round(clamp(channel, 0, 255)).toString(16).padStart(2, '0'))
+      .join('');
+
+  const parseHex = (value) => {
+    let text = String(value).trim().replace(/^#/, '').toLowerCase();
+    if (/^[0-9a-f]{3}$/.test(text)) {
+      text = text[0] + text[0] + text[1] + text[1] + text[2] + text[2];
+    }
+    if (!/^[0-9a-f]{6}$/.test(text)) {
+      return null;
+    }
+    return {
+      r: parseInt(text.slice(0, 2), 16),
+      g: parseInt(text.slice(2, 4), 16),
+      b: parseInt(text.slice(4, 6), 16),
+    };
+  };
+
+  const rgbToHsl = (rgb) => {
+    const r = rgb.r / 255;
+    const g = rgb.g / 255;
+    const b = rgb.b / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    const lightness = (max + min) / 2;
+    let hue = 0;
+    let saturation = 0;
+    if (delta !== 0) {
+      saturation = delta / (1 - Math.abs(2 * lightness - 1));
+      if (max === r) {
+        hue = ((g - b) / delta) % 6;
+      } else if (max === g) {
+        hue = (b - r) / delta + 2;
+      } else {
+        hue = (r - g) / delta + 4;
+      }
+      hue *= 60;
+      if (hue < 0) {
+        hue += 360;
+      }
+    }
+    return {
+      h: Math.round(hue) % 360,
+      s: Math.round(saturation * 100),
+      l: Math.round(lightness * 100),
+    };
+  };
+
+  const hslToRgb = (hue, saturation, lightness) => {
+    const h = ((hue % 360) + 360) % 360;
+    const s = saturation / 100;
+    const l = lightness / 100;
+    const chroma = (1 - Math.abs(2 * l - 1)) * s;
+    const sector = h / 60;
+    const second = chroma * (1 - Math.abs((sector % 2) - 1));
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    if (sector < 1) {
+      r = chroma;
+      g = second;
+    } else if (sector < 2) {
+      r = second;
+      g = chroma;
+    } else if (sector < 3) {
+      g = chroma;
+      b = second;
+    } else if (sector < 4) {
+      g = second;
+      b = chroma;
+    } else if (sector < 5) {
+      r = second;
+      b = chroma;
+    } else {
+      r = chroma;
+      b = second;
+    }
+    const m = l - chroma / 2;
+    return {
+      r: Math.round((r + m) * 255),
+      g: Math.round((g + m) * 255),
+      b: Math.round((b + m) * 255),
+    };
+  };
+
+  const srgbToLinear = (channel) => {
+    const c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+
+  const luminance = (rgb) =>
+    0.2126 * srgbToLinear(rgb.r) +
+    0.7152 * srgbToLinear(rgb.g) +
+    0.0722 * srgbToLinear(rgb.b);
+
+  const contrastRatio = (a, b) => {
+    const first = luminance(a);
+    const second = luminance(b);
+    return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+  };
+
+  const mix = (a, b, t) => ({
+    r: Math.round(a.r + (b.r - a.r) * t),
+    g: Math.round(a.g + (b.g - a.g) * t),
+    b: Math.round(a.b + (b.b - a.b) * t),
+  });
+
+  const rgbString = (rgb) => `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+
+  const hslString = (rgb) => {
+    const hsl = rgbToHsl(rgb);
+    return `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
+  };
+
+  // ---- DOM ----
+  const $ = (id) => document.getElementById(id);
+
+  const hexInput = $('hex');
+  const picker = $('picker');
+  const rInput = $('r');
+  const gInput = $('g');
+  const bInput = $('b');
+  const hInput = $('h');
+  const sInput = $('s');
+  const lInput = $('l');
+  const preview = $('preview');
+  const previewHex = $('previewHex');
+  const inputError = $('inputError');
+  const statusEl = $('status');
+
+  const rgbInputs = [rInput, gInput, bInput];
+  const hslInputs = [hInput, sInput, lInput];
+  const colorInputs = [hexInput, rInput, gInput, bInput, hInput, sInput, lInput];
+
+  const WHITE = { r: 255, g: 255, b: 255 };
+  const BLACK = { r: 0, g: 0, b: 0 };
+  const SWATCH_STEPS = [0.15, 0.3, 0.45, 0.6, 0.75];
+  const swatches = [];
+
+  let color = { r: 122, g: 47, b: 39 };
+
+  function setInputError(message, fields) {
+    inputError.textContent = message || '';
+    const invalid = new Set(fields || []);
+    for (const input of colorInputs) {
+      if (invalid.has(input)) {
+        input.setAttribute('aria-invalid', 'true');
+      } else {
+        input.removeAttribute('aria-invalid');
+      }
+    }
+  }
+
+  function renderSwatches() {
+    for (const item of swatches) {
+      const target = item.kind === 'tint' ? WHITE : BLACK;
+      const rgb = mix(color, target, item.step);
+      const hex = toHex(rgb);
+      item.chip.style.backgroundColor = hex;
+      item.code.textContent = hex;
+      item.button.setAttribute(
+        'aria-label',
+        `${item.kind === 'tint' ? '明るい色' : '暗い色'} ${item.position}（${hex}）を入力に反映`
+      );
+    }
+  }
+
+  function renderMain(skip) {
+    const hex = toHex(color);
+    const hsl = rgbToHsl(color);
+
+    if (skip !== 'hex') {
+      hexInput.value = hex;
+    }
+    if (skip !== 'picker') {
+      picker.value = hex;
+    }
+    if (skip !== 'rgb') {
+      rInput.value = color.r;
+      gInput.value = color.g;
+      bInput.value = color.b;
+    }
+    if (skip !== 'hsl') {
+      hInput.value = hsl.h;
+      sInput.value = hsl.s;
+      lInput.value = hsl.l;
+    }
+
+    preview.style.backgroundColor = hex;
+    preview.style.color = luminance(color) > 0.179 ? '#1c1b20' : '#fff8f0';
+    previewHex.textContent = hex;
+
+    renderSwatches();
+  }
+
+  function applyColor(rgb, skip) {
+    color = rgb;
+    setInputError('');
+    statusEl.textContent = '';
+    statusEl.className = 'note';
+    renderMain(skip);
+  }
+
+  function buildSwatches() {
+    const makeRow = (containerId, kind) => {
+      const container = $(containerId);
+      const fragment = document.createDocumentFragment();
+      SWATCH_STEPS.forEach((step, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'swatch';
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        const code = document.createElement('code');
+        button.append(chip, code);
+        button.addEventListener('click', () => {
+          const target = kind === 'tint' ? WHITE : BLACK;
+          const rgb = mix(color, target, step);
+          applyColor(rgb);
+          statusEl.textContent = `${kind === 'tint' ? '明るい色' : '暗い色'} ${toHex(rgb)} を入力に反映しました。`;
+          statusEl.className = 'note ok';
+        });
+        swatches.push({ button, chip, code, step, kind, position: index + 1 });
+        fragment.append(button);
+      });
+      container.append(fragment);
+    };
+    makeRow('tints', 'tint');
+    makeRow('shades', 'shade');
+  }
+
+  hexInput.addEventListener('input', () => {
+    const rgb = parseHex(hexInput.value);
+    if (!rgb) {
+      setInputError('HEX は #rgb または #rrggbb の形式で入力してください。', [hexInput]);
+      return;
+    }
+    applyColor(rgb, 'hex');
+  });
+
+  hexInput.addEventListener('change', () => {
+    const rgb = parseHex(hexInput.value);
+    if (rgb) {
+      applyColor(rgb);
+    } else {
+      hexInput.value = toHex(color);
+      setInputError('');
+      renderMain('hex');
+    }
+  });
+
+  function readRgbFields() {
+    const values = [];
+    const invalid = [];
+    for (const input of rgbInputs) {
+      const raw = input.value.trim();
+      if (raw === '') {
+        return { empty: true };
+      }
+      const number = Number(raw);
+      if (!Number.isInteger(number) || number < 0 || number > 255) {
+        invalid.push(input);
+      } else {
+        values.push(number);
+      }
+    }
+    if (invalid.length > 0) {
+      return { invalid };
+    }
+    return { rgb: { r: values[0], g: values[1], b: values[2] } };
+  }
+
+  function onRgbInput() {
+    const result = readRgbFields();
+    if (result.empty) {
+      setInputError('');
+      return;
+    }
+    if (result.invalid) {
+      setInputError('RGB は 0〜255 の整数で入力してください。', result.invalid);
+      return;
+    }
+    applyColor(result.rgb, 'rgb');
+  }
+
+  function commitRgb() {
+    const current = [color.r, color.g, color.b];
+    const values = rgbInputs.map((input, index) => {
+      const raw = input.value.trim();
+      if (raw === '') {
+        return current[index];
+      }
+      const number = Number(raw);
+      if (!Number.isFinite(number)) {
+        return current[index];
+      }
+      return clamp(Math.round(number), 0, 255);
+    });
+    applyColor({ r: values[0], g: values[1], b: values[2] });
+  }
+
+  for (const input of rgbInputs) {
+    input.addEventListener('input', onRgbInput);
+    input.addEventListener('change', commitRgb);
+  }
+
+  function readHslFields() {
+    const limits = [
+      { input: hInput, min: 0, max: 360 },
+      { input: sInput, min: 0, max: 100 },
+      { input: lInput, min: 0, max: 100 },
+    ];
+    const values = [];
+    const invalid = [];
+    for (const limit of limits) {
+      const raw = limit.input.value.trim();
+      if (raw === '') {
+        return { empty: true };
+      }
+      const number = Number(raw);
+      if (!Number.isInteger(number) || number < limit.min || number > limit.max) {
+        invalid.push(limit.input);
+      } else {
+        values.push(number);
+      }
+    }
+    if (invalid.length > 0) {
+      return { invalid };
+    }
+    return { hsl: { h: values[0], s: values[1], l: values[2] } };
+  }
+
+  function onHslInput() {
+    const result = readHslFields();
+    if (result.empty) {
+      setInputError('');
+      return;
+    }
+    if (result.invalid) {
+      setInputError('H は 0〜360、S と L は 0〜100 の整数で入力してください。', result.invalid);
+      return;
+    }
+    applyColor(hslToRgb(result.hsl.h, result.hsl.s, result.hsl.l), 'hsl');
+  }
+
+  function commitHsl() {
+    const current = rgbToHsl(color);
+    const limits = [
+      { input: hInput, value: current.h, min: 0, max: 360 },
+      { input: sInput, value: current.s, min: 0, max: 100 },
+      { input: lInput, value: current.l, min: 0, max: 100 },
+    ];
+    const values = limits.map((limit) => {
+      const raw = limit.input.value.trim();
+      if (raw === '') {
+        return limit.value;
+      }
+      const number = Number(raw);
+      if (!Number.isFinite(number)) {
+        return limit.value;
+      }
+      return clamp(Math.round(number), limit.min, limit.max);
+    });
+    applyColor(hslToRgb(values[0], values[1], values[2]));
+  }
+
+  for (const input of hslInputs) {
+    input.addEventListener('input', onHslInput);
+    input.addEventListener('change', commitHsl);
+  }
+
+  picker.addEventListener('input', () => {
+    const rgb = parseHex(picker.value);
+    if (rgb) {
+      applyColor(rgb, 'picker');
+    }
+  });
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (error) {
+      // クリップボード API が使えないときは下の方法に切り替える
+    }
+    try {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-1000px';
+      area.style.opacity = '0';
+      document.body.append(area);
+      area.select();
+      const copied = document.execCommand('copy');
+      area.remove();
+      return copied;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  for (const button of document.querySelectorAll('[data-copy]')) {
+    button.addEventListener('click', () => {
+      const kind = button.dataset.copy;
+      let text;
+      let label;
+      if (kind === 'hex') {
+        text = toHex(color);
+        label = 'HEX';
+      } else if (kind === 'rgb') {
+        text = rgbString(color);
+        label = 'RGB';
+      } else {
+        text = hslString(color);
+        label = 'HSL';
+      }
+      copyText(text).then((copied) => {
+        if (copied) {
+          statusEl.textContent = `${label} をコピーしました（${text}）。`;
+          statusEl.className = 'note ok';
+        } else {
+          statusEl.textContent = 'コピーできませんでした。表示されている値を選択してコピーしてください。';
+          statusEl.className = 'note err';
+        }
+      });
+    });
+  }
+
+  const tcPicker = $('tcPicker');
+  const tcHex = $('tcHex');
+  const tcError = $('tcError');
+  const bgPicker = $('bgPicker');
+  const bgHex = $('bgHex');
+  const bgError = $('bgError');
+  const sample = $('sample');
+  const ratioEl = $('ratio');
+  const summary = $('summary');
+  const swapButton = $('swap');
+  const contrastStatus = $('contrastStatus');
+
+  let textColor = { r: 107, g: 106, b: 114 };
+  let bgColor = { r: 247, g: 243, b: 234 };
+
+  const CHECKS = [
+    { id: 'checkAA', threshold: 4.5 },
+    { id: 'checkAAA', threshold: 7 },
+    { id: 'checkLargeAA', threshold: 3 },
+    { id: 'checkLargeAAA', threshold: 4.5 },
+  ];
+
+  function renderContrast() {
+    const rounded = Math.round(contrastRatio(textColor, bgColor) * 100) / 100;
+
+    sample.style.color = toHex(textColor);
+    sample.style.backgroundColor = toHex(bgColor);
+    ratioEl.textContent = `${rounded.toFixed(2)} : 1`;
+
+    for (const check of CHECKS) {
+      const node = $(check.id);
+      const passed = rounded >= check.threshold;
+      node.textContent = passed ? '合格' : '不合格';
+      node.className = passed ? 'ok' : 'err';
+    }
+
+    let className;
+    let message;
+    if (rounded >= 7) {
+      className = 'ok';
+      message = '通常テキスト・大きなテキストとも AAA（7:1 以上）に適合しています。';
+    } else if (rounded >= 4.5) {
+      className = 'warn';
+      message = '通常テキストは AA に適合します。AAA（7:1）には届きません。';
+    } else if (rounded >= 3) {
+      className = 'warn';
+      message = '大きなテキストは AA に適合します。通常テキストには不足しています。';
+    } else {
+      className = 'err';
+      message = '通常テキスト・大きなテキストとも AA の基準に届きません。';
+    }
+    summary.textContent = message;
+    summary.className = `note ${className}`;
+  }
+
+  function bindContrast(pickerEl, hexEl, errorEl, getColor, setColor) {
+    pickerEl.addEventListener('input', () => {
+      const rgb = parseHex(pickerEl.value);
+      if (!rgb) {
+        return;
+      }
+      errorEl.textContent = '';
+      hexEl.removeAttribute('aria-invalid');
+      hexEl.value = toHex(rgb);
+      setColor(rgb);
+      renderContrast();
+    });
+
+    hexEl.addEventListener('input', () => {
+      const rgb = parseHex(hexEl.value);
+      if (!rgb) {
+        errorEl.textContent = 'HEX は #rgb または #rrggbb の形式で入力してください。';
+        hexEl.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      errorEl.textContent = '';
+      hexEl.removeAttribute('aria-invalid');
+      pickerEl.value = toHex(rgb);
+      setColor(rgb);
+      renderContrast();
+    });
+
+    hexEl.addEventListener('change', () => {
+      const rgb = parseHex(hexEl.value);
+      if (rgb) {
+        hexEl.value = toHex(rgb);
+        setColor(rgb);
+      } else {
+        hexEl.value = toHex(getColor());
+        errorEl.textContent = '';
+        hexEl.removeAttribute('aria-invalid');
+      }
+      renderContrast();
+    });
+  }
+
+  bindContrast(tcPicker, tcHex, tcError, () => textColor, (rgb) => {
+    textColor = rgb;
+  });
+  bindContrast(bgPicker, bgHex, bgError, () => bgColor, (rgb) => {
+    bgColor = rgb;
+  });
+
+  swapButton.addEventListener('click', () => {
+    const previousText = textColor;
+    textColor = bgColor;
+    bgColor = previousText;
+
+    tcPicker.value = toHex(textColor);
+    tcHex.value = toHex(textColor);
+    bgPicker.value = toHex(bgColor);
+    bgHex.value = toHex(bgColor);
+    tcHex.removeAttribute('aria-invalid');
+    bgHex.removeAttribute('aria-invalid');
+    tcError.textContent = '';
+    bgError.textContent = '';
+
+    renderContrast();
+    contrastStatus.textContent = '文字色と背景色を入れ替えました。';
+  });
+
+  buildSwatches();
+  renderMain();
+  renderContrast();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>URLエンコード・デコード（パーセントエンコード）｜道具箱</title>
+<meta name="description" content="文字列をUTF-8のパーセントエンコード（encodeURIComponent / decodeURIComponent）とフォーム方式（空白を + に）で相互変換します。日本語や記号の例、不正な%シーケンスのエラー表示に対応。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/urlcode/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  fieldset.plain { border: 0; margin: 1rem 0 0; padding: 0; }
+  fieldset.plain legend { padding: 0 0 0.4rem; font-size: 0.75rem; color: var(--muted); }
+  .result { min-height: 3.25rem; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>URLエンコード</h1>
+    <p class="lead">文字列をパーセントエンコードし、また元に戻します。通常の方式と、フォーム送信で使われる「空白を + にする」方式の両方に対応しています。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <fieldset class="plain" style="margin-top:0">
+      <legend>変換の向き</legend>
+      <div class="row" style="gap:0.5rem 1.5rem">
+        <label class="check"><input type="radio" name="mode" value="encode" checked> エンコード</label>
+        <label class="check"><input type="radio" name="mode" value="decode"> デコード</label>
+      </div>
+    </fieldset>
+
+    <label class="check" for="optForm" style="margin-top:0.75rem">
+      <input type="checkbox" id="optForm" aria-describedby="formHelp">
+      <span id="formLabel">フォーム方式（空白を + に）</span>
+    </label>
+    <p class="hint" id="formHelp" style="margin:0.35rem 0 0">フォーム方式は application/x-www-form-urlencoded に合わせ、空白を + として扱います。</p>
+
+    <label class="field" for="src" style="margin-top:1.25rem">
+      <span>変換する文字列</span>
+      <textarea id="src" rows="5" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="srcHelp"></textarea>
+    </label>
+    <p class="hint" id="srcHelp" style="margin:0.5rem 0 0">変換はUTF-8として行います。Shift_JISなどで作られた文字列は正しく変換できません。</p>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn" type="button" id="btnRun">エンコードする</button>
+      <button class="btn secondary" type="button" id="btnCopy">結果をコピー</button>
+      <button class="btn ghost" type="button" id="btnSample">例を入れる</button>
+      <button class="btn ghost" type="button" id="btnClear">クリア</button>
+    </div>
+    <p class="hint" style="margin:0.6rem 0 0">Ctrl（Macは⌘）+ Enter でも変換できます。</p>
+
+    <p class="err" id="err" role="alert"></p>
+    <p class="warn" id="warn" role="status" aria-live="polite"></p>
+    <div class="result" id="out" aria-live="polite"></div>
+    <p class="hint" id="count" style="margin:0.5rem 0 0"></p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「変換の向き」でエンコードかデコードを選びます。ボタンの表示も選んだ向きに変わります。</li>
+      <li>フォーム送信のデータを扱う場合は「フォーム方式」をオンにします。エンコードでは空白が + になり、デコードでは + が空白として戻ります。</li>
+      <li>「変換する文字列」欄に入力し、「エンコードする」（または「デコードする」）を押します。Ctrl（Macは⌘）+ Enter でも実行できます。</li>
+      <li>結果を確認し、「結果をコピー」でクリップボードに入れます。デコードで % の後ろが不正な場合は、理由が赤字で表示されます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>URLエンコードについて</h2>
+    <p>URLでは、そのままでは使えない文字を「%」と2桁の16進数で表します。これをパーセントエンコードといいます。日本語のような文字は、まずUTF-8のバイト列に変換し、その1バイトずつを %XX の形にします。たとえば「日」は UTF-8 で E6 97 A5 なので、%E6%97%A5 になります。この道具はブラウザの encodeURIComponent と decodeURIComponent を使い、同じ規則で変換します。</p>
+
+    <h3>通常方式とフォーム方式の違い</h3>
+    <p>encodeURIComponent は、英数字と <code>- _ . ! ~ * ' ( )</code> をそのまま残し、それ以外を %XX にします。空白は %20 です。一方、HTMLのフォーム送信で使われる application/x-www-form-urlencoded では、空白を + で表し、<code>! ' ( ) ~</code> も %XX にします。この道具の「フォーム方式」はこの規則に合わせています。クエリ文字列のなかでは + が空白を意味しますが、URLのパス部分では + は文字どおりのプラスです。フォーム方式はフォームのデータにだけ使ってください。</p>
+
+    <h3>エラーになる例</h3>
+    <p>デコードでは、% の後ろに2桁の16進数がないとエラーになります。また、16進数としては正しくても、UTF-8として不正なバイト列（例: %FF の単独）はデコードできません。% そのものを文字として含めたいときは、あらかじめ %25 にエンコードされている必要があります。すでにエンコード済みの文字列をもう一度エンコードすると、% が %25 になり、二重エンコードになります。元の文字列がUTF-8かどうかも確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var src = document.getElementById('src');
+  var btnRun = document.getElementById('btnRun');
+  var btnCopy = document.getElementById('btnCopy');
+  var errEl = document.getElementById('err');
+  var warnEl = document.getElementById('warn');
+  var outEl = document.getElementById('out');
+  var countEl = document.getElementById('count');
+  var formLabel = document.getElementById('formLabel');
+  var optForm = document.getElementById('optForm');
+  var modes = Array.prototype.slice.call(document.querySelectorAll('input[name="mode"]'));
+  var lastResult = '';
+
+  var SAMPLE_PLAIN = '検索ワード: 道具箱 & tools?q=日本語 100%';
+  var SAMPLE_ENCODED = '%E6%A4%9C%E7%B4%A2%E3%83%AF%E3%83%BC%E3%83%89%3A+%E9%81%93%E5%85%B7%E7%AE%B1+%26+tools%3Fq%3D%E6%97%A5%E6%9C%AC%E8%AA%9E+100%25';
+
+  function currentMode() {
+    for (var i = 0; i < modes.length; i++) {
+      if (modes[i].checked) return modes[i].value;
+    }
+    return 'encode';
+  }
+
+  function isHex(ch) {
+    return /^[0-9A-Fa-f]$/.test(ch);
+  }
+
+  function badPercentIndex(s) {
+    for (var i = 0; i < s.length; i++) {
+      if (s.charCodeAt(i) !== 37) continue;
+      if (!isHex(s.charAt(i + 1)) || !isHex(s.charAt(i + 2))) return i;
+    }
+    return -1;
+  }
+
+  function encodeValue(s, form) {
+    var out = encodeURIComponent(s);
+    if (!form) return out;
+    out = out.replace(/[!'()~]/g, function (c) {
+      return '%' + c.charCodeAt(0).toString(16).toUpperCase();
+    });
+    return out.replace(/%20/g, '+');
+  }
+
+  function decodeValue(s, form) {
+    if (form) s = s.replace(/\+/g, ' ');
+    return decodeURIComponent(s);
+  }
+
+  function clearOutputs() {
+    lastResult = '';
+    outEl.textContent = '';
+    countEl.textContent = '';
+    warnEl.textContent = '';
+  }
+
+  function updateLabels() {
+    var m = currentMode();
+    btnRun.textContent = m === 'encode' ? 'エンコードする' : 'デコードする';
+    formLabel.textContent = m === 'encode' ? 'フォーム方式（空白を + に）' : 'フォーム方式（+ を空白に）';
+  }
+
+  function run() {
+    errEl.textContent = '';
+    warnEl.textContent = '';
+    warnEl.className = 'warn';
+    var input = src.value;
+    var mode = currentMode();
+    var form = optForm.checked;
+
+    if (input === '') {
+      clearOutputs();
+      errEl.textContent = '変換する文字列を入力してください。';
+      return;
+    }
+
+    var result;
+    try {
+      if (mode === 'encode') {
+        result = encodeValue(input, form);
+      } else {
+        var bad = badPercentIndex(input);
+        if (bad !== -1) {
+          clearOutputs();
+          errEl.textContent = '位置 ' + (bad + 1) + ' の % が不正です。% の後ろには2桁の16進数（0-9・A-F）が必要です。';
+          return;
+        }
+        result = decodeValue(input, form);
+      }
+    } catch (e) {
+      clearOutputs();
+      if (mode === 'decode') {
+        errEl.textContent = 'デコードできません。UTF-8として正しくないバイト列が含まれています（例: %FF）。元の文字列がUTF-8でエンコードされているか確認してください。';
+      } else {
+        errEl.textContent = 'エンコードできない文字が含まれています。対になっていないサロゲート文字など、文字列が壊れている可能性があります。';
+      }
+      return;
+    }
+
+    lastResult = result;
+    outEl.textContent = result;
+    countEl.textContent = '入力 ' + input.length + ' 文字 → 出力 ' + result.length + ' 文字';
+
+    if (mode === 'encode' && input.indexOf('%') !== -1) {
+      warnEl.textContent = '入力に % が含まれています。すでにエンコード済みの文字列なら、二重エンコードに注意してください。';
+    }
+  }
+
+  modes.forEach(function (r) {
+    r.addEventListener('change', function () {
+      updateLabels();
+      if (src.value !== '') run();
+    });
+  });
+
+  optForm.addEventListener('change', function () {
+    if (src.value !== '') run();
+  });
+
+  btnRun.addEventListener('click', run);
+
+  btnCopy.addEventListener('click', function () {
+    if (lastResult === '') {
+      errEl.textContent = 'コピーする結果がありません。先に変換してください。';
+      return;
+    }
+    function done(ok) {
+      if (ok) {
+        errEl.textContent = '';
+        warnEl.textContent = '結果をコピーしました。';
+        warnEl.className = 'ok';
+      } else {
+        errEl.textContent = 'コピーできませんでした。結果を選択してコピーしてください。';
+      }
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(lastResult).then(function () {
+        done(true);
+      }, function () {
+        done(legacyCopy(lastResult));
+      });
+    } else {
+      done(legacyCopy(lastResult));
+    }
+    function legacyCopy(text) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) {
+        return false;
+      }
+    }
+  });
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    src.value = currentMode() === 'encode' ? SAMPLE_PLAIN : SAMPLE_ENCODED;
+    run();
+    src.focus();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function () {
+    src.value = '';
+    errEl.textContent = '';
+    clearOutputs();
+    src.focus();
+  });
+
+  src.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      run();
+    }
+  });
+
+  updateLabels();
+})();
+</script>
+</body>
+</html>

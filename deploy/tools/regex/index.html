@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>正規表現テスター（ハイライト・キャプチャ確認）｜道具箱</title>
+<meta name="description" content="正規表現のパターンと対象テキストから、マッチ箇所のハイライト・マッチ数・各マッチの位置とキャプチャグループをその場で確認できるテスターです。g i m s u y のフラグ、メール・URL・電話・郵便番号・日付のプリセット付き。対象テキストは100KBまで。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/regex/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  mark { background: var(--mark); color: var(--ox); padding: 0 0.08em; border-radius: 2px; }
+  #marked { min-height: 3.25rem; max-height: 22rem; overflow: auto; }
+  #list table { margin-top: 0.5rem; }
+  #list table th:nth-child(1), #list table td:nth-child(1),
+  #list table th:nth-child(2), #list table td:nth-child(2) { width: 1%; white-space: nowrap; }
+  #list table td:nth-child(2) { color: var(--muted); }
+  .preset-row { gap: 0.4rem; margin-top: 0.75rem; }
+  .preset-row .btn { height: 1.9rem; padding: 0 0.7rem; font-size: 0.75rem; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>正規表現テスター</h1>
+    <p class="lead">パターンと対象テキストを入れると、マッチした箇所を色付けし、件数・位置・キャプチャグループを一覧にします。フラグの違いもその場で確かめられます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="grid-2">
+      <label class="field" for="pattern">
+        <span>正規表現パターン（/ は不要）</span>
+        <input type="text" id="pattern" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="patternHelp">
+      </label>
+      <div class="field">
+        <span id="flagsLabel">フラグ</span>
+        <div class="row" role="group" aria-labelledby="flagsLabel" style="gap:0.35rem 1rem;padding-top:0.4rem">
+          <label class="check"><input type="checkbox" class="flag" value="g" checked> g</label>
+          <label class="check"><input type="checkbox" class="flag" value="i"> i</label>
+          <label class="check"><input type="checkbox" class="flag" value="m"> m</label>
+          <label class="check"><input type="checkbox" class="flag" value="s"> s</label>
+          <label class="check"><input type="checkbox" class="flag" value="u"> u</label>
+          <label class="check"><input type="checkbox" class="flag" value="y"> y</label>
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="patternHelp" style="margin:0.5rem 0 0">パターン本体だけを入力し、修飾子はチェックボックスで指定します。入力のたびに結果が更新されます。</p>
+
+    <label class="field" for="target" style="margin-top:1rem">
+      <span>対象テキスト</span>
+      <textarea id="target" rows="6" spellcheck="false" aria-describedby="targetHelp"></textarea>
+    </label>
+    <p class="hint" id="targetHelp" style="margin:0.5rem 0 0">100KB（102,400バイト）まで。超えた場合は先頭だけを対象にします。</p>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn secondary" type="button" id="btnSample">サンプルを入れる</button>
+      <button class="btn secondary" type="button" id="btnCopy">結果をコピー</button>
+      <button class="btn ghost" type="button" id="btnClear">クリア</button>
+    </div>
+    <p class="ok" id="msg" role="status" aria-live="polite"></p>
+
+    <div class="row preset-row" role="group" aria-label="よく使うパターン">
+      <span class="hint">プリセット:</span>
+      <button class="btn ghost" type="button" data-preset="email">メール</button>
+      <button class="btn ghost" type="button" data-preset="url">URL</button>
+      <button class="btn ghost" type="button" data-preset="phone">電話番号</button>
+      <button class="btn ghost" type="button" data-preset="zip">郵便番号</button>
+      <button class="btn ghost" type="button" data-preset="date">日付</button>
+    </div>
+
+    <p class="err" id="err" role="alert"></p>
+    <p class="warn" id="warn" role="status" aria-live="polite"></p>
+
+    <div class="stats">
+      <div class="stat"><b id="stCount">0</b><span>マッチ数</span></div>
+      <div class="stat"><b id="stFlags">g</b><span>使用中のフラグ</span></div>
+      <div class="stat"><b id="stLen">0</b><span>対象文字数</span></div>
+    </div>
+    <p class="hint" id="summary" role="status" aria-live="polite" style="margin:0.6rem 0 0"></p>
+
+    <h2 style="margin-top:1.5rem;font-size:1rem">ハイライト</h2>
+    <div class="result" id="marked" aria-live="off"></div>
+
+    <h2 style="margin-top:1.5rem;font-size:1rem">マッチ一覧</h2>
+    <p class="hint" style="margin:0 0 0.25rem">位置は1始まりではなく、対象文字列の先頭を0としたUTF-16コード単位のオフセットです。</p>
+    <div id="list"></div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「正規表現パターン」に、スラッシュで囲まずにパターン本体を入力します。例: <code>\d{3}-\d{4}</code></li>
+      <li>必要に応じて g・i・m・s・u・y のフラグをオンにします。g をオフにすると最初の1件だけを調べます。</li>
+      <li>「対象テキスト」に検索したい文章を貼り付けます。入力のたびにハイライト・マッチ数・一覧が更新されます。</li>
+      <li>「プリセット」でメール・URL・電話番号・郵便番号・日付の代表的なパターンを試せます。「結果をコピー」でパターンとマッチ一覧をテキストとして取り出せます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>正規表現テスターについて</h2>
+    <p>正規表現は、文字列の検索や置換に使われるパターンの書き方です。この道具は、ブラウザの JavaScript が持つ RegExp をそのまま使って、パターンと対象テキストの一致を調べます。入力内容はブラウザの外へ送られません。</p>
+
+    <h3>フラグの意味</h3>
+    <p><code>g</code> は全体検索で、最初の一致で止めずにすべての一致を探します。<code>i</code> は大文字小文字を区別しません。<code>m</code> は複数行モードで、<code>^</code> と <code>$</code> が各行の先頭と末尾にも一致します。<code>s</code> は <code>.</code> が改行にも一致するようにします。<code>u</code> は Unicode モードで、サロゲートペアを1文字として扱い、<code>\u{...}</code> などの書き方が使えます。<code>y</code> は sticky モードで、<code>lastIndex</code> の位置から連続して一致する箇所だけを探します。g も y もオフのときは、最初の1件だけを表示します。</p>
+
+    <h3>表示の読み方</h3>
+    <p>「位置」は、対象テキストの先頭を0とした UTF-16 コード単位のオフセットです。日本語の多くは1文字が1コード単位ですが、絵文字などは2コード単位になります。「グループ」には、丸括弧で囲んだキャプチャグループが番号順に並びます。名前付きグループは <code>(?&lt;name&gt;...)</code> で定義でき、名前でも表示します。一致しなかったグループは「未参加」と表示します。長さ0の一致はハイライトせず、一覧に「(長さ0)」として残します。</p>
+
+    <h3>制限と注意</h3>
+    <p>対象テキストは100KB（102,400バイト）までで、超えた分は先頭から切り詰めて検証します。一致が多い場合は、ハイライトを先頭1,000件、一覧を先頭200件まで表示します。また、<code>(a+)+</code> のような入れ子の繰り返しを含むパターンでは、一致に膨大な時間がかかることがあります（破滅的バックトラック）。JavaScript の正規表現は途中で中断できないため、そのようなパターンを長いテキストに当てるとタブが応答しなくなることがあります。心当たりのあるパターンは、短いテキストで試してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var patternEl = document.getElementById('pattern');
+  var targetEl = document.getElementById('target');
+  var flagBoxes = Array.prototype.slice.call(document.querySelectorAll('.flag'));
+  var msgEl = document.getElementById('msg');
+  var errEl = document.getElementById('err');
+  var warnEl = document.getElementById('warn');
+  var markedEl = document.getElementById('marked');
+  var listEl = document.getElementById('list');
+  var summaryEl = document.getElementById('summary');
+  var stCount = document.getElementById('stCount');
+  var stFlags = document.getElementById('stFlags');
+  var stLen = document.getElementById('stLen');
+
+  var LIMIT_BYTES = 100 * 1024;
+  var MAX_MATCHES = 1000;
+  var MAX_MARKS = 1000;
+  var MAX_LIST = 200;
+  var lastReport = '';
+  var timer = null;
+
+  var SAMPLE_PATTERN = '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}';
+  var SAMPLE_TEXT = [
+    'お問い合わせ: info@example.com / support@example.com',
+    'URL: https://example.com/tools?q=1',
+    '電話: 03-1234-5678 / 090-1234-5678',
+    '郵便番号: 100-0001 / 060-0001',
+    '日付: 2026-11-23 / 2026/12/01'
+  ].join('\n');
+
+  var PRESETS = {
+    email: { pattern: '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}', flags: 'g' },
+    url: { pattern: "https?://[^\\s<>\"']+", flags: 'g' },
+    phone: { pattern: '0\\d{1,4}-\\d{1,4}-\\d{3,4}', flags: 'g' },
+    zip: { pattern: '\\d{3}-\\d{4}', flags: 'g' },
+    date: { pattern: '\\d{4}[-/]\\d{2}[-/]\\d{2}', flags: 'g' }
+  };
+
+  var ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  function esc(s) {
+    return s.replace(/[&<>"']/g, function (c) { return ESC[c]; });
+  }
+
+  function getFlags() {
+    return flagBoxes.filter(function (b) { return b.checked; })
+      .map(function (b) { return b.value; }).join('');
+  }
+
+  function setFlags(str) {
+    flagBoxes.forEach(function (b) {
+      b.checked = str.indexOf(b.value) !== -1;
+    });
+  }
+
+  function clampToBytes(s, limit) {
+    var n = 0;
+    var i = 0;
+    while (i < s.length) {
+      var c = s.charCodeAt(i);
+      var w;
+      var step;
+      if (c < 0x80) { w = 1; step = 1; }
+      else if (c < 0x800) { w = 2; step = 1; }
+      else if (c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length) {
+        var c2 = s.charCodeAt(i + 1);
+        if (c2 >= 0xDC00 && c2 <= 0xDFFF) { w = 4; step = 2; }
+        else { w = 3; step = 1; }
+      } else { w = 3; step = 1; }
+      if (n + w > limit) break;
+      n += w;
+      i += step;
+    }
+    return { text: s.slice(0, i), bytes: n, truncated: i < s.length };
+  }
+
+  function advanceBy(text, i) {
+    var c = text.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < text.length) {
+      var c2 = text.charCodeAt(i + 1);
+      if (c2 >= 0xDC00 && c2 <= 0xDFFF) return 2;
+    }
+    return 1;
+  }
+
+  function collect(re, text, all) {
+    var matches = [];
+    if (!all) {
+      var one = re.exec(text);
+      if (one) matches.push(one);
+      return matches;
+    }
+    while (matches.length < MAX_MATCHES) {
+      var m = re.exec(text);
+      if (!m) break;
+      matches.push(m);
+      if (m[0] === '') {
+        if (re.lastIndex >= text.length) break;
+        re.lastIndex += advanceBy(text, re.lastIndex);
+      }
+    }
+    return matches;
+  }
+
+  function buildMarks(text, matches) {
+    var parts = [];
+    var pos = 0;
+    var marked = 0;
+    for (var i = 0; i < matches.length && marked < MAX_MARKS; i++) {
+      var m = matches[i];
+      var start = m.index;
+      var end = start + m[0].length;
+      if (start < pos || end === start) continue;
+      parts.push(esc(text.slice(pos, start)));
+      parts.push('<mark>' + esc(m[0]) + '</mark>');
+      pos = end;
+      marked++;
+    }
+    parts.push(esc(text.slice(pos)));
+    return { html: parts.join(''), marked: marked };
+  }
+
+  function groupLines(m) {
+    var lines = [];
+    var g;
+    for (g = 1; g < m.length; g++) {
+      lines.push('$' + g + ': ' + (m[g] === undefined ? '未参加' : m[g]));
+    }
+    if (m.groups) {
+      Object.keys(m.groups).forEach(function (name) {
+        lines.push(name + ': ' + (m.groups[name] === undefined ? '未参加' : m.groups[name]));
+      });
+    }
+    return lines;
+  }
+
+  function renderList(matches) {
+    listEl.textContent = '';
+    if (matches.length === 0) return;
+    var table = document.createElement('table');
+    var caption = document.createElement('caption');
+    caption.className = 'sr-only';
+    caption.textContent = '一致した文字列・位置・キャプチャグループ';
+    table.appendChild(caption);
+
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    ['#', '位置', 'マッチした文字列', 'グループ'].forEach(function (t) {
+      var th = document.createElement('th');
+      th.scope = 'col';
+      th.textContent = t;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement('tbody');
+    var shown = Math.min(matches.length, MAX_LIST);
+    for (var i = 0; i < shown; i++) {
+      var m = matches[i];
+      var tr = document.createElement('tr');
+
+      var tdNum = document.createElement('td');
+      tdNum.textContent = String(i + 1);
+
+      var tdPos = document.createElement('td');
+      tdPos.className = 'mono';
+      tdPos.textContent = String(m.index);
+
+      var tdVal = document.createElement('td');
+      tdVal.className = 'mono';
+      tdVal.textContent = m[0] === '' ? '(長さ0)' : m[0];
+
+      var tdGrp = document.createElement('td');
+      tdGrp.className = 'mono';
+      var groups = groupLines(m);
+      tdGrp.textContent = groups.length ? groups.join('\n') : '—';
+      tdGrp.style.whiteSpace = 'pre-wrap';
+
+      tr.appendChild(tdNum);
+      tr.appendChild(tdPos);
+      tr.appendChild(tdVal);
+      tr.appendChild(tdGrp);
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    listEl.appendChild(table);
+  }
+
+  function buildReport(pattern, flags, matches, capped) {
+    var lines = [];
+    lines.push('パターン: /' + pattern + '/' + flags);
+    lines.push('マッチ数: ' + (capped ? MAX_MATCHES + '+' : String(matches.length)));
+    var shown = Math.min(matches.length, MAX_LIST);
+    for (var i = 0; i < shown; i++) {
+      var m = matches[i];
+      lines.push((i + 1) + '. 位置 ' + m.index + ': ' + (m[0] === '' ? '(長さ0)' : m[0]));
+      var g;
+      for (g = 1; g < m.length; g++) {
+        if (m[g] !== undefined) lines.push('   $' + g + ' = ' + m[g]);
+      }
+      if (m.groups) {
+        Object.keys(m.groups).forEach(function (name) {
+          if (m.groups[name] !== undefined) lines.push('   <' + name + '> = ' + m.groups[name]);
+        });
+      }
+    }
+    return lines.join('\n');
+  }
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function showMsg(text, cls) {
+    msgEl.textContent = text;
+    msgEl.className = cls;
+  }
+
+  function run() {
+    timer = null;
+    errEl.textContent = '';
+    warnEl.textContent = '';
+    showMsg('', 'ok');
+    lastReport = '';
+
+    var clamp = clampToBytes(targetEl.value, LIMIT_BYTES);
+    var text = clamp.text;
+    var pattern = patternEl.value;
+    var flags = getFlags();
+    var warnings = [];
+
+    if (clamp.truncated) {
+      warnings.push('対象テキストが100KBを超えたため、先頭 ' + text.length + ' 文字（' + clamp.bytes + ' バイト）だけを検証しました。');
+    }
+
+    stFlags.textContent = flags === '' ? 'なし' : flags;
+    stLen.textContent = String(text.length);
+
+    if (pattern === '') {
+      stCount.textContent = '0';
+      summaryEl.textContent = 'パターンを入力してください。';
+      markedEl.textContent = text === '' ? '対象テキストが空です。' : text;
+      listEl.textContent = '';
+      warnEl.textContent = warnings.join(' ');
+      return;
+    }
+
+    var re;
+    try {
+      re = new RegExp(pattern, flags);
+    } catch (e) {
+      stCount.textContent = '—';
+      summaryEl.textContent = '正規表現をコンパイルできませんでした。';
+      markedEl.textContent = text === '' ? '対象テキストが空です。' : text;
+      listEl.textContent = '';
+      errEl.textContent = '正規表現に誤りがあります: ' + e.message + '（括弧の対応や \\ のエスケープを確認してください）';
+      warnEl.textContent = warnings.join(' ');
+      return;
+    }
+
+    var all = flags.indexOf('g') !== -1 || flags.indexOf('y') !== -1;
+    var matches;
+    try {
+      matches = collect(re, text, all);
+    } catch (e2) {
+      stCount.textContent = '—';
+      summaryEl.textContent = '検索中にエラーが発生しました。';
+      markedEl.textContent = text;
+      listEl.textContent = '';
+      errEl.textContent = '検索中にエラーが発生しました: ' + e2.message;
+      warnEl.textContent = warnings.join(' ');
+      return;
+    }
+
+    var capped = matches.length >= MAX_MATCHES;
+    var built = buildMarks(text, matches);
+
+    if (text === '') {
+      markedEl.textContent = '対象テキストが空です。';
+    } else {
+      markedEl.innerHTML = built.html;
+    }
+    renderList(matches);
+
+    stCount.textContent = capped ? MAX_MATCHES + '+' : String(matches.length);
+
+    if (!all) {
+      summaryEl.textContent = matches.length === 0
+        ? 'マッチはありません。'
+        : '1件マッチしました（g フラグがオフのため最初の1件のみ）。';
+    } else if (capped) {
+      summaryEl.textContent = MAX_MATCHES + '件以上マッチしました。';
+    } else {
+      summaryEl.textContent = matches.length + '件マッチしました。';
+    }
+
+    if (built.marked < matches.length) {
+      warnings.push('ハイライトは先頭 ' + MAX_MARKS + ' 件までです。');
+    }
+    if (matches.length > MAX_LIST) {
+      warnings.push('一覧は先頭 ' + MAX_LIST + ' 件までです。');
+    }
+    warnEl.textContent = warnings.join(' ');
+    lastReport = buildReport(pattern, flags, matches, capped);
+  }
+
+  function runNow() {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    run();
+  }
+
+  function schedule() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(run, 140);
+  }
+
+  patternEl.addEventListener('input', schedule);
+  targetEl.addEventListener('input', schedule);
+  flagBoxes.forEach(function (b) {
+    b.addEventListener('change', schedule);
+  });
+
+  Array.prototype.slice.call(document.querySelectorAll('[data-preset]')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var p = PRESETS[btn.getAttribute('data-preset')];
+      if (!p) return;
+      patternEl.value = p.pattern;
+      setFlags(p.flags);
+      if (targetEl.value === '') targetEl.value = SAMPLE_TEXT;
+      runNow();
+    });
+  });
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    patternEl.value = SAMPLE_PATTERN;
+    setFlags('g');
+    targetEl.value = SAMPLE_TEXT;
+    runNow();
+  });
+
+  document.getElementById('btnCopy').addEventListener('click', function () {
+    if (lastReport === '') {
+      showMsg('コピーする結果がありません。パターンと対象テキストを入力してください。', 'err');
+      return;
+    }
+    copyText(lastReport).then(function (ok) {
+      showMsg(ok ? 'パターンとマッチ一覧をコピーしました。' : 'コピーできませんでした。結果を選択してコピーしてください。', ok ? 'ok' : 'err');
+    });
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function () {
+    patternEl.value = '';
+    targetEl.value = '';
+    setFlags('g');
+    runNow();
+    patternEl.focus();
+  });
+
+  run();
+})();
+</script>
+</body>
+</html>

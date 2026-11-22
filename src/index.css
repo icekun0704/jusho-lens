@@ -376,3 +376,11 @@
     color: oklch(0.38 0.12 25);
   }
 }
+
+@layer base {
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+}
+@layer utilities {
+  .tnum { font-variant-numeric: tabular-nums; }
+}

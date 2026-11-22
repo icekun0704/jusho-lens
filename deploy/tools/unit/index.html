@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>単位変換｜道具箱</title>
+<meta name="description" content="長さ・重さ・温度・面積・体積・速度の単位を、入力と同時に双方向で換算するツール。小数桁を指定でき、摂氏・華氏・ケルビンはオフセットを考慮します。計算はブラウザ内で完結し、値は送信されません。">
+<link rel="canonical" href="https://icekun.net/unit/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .unit-pair input[type="text"] { margin-bottom: 0.45rem; font-variant-numeric: tabular-nums; }
+  .conv-table td:first-child { white-space: nowrap; }
+  .conv-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 30rem) { .conv-table { font-size: 0.78rem; } }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>単位変換</h1>
+    <p class="lead">長さ・重さ・温度・面積・体積・速度を、入力と同時にどちら向きにも換算します。小数桁を選べ、温度は摂氏・華氏・ケルビンのオフセットを含めて計算します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>単位を換算する</h2>
+    <p class="hint">どちらの欄に入力しても、もう一方が即座に更新されます。温度は0の位置が単位ごとに違うため、摂氏を経由してオフセットを足し引きします。</p>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="cat"><span>カテゴリ</span></label>
+        <select id="cat">
+          <option value="length">長さ</option>
+          <option value="weight">重さ</option>
+          <option value="temperature">温度</option>
+          <option value="area">面積</option>
+          <option value="volume">体積</option>
+          <option value="speed">速度</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="dp"><span>小数桁（最大）</span></label>
+        <select id="dp">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:1.1rem">
+      <div class="field unit-pair">
+        <label for="fromVal"><span>変換前の値</span></label>
+        <input type="text" id="fromVal" inputmode="decimal" autocomplete="off" value="1">
+        <select id="fromUnit" aria-label="変換前の単位"></select>
+      </div>
+      <div class="field unit-pair">
+        <label for="toVal"><span>変換後の値</span></label>
+        <input type="text" id="toVal" inputmode="decimal" autocomplete="off">
+        <select id="toUnit" aria-label="変換後の単位"></select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button type="button" class="btn secondary" id="swap">単位と値を入れ替え</button>
+      <button type="button" class="btn ghost" id="clear">クリア</button>
+    </div>
+
+    <p class="result" id="equation" aria-live="polite"></p>
+    <p class="note">換算結果は表示上で丸めています。取引や契約など正確な値が必要な場面では、公的な換算基準を確認してください。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="common-h">
+    <h2 id="common-h">よく使う換算</h2>
+    <p class="hint">選択中のカテゴリの代表的な換算です。「小数桁（最大）」の設定がそのまま反映されます。</p>
+    <div style="overflow-x:auto">
+      <table class="conv-table">
+        <thead>
+          <tr><th scope="col">換算前</th><th scope="col">換算後</th></tr>
+        </thead>
+        <tbody id="commonBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">計算はブラウザ内で完結し、入力した値はサーバーに送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>カテゴリを選ぶと、そのカテゴリの単位が2つのプルダウンに入ります。</li>
+      <li>「変換前の値」または「変換後の値」のどちらかに入力すると、もう一方が自動で計算されます。</li>
+      <li>プルダウンで換算元・換算先の単位を変えられます。「単位と値を入れ替え」を押すと、同じ量を逆方向から確認できます。</li>
+      <li>「小数桁（最大）」で表示する桁数を変えられます。末尾の0は表示しません。</li>
+      <li>「よく使う換算」の表は、選んだカテゴリに合わせて切り替わります。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>単位変換について</h2>
+    <p>この道具は、長さ・重さ・温度・面積・体積・速度の6つのカテゴリで、メートル法、ヤード・ポンド法、尺貫法などの単位を相互に換算します。買い物や料理、旅行、DIY、工作などで、手元の値が別の単位でどのくらいになるかを確かめたいときに使えます。</p>
+
+    <h3>換算のしくみ</h3>
+    <p>長さ・重さ・面積・体積・速度は、各カテゴリに1つの基準単位を決め、すべての単位をその基準に対する係数で表しています。たとえば長さの基準はメートルで、1インチは0.0254メートル、1フィートは0.3048メートルです。変換は「元の値 × 元の単位の係数 ÷ 変換先の単位の係数」で求めます。温度だけは0の位置が単位ごとに違うため、摂氏を経由してオフセットを足し引きします。華氏から摂氏は (F − 32) × 5/9、ケルビンから摂氏は K − 273.15 です。</p>
+
+    <h3>尺貫法と日本の単位</h3>
+    <p>尺・間・里・坪・合・升は、現行の計量単位令に基づく換算です。1尺は10/33メートル（約30.30センチ）、1間は6尺（約1.818メートル）、1里は36町すなわち12960尺（約3.927キロメートル）です。面積の1坪は400/121平方メートル（約3.3058平方メートル）、体積の1升は2401/1331リットル（約1.8039リットル）で、1合はその10分の1です。貫・斤・匁は尺貫法由来の慣用単位で、1貫は3.75キログラム、1斤は0.6キログラム、1匁は3.75グラムとして扱っています。</p>
+
+    <h3>丸めと精度</h3>
+    <p>計算はブラウザの倍精度浮動小数点で行い、表示だけを指定した小数桁で丸めています。末尾の0は表示しません。桁を小さくすると、小さな値が0と表示されたり、大きな値が指数表記になったりすることがあります。貿易・契約・医療・法令など正確さが求められる場面では、この画面の値ではなく、公的な換算基準や専門家の確認を使ってください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const DATA = {
+    length: {
+      label: '長さ',
+      kind: 'factor',
+      units: {
+        mm:    { label: 'ミリメートル', sym: 'mm', factor: 0.001 },
+        cm:    { label: 'センチメートル', sym: 'cm', factor: 0.01 },
+        m:     { label: 'メートル', sym: 'm', factor: 1 },
+        km:    { label: 'キロメートル', sym: 'km', factor: 1000 },
+        inch:  { label: 'インチ', sym: 'in', factor: 0.0254 },
+        foot:  { label: 'フィート', sym: 'ft', factor: 0.3048 },
+        yard:  { label: 'ヤード', sym: 'yd', factor: 0.9144 },
+        mile:  { label: 'マイル', sym: 'mi', factor: 1609.344 },
+        nmi:   { label: '海里', sym: 'nmi', factor: 1852 },
+        shaku: { label: '尺', sym: '尺', factor: 10 / 33 },
+        ken:   { label: '間', sym: '間', factor: 60 / 33 },
+        ri:    { label: '里', sym: '里', factor: 129600 / 33 }
+      },
+      defaults: ['m', 'foot'],
+      common: [
+        ['1', 'cm', 'inch'],
+        ['1', 'm', 'foot'],
+        ['1', 'km', 'mile'],
+        ['1', 'mile', 'km'],
+        ['1', 'shaku', 'cm'],
+        ['1', 'ri', 'km']
+      ]
+    },
+    weight: {
+      label: '重さ',
+      kind: 'factor',
+      units: {
+        mg:    { label: 'ミリグラム', sym: 'mg', factor: 0.000001 },
+        g:     { label: 'グラム', sym: 'g', factor: 0.001 },
+        kg:    { label: 'キログラム', sym: 'kg', factor: 1 },
+        t:     { label: 'トン', sym: 't', factor: 1000 },
+        oz:    { label: 'オンス', sym: 'oz', factor: 0.028349523125 },
+        lb:    { label: 'ポンド', sym: 'lb', factor: 0.45359237 },
+        kan:   { label: '貫', sym: '貫', factor: 3.75 },
+        kin:   { label: '斤', sym: '斤', factor: 0.6 },
+        monme: { label: '匁', sym: '匁', factor: 0.00375 }
+      },
+      defaults: ['kg', 'lb'],
+      common: [
+        ['1', 'kg', 'lb'],
+        ['1', 'lb', 'kg'],
+        ['1', 'oz', 'g'],
+        ['1', 'kan', 'kg'],
+        ['1', 't', 'kg'],
+        ['100', 'g', 'monme']
+      ]
+    },
+    temperature: {
+      label: '温度',
+      kind: 'temperature',
+      units: {
+        c: { label: '摂氏', sym: '°C' },
+        f: { label: '華氏', sym: '°F' },
+        k: { label: 'ケルビン', sym: 'K' }
+      },
+      defaults: ['c', 'f'],
+      common: [
+        ['0', 'c', 'f'],
+        ['100', 'c', 'f'],
+        ['37', 'c', 'f'],
+        ['-40', 'c', 'f'],
+        ['0', 'k', 'c'],
+        ['98.6', 'f', 'c']
+      ]
+    },
+    area: {
+      label: '面積',
+      kind: 'factor',
+      units: {
+        mm2:   { label: '平方ミリメートル', sym: 'mm²', factor: 0.000001 },
+        cm2:   { label: '平方センチメートル', sym: 'cm²', factor: 0.0001 },
+        m2:    { label: '平方メートル', sym: 'm²', factor: 1 },
+        km2:   { label: '平方キロメートル', sym: 'km²', factor: 1000000 },
+        ha:    { label: 'ヘクタール', sym: 'ha', factor: 10000 },
+        a:     { label: 'アール', sym: 'a', factor: 100 },
+        tsubo: { label: '坪', sym: '坪', factor: 400 / 121 },
+        in2:   { label: '平方インチ', sym: 'in²', factor: 0.00064516 },
+        ft2:   { label: '平方フィート', sym: 'ft²', factor: 0.09290304 },
+        yd2:   { label: '平方ヤード', sym: 'yd²', factor: 0.83612736 },
+        acre:  { label: 'エーカー', sym: 'ac', factor: 4046.8564224 },
+        mi2:   { label: '平方マイル', sym: 'mi²', factor: 2589988.110336 }
+      },
+      defaults: ['m2', 'tsubo'],
+      common: [
+        ['1', 'm2', 'ft2'],
+        ['1', 'tsubo', 'm2'],
+        ['1', 'ha', 'm2'],
+        ['1', 'acre', 'm2'],
+        ['1', 'km2', 'mi2'],
+        ['1', 'ft2', 'm2']
+      ]
+    },
+    volume: {
+      label: '体積',
+      kind: 'factor',
+      units: {
+        ml:     { label: 'ミリリットル', sym: 'mL', factor: 0.001 },
+        l:      { label: 'リットル', sym: 'L', factor: 1 },
+        m3:     { label: '立方メートル', sym: 'm³', factor: 1000 },
+        cc:     { label: '立方センチメートル', sym: 'cm³', factor: 0.001 },
+        usgal:  { label: '米ガロン', sym: 'US gal', factor: 3.785411784 },
+        uspt:   { label: '米パイント', sym: 'US pt', factor: 0.473176473 },
+        usfloz: { label: '米液量オンス', sym: 'US fl oz', factor: 0.0295735295625 },
+        impgal: { label: '英ガロン', sym: 'imp gal', factor: 4.54609 },
+        go:     { label: '合', sym: '合', factor: 2401 / 13310 },
+        sho:    { label: '升', sym: '升', factor: 2401 / 1331 },
+        cup:    { label: '計量カップ（200 mL）', sym: 'cup', factor: 0.2 }
+      },
+      defaults: ['l', 'usgal'],
+      common: [
+        ['1', 'l', 'usgal'],
+        ['1', 'usgal', 'l'],
+        ['1', 'go', 'ml'],
+        ['1', 'sho', 'l'],
+        ['1', 'm3', 'l'],
+        ['1', 'cup', 'ml']
+      ]
+    },
+    speed: {
+      label: '速度',
+      kind: 'factor',
+      units: {
+        mps:  { label: 'メートル毎秒', sym: 'm/s', factor: 1 },
+        kmh:  { label: 'キロメートル毎時', sym: 'km/h', factor: 1 / 3.6 },
+        mph:  { label: 'マイル毎時', sym: 'mph', factor: 0.44704 },
+        knot: { label: 'ノット', sym: 'kn', factor: 1852 / 3600 },
+        fps:  { label: 'フィート毎秒', sym: 'ft/s', factor: 0.3048 }
+      },
+      defaults: ['kmh', 'mph'],
+      common: [
+        ['100', 'kmh', 'mph'],
+        ['60', 'mph', 'kmh'],
+        ['1', 'knot', 'kmh'],
+        ['1', 'mps', 'kmh'],
+        ['10', 'mps', 'knot']
+      ]
+    }
+  };
+
+  const catEl = document.getElementById('cat');
+  const dpEl = document.getElementById('dp');
+  const fromVal = document.getElementById('fromVal');
+  const toVal = document.getElementById('toVal');
+  const fromUnit = document.getElementById('fromUnit');
+  const toUnit = document.getElementById('toUnit');
+  const swapBtn = document.getElementById('swap');
+  const clearBtn = document.getElementById('clear');
+  const eqEl = document.getElementById('equation');
+  const commonBody = document.getElementById('commonBody');
+
+  function toCelsius(key, v) {
+    if (key === 'c') return v;
+    if (key === 'f') return (v - 32) * 5 / 9;
+    return v - 273.15;
+  }
+
+  function fromCelsius(key, c) {
+    if (key === 'c') return c;
+    if (key === 'f') return c * 9 / 5 + 32;
+    return c + 273.15;
+  }
+
+  function convert(catKey, fromKey, toKey, value) {
+    if (catKey === 'temperature') {
+      return fromCelsius(toKey, toCelsius(fromKey, value));
+    }
+    const units = DATA[catKey] && DATA[catKey].units;
+    if (!units || !units[fromKey] || !units[toKey]) return NaN;
+    return value * units[fromKey].factor / units[toKey].factor;
+  }
+
+  function parseNumber(input) {
+    let s = String(input).trim();
+    if (s === '') return null;
+    s = s
+      .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .replace(/．/g, '.')
+      .replace(/[，、]/g, ',')
+      .replace(/[－−]/g, '-')
+      .replace(/[,\s]/g, '');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function trimExp(s) {
+    const parts = s.split('e');
+    let mant = parts[0];
+    if (mant.indexOf('.') !== -1) {
+      mant = mant.replace(/0+$/, '').replace(/\.$/, '');
+    }
+    return mant + 'e' + parts[1];
+  }
+
+  function fmt(n, dp) {
+    if (!Number.isFinite(n)) return '—';
+    if (n === 0) return '0';
+    const abs = Math.abs(n);
+    if (abs >= 1e15) return trimExp(n.toExponential(Math.min(dp, 6)));
+    let s = n.toFixed(dp);
+    if (s.indexOf('.') !== -1) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    if (s === '-0') return '0';
+    if (Number(s) === 0 && abs < 1e-3) {
+      return trimExp(n.toExponential(Math.min(Math.max(dp, 2), 6)));
+    }
+    return s;
+  }
+
+  function unitText(catKey, key) {
+    const units = DATA[catKey] && DATA[catKey].units;
+    const u = units && units[key];
+    return u ? (u.sym || u.label) : key;
+  }
+
+  function fillUnitSelect(select, catKey, preferred) {
+    const units = DATA[catKey].units;
+    select.replaceChildren();
+    for (const key of Object.keys(units)) {
+      const u = units[key];
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = u.sym && u.sym !== u.label ? u.label + '（' + u.sym + '）' : u.label;
+      select.append(opt);
+    }
+    if (preferred && Object.prototype.hasOwnProperty.call(units, preferred)) {
+      select.value = preferred;
+    }
+  }
+
+  function compute(source) {
+    const catKey = catEl.value;
+    const dp = Number(dpEl.value);
+    const fromSide = source !== 'to';
+    const srcEl = fromSide ? fromVal : toVal;
+    const dstEl = fromSide ? toVal : fromVal;
+    const srcUnit = fromSide ? fromUnit.value : toUnit.value;
+    const dstUnit = fromSide ? toUnit.value : fromUnit.value;
+
+    const value = parseNumber(srcEl.value);
+    if (value === null) {
+      dstEl.value = '';
+      eqEl.textContent = '値を入力すると換算結果が表示されます。';
+      return;
+    }
+    const out = convert(catKey, srcUnit, dstUnit, value);
+    if (!Number.isFinite(out)) {
+      dstEl.value = '';
+      eqEl.textContent = '単位を選び直してください。';
+      return;
+    }
+    dstEl.value = fmt(out, dp);
+    eqEl.textContent =
+      fmt(value, dp) + ' ' + unitText(catKey, srcUnit) +
+      ' = ' + fmt(out, dp) + ' ' + unitText(catKey, dstUnit);
+  }
+
+  function renderCommon() {
+    const catKey = catEl.value;
+    const dp = Number(dpEl.value);
+    commonBody.replaceChildren();
+    for (const row of DATA[catKey].common) {
+      const value = Number(row[0]);
+      const out = convert(catKey, row[1], row[2], value);
+      const tr = document.createElement('tr');
+      const tdFrom = document.createElement('td');
+      tdFrom.textContent = fmt(value, dp) + ' ' + unitText(catKey, row[1]);
+      const tdTo = document.createElement('td');
+      tdTo.className = 'mono';
+      tdTo.textContent = fmt(out, dp) + ' ' + unitText(catKey, row[2]);
+      tr.append(tdFrom, tdTo);
+      commonBody.append(tr);
+    }
+  }
+
+  function onCategoryChange() {
+    const catKey = catEl.value;
+    const def = DATA[catKey].defaults;
+    fillUnitSelect(fromUnit, catKey, def[0]);
+    fillUnitSelect(toUnit, catKey, def[1]);
+    fromVal.value = '1';
+    toVal.value = '';
+    renderCommon();
+    compute('from');
+  }
+
+  catEl.addEventListener('change', onCategoryChange);
+  dpEl.addEventListener('change', () => {
+    renderCommon();
+    compute('from');
+  });
+  fromVal.addEventListener('input', () => compute('from'));
+  toVal.addEventListener('input', () => compute('to'));
+  fromUnit.addEventListener('change', () => compute('from'));
+  toUnit.addEventListener('change', () => compute('from'));
+
+  swapBtn.addEventListener('click', () => {
+    const unitTmp = fromUnit.value;
+    fromUnit.value = toUnit.value;
+    toUnit.value = unitTmp;
+    const valueTmp = fromVal.value;
+    fromVal.value = toVal.value;
+    toVal.value = valueTmp;
+    compute('from');
+  });
+
+  clearBtn.addEventListener('click', () => {
+    fromVal.value = '';
+    toVal.value = '';
+    compute('from');
+    fromVal.focus();
+  });
+
+  onCategoryChange();
+})();
+</script>
+</body>
+</html>

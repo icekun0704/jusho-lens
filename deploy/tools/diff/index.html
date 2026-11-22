@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>テキスト差分｜道具箱</title>
+<meta name="description" content="2つのテキストを行単位で比較する差分ツール。追加行は＋、削除行は−の記号と色で表示し、追加・削除・変更なしの行数を集計します。空白の違いを無視するオプション付き。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/diff/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .diff {
+    margin-top: 1rem; border: 1px solid var(--rule); border-radius: 8px;
+    overflow: auto; max-height: 34rem; background: var(--bg);
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.75;
+  }
+  .diff-line {
+    display: grid; grid-template-columns: 2.6rem 2.6rem 1.5rem minmax(0, 1fr);
+    gap: 0.5rem; padding: 0 0.7rem;
+  }
+  .diff-line > .ln {
+    color: var(--muted); font-size: 0.7rem; text-align: right;
+    font-variant-numeric: tabular-nums; user-select: none;
+  }
+  .diff-line > .mark { text-align: center; font-weight: 600; }
+  .diff-line > .txt { white-space: pre-wrap; word-break: break-word; }
+  .diff-line.add { background: #e9f0e4; box-shadow: inset 3px 0 0 var(--ok); }
+  .diff-line.add > .mark { color: var(--ok); }
+  .diff-line.del { background: #f7e6e1; box-shadow: inset 3px 0 0 var(--err); }
+  .diff-line.del > .mark { color: var(--err); }
+  .diff-line.ws > .mark { color: var(--warn); }
+  @media (max-width: 40rem) {
+    .diff-line { grid-template-columns: 2rem 2rem 1.2rem minmax(0, 1fr); gap: 0.35rem; padding: 0 0.5rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>テキスト差分</h1>
+    <p class="lead">2つのテキストを行単位で比較し、追加された行は「＋」、削除された行は「−」の記号と色で示します。空白の違いを無視する切り替えもできます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="grid-2">
+      <label class="field" for="textA">
+        <span>変更前（A）</span>
+        <textarea id="textA" rows="10" spellcheck="false" placeholder="比較元のテキストを貼り付けてください。"></textarea>
+      </label>
+      <label class="field" for="textB">
+        <span>変更後（B）</span>
+        <textarea id="textB" rows="10" spellcheck="false" placeholder="比較先のテキストを貼り付けてください。"></textarea>
+      </label>
+    </div>
+
+    <div class="row" style="margin-top:1rem">
+      <label class="check"><input type="checkbox" id="optWs"> 空白の違いを無視する</label>
+    </div>
+    <p class="hint" style="margin:0.5rem 0 0">行頭・行末の空白と、連続する空白（半角スペース・タブ・全角スペース）の違いを無視します。該当する行には「≈」を付けます。</p>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn" type="button" id="btnCompare">比較する</button>
+      <button class="btn secondary" type="button" id="btnSample">サンプルを入れる</button>
+      <button class="btn ghost" type="button" id="btnClear">クリア</button>
+    </div>
+    <p class="hint" style="margin:0.75rem 0 0">Ctrl＋Enter（Mac は ⌘＋Enter）でも比較できます。</p>
+
+    <p class="hint" id="diffMsg" role="status" aria-live="polite" style="min-height:1.5rem"></p>
+
+    <div class="stats">
+      <div class="stat"><b id="stAdd">0</b><span>追加された行（＋）</span></div>
+      <div class="stat"><b id="stDel">0</b><span>削除された行（−）</span></div>
+      <div class="stat"><b id="stSame">0</b><span>変更なしの行</span></div>
+    </div>
+
+    <div class="diff" id="diffOut" role="region" aria-label="差分の結果" tabindex="0">
+      <p class="hint" style="padding:0.9rem;margin:0">「比較する」を押すと、ここに差分が表示されます。</p>
+    </div>
+
+    <p class="hint" style="margin:0.6rem 0 0">＋ は追加された行、− は削除された行、≈ は空白の違いだけの行です。行番号は左が変更前（A）、右が変更後（B）です。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「変更前（A）」と「変更後（B）」の欄に、比べたいテキストをそれぞれ貼り付けます。</li>
+      <li>インデントや語間の空白の違いを無視したい場合は「空白の違いを無視する」をオンにします。</li>
+      <li>「比較する」を押すか、どちらかの欄で Ctrl＋Enter（Mac は ⌘＋Enter）を押します。</li>
+      <li>追加・削除・変更なしの行数と、行番号付きの差分を確認します。追加は＋と緑、削除は−と赤で表示されます。</li>
+      <li>「サンプルを入れる」で動作を試し、「クリア」で両方の欄を空にできます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>テキスト差分について</h2>
+    <p>2つのテキストを行単位で比較し、追加・削除された行を並べて表示する道具です。文章やプログラム、設定ファイルの変更点を目で追うときに使います。入力した内容はブラウザ内だけで処理され、サーバーには送信されません。</p>
+
+    <h3>差分の求め方</h3>
+    <p>比較には最長共通部分列（LCS）を使っています。両方のテキストに共通して現れる行の並びをできるだけ長く取り出し、そこに含まれない行を「削除（Aにだけある行）」と「追加（Bにだけある行）」として示します。行の順番は保たれるため、同じ内容の行が別の場所へ移動した場合は、移動としてではなく削除と追加の組として表示されます。文字単位ではなく行単位の比較なので、1行の中の小さな修正は、その行全体の削除と追加になります。</p>
+
+    <h3>空白を無視するオプション</h3>
+    <p>「空白の違いを無視する」をオンにすると、行頭・行末の空白を取り除き、連続する空白（半角スペース、タブ、全角スペース）を1つにまとめたうえで比較します。インデントだけが違う行や、語間のスペースの数だけが違う行は「変更なし」として扱われ、該当行には「≈」を付けます。表示される本文は元のままです。改行コードの CRLF と LF の違いは、常に同じ改行として扱います。</p>
+
+    <h3>表示と制限</h3>
+    <p>追加行は「＋」と緑、削除行は「−」と赤で示します。色が見分けにくい場合でも記号で判別できます。行番号は左が変更前（A）、右が変更後（B）です。計算はブラウザ内で行うため、1回の比較は各5,000行まで、共通部分を除いた比較表が400万セルを超える場合は中止します。表示は先頭5,000行までですが、追加・削除の集計はすべての行を対象にします。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+    <a href="/diff/">テキスト差分</a>
+    <a href="/gzip/">gzip圧縮・解凍</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var taA = document.getElementById('textA');
+  var taB = document.getElementById('textB');
+  var optWs = document.getElementById('optWs');
+  var diffMsg = document.getElementById('diffMsg');
+  var diffOut = document.getElementById('diffOut');
+  var stAdd = document.getElementById('stAdd');
+  var stDel = document.getElementById('stDel');
+  var stSame = document.getElementById('stSame');
+  var btnCompare = document.getElementById('btnCompare');
+
+  var MAX_LINES = 5000;
+  var MAX_CELLS = 4000000;
+  var MAX_ROWS = 5000;
+  var nf = new Intl.NumberFormat('ja-JP');
+  var hasRun = false;
+
+  var SAMPLE_A = [
+    '道具箱へようこそ。',
+    'このページはテキストの差分を表示します。',
+    '追加された行は緑、削除された行は赤で表示します。',
+    '入力はブラウザ内で処理されます。'
+  ].join('\n');
+
+  var SAMPLE_B = [
+    '道具箱へようこそ。',
+    'このページはテキストの差分を表示します。',
+    '追加された行は＋、削除された行は−の記号でも表示します。',
+    '入力はブラウザ内で処理されます。',
+    '比較できる行数には上限があります。'
+  ].join('\n');
+
+  function setMsg(text, cls) {
+    diffMsg.textContent = text;
+    diffMsg.className = cls;
+  }
+
+  function splitLines(text) {
+    var t = text.replace(/\r\n?/g, '\n');
+    if (t.length > 0 && t.charAt(t.length - 1) === '\n') t = t.slice(0, -1);
+    if (t === '') return [];
+    return t.split('\n');
+  }
+
+  function keyOf(line, ignoreWs) {
+    if (!ignoreWs) return line;
+    return line.replace(/\s+/g, ' ').trim();
+  }
+
+  function makeRow(type, oldNo, newNo, text, wsOnly) {
+    return { type: type, oldNo: oldNo, newNo: newNo, text: text, ws: wsOnly };
+  }
+
+  function computeRows(aLines, bLines, ignoreWs) {
+    var aKeys = aLines.map(function (l) { return keyOf(l, ignoreWs); });
+    var bKeys = bLines.map(function (l) { return keyOf(l, ignoreWs); });
+    var n = aKeys.length;
+    var m = bKeys.length;
+    var rows = [];
+    var p = 0;
+    var s = 0;
+    var i;
+    var j;
+
+    while (p < n && p < m && aKeys[p] === bKeys[p]) p++;
+    while (s < n - p && s < m - p && aKeys[n - 1 - s] === bKeys[m - 1 - s]) s++;
+
+    for (i = 0; i < p; i++) {
+      rows.push(makeRow('same', i + 1, i + 1, bLines[i], ignoreWs && aLines[i] !== bLines[i]));
+    }
+
+    var na = n - p - s;
+    var nb = m - p - s;
+
+    if (na * nb > MAX_CELLS) {
+      var limitErr = new Error('LIMIT');
+      limitErr.limit = true;
+      throw limitErr;
+    }
+
+    if (na > 0 || nb > 0) {
+      var w = nb + 1;
+      var dp = new Uint32Array((na + 1) * w);
+
+      for (i = na - 1; i >= 0; i--) {
+        var base = i * w;
+        var next = base + w;
+        var ai = aKeys[p + i];
+        for (j = nb - 1; j >= 0; j--) {
+          if (ai === bKeys[p + j]) {
+            dp[base + j] = dp[next + j + 1] + 1;
+          } else {
+            var down = dp[next + j];
+            var right = dp[base + j + 1];
+            dp[base + j] = down >= right ? down : right;
+          }
+        }
+      }
+
+      var oldNo = p;
+      var newNo = p;
+      i = 0;
+      j = 0;
+
+      while (i < na && j < nb) {
+        if (aKeys[p + i] === bKeys[p + j]) {
+          var sameText = bLines[p + j];
+          rows.push(makeRow('same', oldNo + 1, newNo + 1, sameText, ignoreWs && aLines[p + i] !== sameText));
+          oldNo++;
+          newNo++;
+          i++;
+          j++;
+        } else if (dp[(i + 1) * w + j] >= dp[i * w + j + 1]) {
+          rows.push(makeRow('del', oldNo + 1, 0, aLines[p + i], false));
+          oldNo++;
+          i++;
+        } else {
+          rows.push(makeRow('add', 0, newNo + 1, bLines[p + j], false));
+          newNo++;
+          j++;
+        }
+      }
+
+      while (i < na) {
+        rows.push(makeRow('del', oldNo + 1, 0, aLines[p + i], false));
+        oldNo++;
+        i++;
+      }
+
+      while (j < nb) {
+        rows.push(makeRow('add', 0, newNo + 1, bLines[p + j], false));
+        newNo++;
+        j++;
+      }
+    }
+
+    for (i = 0; i < s; i++) {
+      rows.push(makeRow('same', n - s + i + 1, m - s + i + 1, bLines[m - s + i], ignoreWs && aLines[n - s + i] !== bLines[m - s + i]));
+    }
+
+    return rows;
+  }
+
+  function renderRows(rows) {
+    var frag = document.createDocumentFragment();
+    var limit = Math.min(rows.length, MAX_ROWS);
+    var i;
+
+    for (i = 0; i < limit; i++) {
+      var r = rows[i];
+      var line = document.createElement('div');
+      line.className = 'diff-line ' + r.type + (r.ws ? ' ws' : '');
+
+      var oldEl = document.createElement('span');
+      oldEl.className = 'ln';
+      oldEl.textContent = r.oldNo ? String(r.oldNo) : '';
+
+      var newEl = document.createElement('span');
+      newEl.className = 'ln';
+      newEl.textContent = r.newNo ? String(r.newNo) : '';
+
+      var mark = document.createElement('span');
+      mark.className = 'mark';
+      mark.setAttribute('aria-hidden', 'true');
+      if (r.type === 'add') {
+        mark.textContent = '＋';
+      } else if (r.type === 'del') {
+        mark.textContent = '−';
+      } else if (r.ws) {
+        mark.textContent = '≈';
+      } else {
+        mark.textContent = ' ';
+      }
+
+      var label = document.createElement('span');
+      label.className = 'sr-only';
+      if (r.type === 'add') {
+        label.textContent = '追加 ';
+      } else if (r.type === 'del') {
+        label.textContent = '削除 ';
+      } else if (r.ws) {
+        label.textContent = '空白のみ異なる ';
+      }
+
+      var txt = document.createElement('span');
+      txt.className = 'txt';
+      txt.textContent = r.text;
+
+      line.appendChild(oldEl);
+      line.appendChild(newEl);
+      line.appendChild(mark);
+      line.appendChild(label);
+      line.appendChild(txt);
+      frag.appendChild(line);
+    }
+
+    if (rows.length > limit) {
+      var note = document.createElement('p');
+      note.className = 'hint';
+      note.style.padding = '0.7rem';
+      note.style.margin = '0';
+      note.textContent = '表示は先頭 ' + nf.format(limit) + ' 行までです（残り ' + nf.format(rows.length - limit) + ' 行は省略）。集計はすべての行を対象にしています。';
+      frag.appendChild(note);
+    }
+
+    diffOut.textContent = '';
+    diffOut.appendChild(frag);
+  }
+
+  function showEmpty() {
+    var p = document.createElement('p');
+    p.className = 'hint';
+    p.style.padding = '0.9rem';
+    p.style.margin = '0';
+    p.textContent = '「比較する」を押すと、ここに差分が表示されます。';
+    diffOut.textContent = '';
+    diffOut.appendChild(p);
+    stAdd.textContent = '0';
+    stDel.textContent = '0';
+    stSame.textContent = '0';
+  }
+
+  function run() {
+    var aLines = splitLines(taA.value);
+    var bLines = splitLines(taB.value);
+
+    if (aLines.length === 0 && bLines.length === 0) {
+      showEmpty();
+      setMsg('比較するテキストがありません。上の2つの欄に入力してください。', 'err');
+      hasRun = false;
+      return;
+    }
+
+    if (aLines.length > MAX_LINES || bLines.length > MAX_LINES) {
+      showEmpty();
+      setMsg('行数が上限を超えています（A ' + nf.format(aLines.length) + ' 行 / B ' + nf.format(bLines.length) + ' 行、上限 ' + nf.format(MAX_LINES) + ' 行）。', 'err');
+      return;
+    }
+
+    var rows;
+    try {
+      rows = computeRows(aLines, bLines, optWs.checked);
+    } catch (e) {
+      showEmpty();
+      if (e && e.limit) {
+        setMsg('差分の計算量が上限を超えました。行数を減らすか、共通部分を取り除いてから比較してください。', 'err');
+      } else {
+        setMsg('比較できませんでした。', 'err');
+      }
+      return;
+    }
+
+    var add = 0;
+    var del = 0;
+    var same = 0;
+    var ws = 0;
+    var i;
+    for (i = 0; i < rows.length; i++) {
+      if (rows[i].type === 'add') {
+        add++;
+      } else if (rows[i].type === 'del') {
+        del++;
+      } else {
+        same++;
+        if (rows[i].ws) ws++;
+      }
+    }
+
+    stAdd.textContent = nf.format(add);
+    stDel.textContent = nf.format(del);
+    stSame.textContent = nf.format(same);
+    renderRows(rows);
+
+    var note = 'A ' + nf.format(aLines.length) + ' 行 / B ' + nf.format(bLines.length) + ' 行を比較しました。';
+    if (optWs.checked) note += ' 空白の違いのみの行は ' + nf.format(ws) + ' 行です。';
+    if (add === 0 && del === 0) note += ' 2つのテキストは同じ内容です。';
+    setMsg(note, add === 0 && del === 0 ? 'ok' : 'hint');
+    hasRun = true;
+  }
+
+  function markStale() {
+    if (hasRun) setMsg('入力が変更されました。「比較する」でもう一度比較してください。', 'hint');
+  }
+
+  btnCompare.addEventListener('click', run);
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    taA.value = SAMPLE_A;
+    taB.value = SAMPLE_B;
+    optWs.checked = false;
+    hasRun = false;
+    diffMsg.textContent = '';
+    run();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function () {
+    taA.value = '';
+    taB.value = '';
+    hasRun = false;
+    showEmpty();
+    setMsg('クリアしました。', 'hint');
+    taA.focus();
+  });
+
+  taA.addEventListener('input', markStale);
+  taB.addEventListener('input', markStale);
+
+  optWs.addEventListener('change', function () {
+    if (hasRun) run();
+  });
+
+  [taA, taB].forEach(function (ta) {
+    ta.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        run();
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

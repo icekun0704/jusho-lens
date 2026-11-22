@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gzip圧縮・解凍｜道具箱</title>
+<meta name="description" content="テキストを gzip 形式で圧縮して .gz ファイルとしてダウンロードし、.gz ファイルを解凍して中身を表示・保存できるツール。元サイズ・圧縮後サイズ・削減率も表示します。処理はブラウザ内（CompressionStream）で完結し、サーバーには送信しません。">
+<link rel="canonical" href="https://icekun.net/gzip/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+  .sep { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0 1.5rem; }
+  input[type="file"] { font-size: 0.8125rem; color: var(--muted); max-width: 100%; }
+  #gzOut { min-height: 10rem; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>gzip圧縮・解凍</h1>
+    <p class="lead">テキストを gzip で圧縮して .gz ファイルとして保存し、.gz ファイルを解凍して中身を表示・保存できます。元サイズと圧縮後サイズ、削減率も確認できます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <p class="warn" id="unsupported" role="alert" hidden>
+      このブラウザは <span class="mono">CompressionStream</span> / <span class="mono">DecompressionStream</span> に対応していないため、圧縮・解凍を利用できません。Chrome または Edge の 80 以降、Firefox 113 以降、Safari 16.4 以降の最新版でお試しください。
+    </p>
+
+    <h2>圧縮（テキスト → .gz）</h2>
+    <p class="hint">入力したテキストを UTF-8 のバイト列として gzip で圧縮し、.gz ファイルとしてダウンロードします。上限は 20MB です。</p>
+
+    <label class="field" for="src">
+      <span>テキスト</span>
+      <textarea id="src" rows="8" spellcheck="false" placeholder="圧縮したいテキストを貼り付けてください。"></textarea>
+    </label>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <label class="field" for="gzName">
+        <span>保存するファイル名</span>
+        <input type="text" id="gzName" value="text.txt.gz" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="row" style="align-items:flex-end">
+        <button class="btn" type="button" id="btnGzip">圧縮してダウンロード</button>
+        <button class="btn secondary" type="button" id="btnSample">サンプルを入れる</button>
+        <button class="btn ghost" type="button" id="btnClear">クリア</button>
+      </div>
+    </div>
+    <p class="hint" style="margin:0.5rem 0 0">拡張子がなければ自動で「.gz」を付けます。</p>
+
+    <p class="hint" id="gzipMsg" role="status" aria-live="polite" style="min-height:1.5rem"></p>
+
+    <div class="stats" id="gzipStats" hidden>
+      <div class="stat"><b id="stOrig">—</b><span>元のサイズ（UTF-8）</span></div>
+      <div class="stat"><b id="stGz">—</b><span>圧縮後（.gz）</span></div>
+      <div class="stat"><b id="stRatio">—</b><span>削減率</span></div>
+    </div>
+
+    <hr class="sep">
+
+    <h2>解凍（.gz → テキスト）</h2>
+    <p class="hint">gzip 形式の .gz ファイルを選んで解凍します。上限は 20MB です。.tar.gz の場合は tar 形式の中身が出るため、テキストとしては表示されません。</p>
+
+    <label class="field" for="gzFile">
+      <span>.gz ファイル</span>
+      <input type="file" id="gzFile" accept=".gz,application/gzip,application/x-gzip">
+    </label>
+
+    <div class="row" style="margin-top:1rem">
+      <button class="btn" type="button" id="btnGunzip">解凍する</button>
+    </div>
+
+    <p class="hint" id="gunzipMsg" role="status" aria-live="polite" style="min-height:1.5rem"></p>
+
+    <div class="stats" id="gunzipStats" hidden>
+      <div class="stat"><b id="stIn">—</b><span>.gz のサイズ</span></div>
+      <div class="stat"><b id="stOut">—</b><span>解凍後のサイズ</span></div>
+      <div class="stat"><b id="stFactor">—</b><span>展開倍率</span></div>
+    </div>
+
+    <label class="field" for="gzOut" style="margin-top:1rem">
+      <span>解凍したテキスト</span>
+      <textarea id="gzOut" readonly spellcheck="false" placeholder="解凍すると、ここに中身が表示されます。"></textarea>
+    </label>
+
+    <div class="row" style="margin-top:1rem">
+      <button class="btn secondary" type="button" id="btnSaveOut" disabled>テキストをダウンロード</button>
+    </div>
+    <p class="hint" id="outName" style="margin:0.5rem 0 0"></p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>圧縮するには、「テキスト」欄に入力し、保存するファイル名を確認してから「圧縮してダウンロード」を押します。.gz ファイルのダウンロードが始まります。</li>
+      <li>圧縮後は、元のサイズ・圧縮後のサイズ・削減率が表示されます。削減率がマイナスの場合は、圧縮でサイズが増えています。</li>
+      <li>解凍するには、「.gz ファイル」でファイルを選び、「解凍する」を押します。中身がテキストとして読める場合は表示され、「テキストをダウンロード」で保存できます。</li>
+      <li>テキストとして読めないバイト列（tar など）の場合は、その旨が表示され、元の形式のままファイルとして保存できます。</li>
+      <li>どちらも上限は 20MB です。それを超えるファイルは処理しません。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>gzip圧縮・解凍について</h2>
+    <p>テキストを gzip 形式で圧縮し、.gz ファイルとして保存する道具です。逆に .gz ファイルを選ぶと、解凍した内容をテキストとして表示し、必要ならファイルとして保存できます。処理はブラウザ内の CompressionStream / DecompressionStream で行い、入力した内容をサーバーへ送ることはありません。</p>
+
+    <h3>gzip とは</h3>
+    <p>gzip は RFC 1952 で定められた圧縮ファイル形式で、中身は DEFLATE という可逆圧縮アルゴリズムです。元のデータは完全に復元でき、テキストのように同じ記号や単語が繰り返されるデータほど小さくなります。ファイルの先頭と末尾には、圧縮データのほかに CRC32 と元のサイズ（ISIZE）が入ります。この道具が作る .gz には元のファイル名や更新日時などのメタデータは記録されず、保存名はダウンロード時のファイル名としてのみ使われます。</p>
+
+    <h3>削減率の読み方</h3>
+    <p>削減率は、元の UTF-8 バイト数に対して圧縮後のサイズがどれだけ減ったかを割合で示します。日本語は UTF-8 で1文字あたり3バイトになるため、文字数より元サイズが大きくなります。短いテキストでは gzip のヘッダとトレーラ（合わせて約18バイト）の分だけサイズが増えることがあり、その場合は削減率がマイナスになります。既に圧縮されている画像や ZIP ファイルの中身などは、ほとんど小さくなりません。</p>
+
+    <h3>ブラウザ内処理と注意点</h3>
+    <p>圧縮と解凍にはブラウザ標準の CompressionStream / DecompressionStream を使っています。Chrome と Edge は 80 以降、Firefox は 113 以降、Safari は 16.4 以降が目安です。対応していないブラウザでは警告を表示し、ボタンを無効にします。一度に扱えるのは 20MB までで、解凍後のサイズが上限を超える場合も処理を中止します。.tar.gz は gzip を解くと tar 形式のバイト列になるため、テキストとしては表示されません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+    <a href="/diff/">テキスト差分</a>
+    <a href="/gzip/">gzip圧縮・解凍</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var MAX_BYTES = 20 * 1024 * 1024;
+  var DISPLAY_MAX = 200000;
+  var nf = new Intl.NumberFormat('ja-JP');
+  var supported = typeof window.CompressionStream === 'function' && typeof window.DecompressionStream === 'function';
+
+  var src = document.getElementById('src');
+  var gzName = document.getElementById('gzName');
+  var btnGzip = document.getElementById('btnGzip');
+  var gzipMsg = document.getElementById('gzipMsg');
+  var gzipStats = document.getElementById('gzipStats');
+  var stOrig = document.getElementById('stOrig');
+  var stGz = document.getElementById('stGz');
+  var stRatio = document.getElementById('stRatio');
+
+  var gzFile = document.getElementById('gzFile');
+  var btnGunzip = document.getElementById('btnGunzip');
+  var gunzipMsg = document.getElementById('gunzipMsg');
+  var gunzipStats = document.getElementById('gunzipStats');
+  var stIn = document.getElementById('stIn');
+  var stOut = document.getElementById('stOut');
+  var stFactor = document.getElementById('stFactor');
+  var gzOut = document.getElementById('gzOut');
+  var btnSaveOut = document.getElementById('btnSaveOut');
+  var outName = document.getElementById('outName');
+  var unsupported = document.getElementById('unsupported');
+
+  var lastBlob = null;
+  var busy = false;
+
+  var SAMPLE = [
+    'gzip は、データを圧縮するためのファイル形式のひとつです。',
+    'テキストをそのまま保存するよりも小さくなることが多く、転送や保存の容量を減らせます。',
+    'この道具では、入力したテキストをブラウザ内で圧縮し、.gz ファイルとして保存します。',
+    '逆に .gz ファイルを選ぶと、中身を解凍してテキストとして表示します。',
+    '入力した内容がサーバーに送られることはありません。'
+  ].join('\n');
+
+  if (!supported) {
+    unsupported.hidden = false;
+    btnGzip.disabled = true;
+    btnGunzip.disabled = true;
+  }
+
+  function setMsg(el, text, cls) {
+    el.textContent = text;
+    el.className = cls;
+  }
+
+  function formatBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+    if (n < 1073741824) return (n / 1048576).toFixed(2) + ' MB';
+    return (n / 1073741824).toFixed(2) + ' GB';
+  }
+
+  function userError(message) {
+    var e = new Error(message);
+    e.userFacing = true;
+    return e;
+  }
+
+  function download(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+  }
+
+  async function readAll(stream, maxBytes, overMsg) {
+    var reader = stream.getReader();
+    var chunks = [];
+    var total = 0;
+    while (true) {
+      var step = await reader.read();
+      if (step.done) break;
+      var chunk = step.value;
+      total += chunk.byteLength;
+      if (total > maxBytes) {
+        try { await reader.cancel(); } catch (e) { /* ignore */ }
+        throw userError(overMsg);
+      }
+      chunks.push(chunk);
+    }
+    var all = new Uint8Array(total);
+    var offset = 0;
+    var i;
+    for (i = 0; i < chunks.length; i++) {
+      all.set(chunks[i], offset);
+      offset += chunks[i].byteLength;
+    }
+    return all;
+  }
+
+  async function compress() {
+    if (!supported || busy) return;
+
+    var text = src.value;
+    if (text === '') {
+      setMsg(gzipMsg, '圧縮するテキストを入力してください。', 'err');
+      return;
+    }
+
+    var bytes = new TextEncoder().encode(text);
+    if (bytes.byteLength > MAX_BYTES) {
+      setMsg(gzipMsg, 'テキストが大きすぎます（' + formatBytes(bytes.byteLength) + '）。上限は ' + formatBytes(MAX_BYTES) + ' です。', 'err');
+      return;
+    }
+
+    busy = true;
+    btnGzip.disabled = true;
+    var label = btnGzip.textContent;
+    btnGzip.textContent = '圧縮中…';
+    gzipMsg.textContent = '';
+    gzipStats.hidden = true;
+
+    try {
+      var stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+      var gz = await readAll(stream, MAX_BYTES, '圧縮後のデータが上限を超えました。');
+      var ratio = bytes.byteLength === 0 ? 0 : (1 - gz.byteLength / bytes.byteLength) * 100;
+
+      stOrig.textContent = formatBytes(bytes.byteLength);
+      stGz.textContent = formatBytes(gz.byteLength);
+      stRatio.textContent = ratio.toFixed(1) + '%';
+      gzipStats.hidden = false;
+
+      var name = (gzName.value || '').trim() || 'text.txt.gz';
+      name = name.replace(/[\\/:*?"<>|]/g, '_');
+      if (!/\.gz$/i.test(name)) name += '.gz';
+
+      download(new Blob([gz], { type: 'application/gzip' }), name);
+      setMsg(gzipMsg, '圧縮しました（' + name + '、' + formatBytes(gz.byteLength) + '）。ダウンロードが始まらない場合は、ブラウザのダウンロード設定を確認してください。', 'ok');
+    } catch (e) {
+      setMsg(gzipMsg, (e && e.userFacing) ? e.message : '圧縮できませんでした。テキストを減らして再度お試しください。', 'err');
+    } finally {
+      busy = false;
+      btnGzip.disabled = false;
+      btnGzip.textContent = label;
+    }
+  }
+
+  async function decompress() {
+    if (!supported || busy) return;
+
+    gzOut.value = '';
+    btnSaveOut.disabled = true;
+    outName.textContent = '';
+    lastBlob = null;
+    gunzipStats.hidden = true;
+    gunzipMsg.textContent = '';
+
+    var file = gzFile.files && gzFile.files[0] ? gzFile.files[0] : null;
+    if (!file) {
+      setMsg(gunzipMsg, '解凍する .gz ファイルを選んでください。', 'err');
+      return;
+    }
+    if (file.size === 0) {
+      setMsg(gunzipMsg, 'ファイルが空です。', 'err');
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setMsg(gunzipMsg, '.gz ファイルが大きすぎます（' + formatBytes(file.size) + '）。上限は ' + formatBytes(MAX_BYTES) + ' です。', 'err');
+      return;
+    }
+
+    busy = true;
+    btnGunzip.disabled = true;
+    var label = btnGunzip.textContent;
+    btnGunzip.textContent = '解凍中…';
+
+    try {
+      var stream = file.stream().pipeThrough(new DecompressionStream('gzip'));
+      var out = await readAll(stream, MAX_BYTES, '解凍後のサイズが上限（' + formatBytes(MAX_BYTES) + '）を超えたため、処理を中止しました。');
+
+      stIn.textContent = formatBytes(file.size);
+      stOut.textContent = formatBytes(out.byteLength);
+      stFactor.textContent = (out.byteLength / file.size).toFixed(1) + '倍';
+      gunzipStats.hidden = false;
+
+      var hasNul = false;
+      var i;
+      for (i = 0; i < out.length && i < 8192; i++) {
+        if (out[i] === 0) {
+          hasNul = true;
+          break;
+        }
+      }
+
+      var text = null;
+      if (!hasNul) {
+        try {
+          text = new TextDecoder('utf-8', { fatal: true }).decode(out);
+        } catch (decodeErr) {
+          text = null;
+        }
+      }
+
+      var base = file.name.replace(/\.gz$/i, '');
+      if (base === file.name || base === '') base = 'decompressed';
+
+      if (text !== null) {
+        gzOut.value = text.length > DISPLAY_MAX ? text.slice(0, DISPLAY_MAX) : text;
+        gzOut.scrollTop = 0;
+
+        var saveName = base;
+        if (!/\.[A-Za-z0-9]{1,8}$/.test(base)) saveName = base + '.txt';
+
+        lastBlob = { blob: new Blob([out], { type: 'text/plain;charset=utf-8' }), name: saveName };
+        btnSaveOut.disabled = false;
+        outName.textContent = '保存名: ' + saveName +
+          (text.length > DISPLAY_MAX ? '（表示は先頭 ' + nf.format(DISPLAY_MAX) + ' 文字まで、保存は全文です）' : '');
+        setMsg(gunzipMsg, '解凍しました。UTF-8 のテキストとして表示しています。', 'ok');
+      } else {
+        var binName = base;
+        if (!/\.[A-Za-z0-9]{1,8}$/.test(base)) binName = base + '.bin';
+
+        lastBlob = { blob: new Blob([out], { type: 'application/octet-stream' }), name: binName };
+        btnSaveOut.disabled = false;
+        outName.textContent = '保存名: ' + binName;
+        setMsg(gunzipMsg, '解凍できましたが、UTF-8 のテキストとして読めないバイト列です（tar やバイナリの可能性があります）。ファイルとして保存できます。', 'warn');
+      }
+    } catch (e) {
+      setMsg(gunzipMsg, (e && e.userFacing) ? e.message : '解凍できませんでした。gzip 形式（.gz）のファイルか、ファイルが壊れていないかを確認してください。', 'err');
+    } finally {
+      busy = false;
+      btnGunzip.disabled = false;
+      btnGunzip.textContent = label;
+    }
+  }
+
+  btnGzip.addEventListener('click', compress);
+  btnGunzip.addEventListener('click', decompress);
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    src.value = SAMPLE;
+    gzipMsg.textContent = '';
+    gzipStats.hidden = true;
+    src.focus();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function () {
+    src.value = '';
+    gzipMsg.textContent = '';
+    gzipStats.hidden = true;
+    src.focus();
+  });
+
+  gzFile.addEventListener('change', function () {
+    gzOut.value = '';
+    btnSaveOut.disabled = true;
+    outName.textContent = '';
+    lastBlob = null;
+    gunzipStats.hidden = true;
+    gunzipMsg.textContent = '';
+  });
+
+  btnSaveOut.addEventListener('click', function () {
+    if (lastBlob) download(lastBlob.blob, lastBlob.name);
+  });
+})();
+</script>
+</body>
+</html>

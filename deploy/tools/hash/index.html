@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ハッシュ生成｜道具箱</title>
+<meta name="description" content="テキストやファイルから SHA-1 / SHA-256 / SHA-384 / SHA-512 のハッシュ値を生成します。4種類を同時に表示してコピーでき、計算はすべてブラウザ内で行われます。">
+<link rel="canonical" href="https://icekun.net/hash/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  #hash-body th { font-size: 0.8125rem; color: var(--ink); white-space: nowrap; }
+  #hash-body th .warn { display: block; margin: 0.1rem 0 0; font-size: 0.7rem; line-height: 1.4; }
+  #hash-body .btn { height: 1.9rem; padding: 0 0.7rem; font-size: 0.75rem; }
+  #file { width: 100%; max-width: 100%; font-size: 0.8125rem; }
+  @media (max-width: 40rem) {
+    #hash-body th, #hash-body td { padding-left: 0.35rem; padding-right: 0.35rem; }
+    #hash-body .btn { padding: 0 0.45rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>ハッシュ生成</h1>
+    <p class="lead">テキストやファイルのハッシュ値を、4つのアルゴリズムで同時に計算します。</p>
+  </div>
+
+  <section class="panel" id="tool" aria-labelledby="tool-h">
+    <h2 id="tool-h">ハッシュを計算する</h2>
+    <p class="hint">テキストは UTF-8 として、ファイルは中身のバイト列をそのまま計算します。どちらもブラウザ内で処理され、アップロードされません。</p>
+
+    <div class="row" role="radiogroup" aria-label="入力の種類">
+      <label class="check"><input type="radio" name="source" value="text" checked> テキスト</label>
+      <label class="check"><input type="radio" name="source" value="file"> ファイル</label>
+      <label class="check" style="margin-left:auto"><input type="checkbox" id="upper"> 大文字で表示</label>
+    </div>
+
+    <div id="text-block" style="margin-top:1rem">
+      <label class="field">
+        <span>テキスト（UTF-8）</span>
+        <textarea id="text" rows="5" spellcheck="false" placeholder="ハッシュを計算するテキストを入力"></textarea>
+      </label>
+    </div>
+
+    <div id="file-block" hidden style="margin-top:1rem">
+      <label class="field">
+        <span>ファイル（中身のバイト列を計算）</span>
+        <input type="file" id="file" aria-describedby="file-note">
+      </label>
+      <p class="note" id="file-note">ファイルが選択されていません。</p>
+    </div>
+
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn secondary" type="button" id="sample">サンプル</button>
+      <button class="btn secondary" type="button" id="clear">クリア</button>
+    </div>
+
+    <p class="note" id="source-note" role="status" aria-live="polite">入力がありません。テキストを入力するか、ファイルを選んでください。</p>
+
+    <div id="results" aria-live="polite" style="margin-top:1rem">
+      <table>
+        <caption class="sr-only">ハッシュ値の一覧</caption>
+        <thead>
+          <tr>
+            <th scope="col">アルゴリズム</th>
+            <th scope="col">ハッシュ値</th>
+            <th scope="col"><span class="sr-only">コピー</span></th>
+          </tr>
+        </thead>
+        <tbody id="hash-body"></tbody>
+      </table>
+    </div>
+
+    <p class="warn">SHA-1 は衝突攻撃が確認されているため、パスワードの保存や改ざん検出などのセキュリティ用途には使わないでください。古いシステムとの互換性確認などに限って使います。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">テキストもファイルもブラウザ内で計算され、アップロードされません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「テキスト」か「ファイル」を選びます。テキストは入力すると自動で計算されます。</li>
+      <li>SHA-1 / SHA-256 / SHA-384 / SHA-512 の4種類が同時に表示されます。「大文字で表示」で表記を切り替えられます。</li>
+      <li>各行の「コピー」でハッシュ値だけを取り出せます。ファイルのサイズも入力欄の下に表示されます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>ハッシュ生成について</h2>
+    <p>ハッシュ関数は、任意の長さのデータから固定長の値（ハッシュ値、ダイジェスト）を作る一方向の計算です。同じ入力からは必ず同じ値になり、1文字でも変われば結果はまったく別の値になります。ハッシュ値から元のデータを復元することは事実上できません。ファイルの同一性確認、改ざんの検出、ダウンロードしたファイルの照合などに使われます。</p>
+
+    <h3>アルゴリズムの選び方</h3>
+    <p>ふだん使うなら SHA-256 が標準的な選択です。SHA-384 と SHA-512 はより長い値を返します。SHA-1 は2017年に、同じハッシュ値になる別のデータを作れることが実際に示されました。署名や改ざん検出などのセキュリティ用途には使わず、古いシステムとの互換性確認などに限ってください。</p>
+
+    <h3>テキストとファイルの違い</h3>
+    <p>テキストは UTF-8 に変換したバイト列を計算します。同じ文字でも文字コードや改行コード（LF と CRLF）が違えば値は変わります。ファイルは中身のバイト列をそのまま読み込むため、ファイル名や拡張子は結果に影響しません。大きなファイルはブラウザのメモリに読み込んでから計算するので、数百 MB を超える場合は時間とメモリに余裕をもって実行してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const ALGORITHMS = ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'];
+  const LARGE_FILE = 50 * 1024 * 1024;
+
+  const textArea = document.getElementById('text');
+  const fileInput = document.getElementById('file');
+  const textBlock = document.getElementById('text-block');
+  const fileBlock = document.getElementById('file-block');
+  const upper = document.getElementById('upper');
+  const statusEl = document.getElementById('source-note');
+  const body = document.getElementById('hash-body');
+  const sampleBtn = document.getElementById('sample');
+  const clearBtn = document.getElementById('clear');
+  const fileNote = document.getElementById('file-note');
+  const radios = Array.prototype.slice.call(document.querySelectorAll('input[name="source"]'));
+
+  const state = { hashes: null, seq: 0 };
+  let timer = null;
+
+  function fmt(bytes) {
+    if (bytes < 1024) return bytes + ' バイト';
+    const units = ['KB', 'MB', 'GB', 'TB'];
+    let value = bytes / 1024;
+    let i = 0;
+    while (value >= 1024 && i < units.length - 1) {
+      value /= 1024;
+      i += 1;
+    }
+    return (value >= 10 ? value.toFixed(1) : value.toFixed(2)) + ' ' + units[i];
+  }
+
+  function hex(buffer) {
+    return Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function shown(hash) {
+    return upper.checked ? hash.toUpperCase() : hash;
+  }
+
+  function renderRows() {
+    body.replaceChildren();
+    for (const algo of ALGORITHMS) {
+      const tr = document.createElement('tr');
+
+      const th = document.createElement('th');
+      th.setAttribute('scope', 'row');
+      th.textContent = algo;
+      if (algo === 'SHA-1') {
+        const tag = document.createElement('span');
+        tag.className = 'warn';
+        tag.textContent = '非推奨';
+        th.append(tag);
+      }
+
+      const valueCell = document.createElement('td');
+      valueCell.className = 'mono';
+      valueCell.textContent = state.hashes ? shown(state.hashes[algo]) : '—';
+
+      const actionCell = document.createElement('td');
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'btn secondary';
+      copyBtn.textContent = 'コピー';
+      copyBtn.setAttribute('aria-label', algo + ' のハッシュをコピー');
+      copyBtn.disabled = !state.hashes;
+      copyBtn.addEventListener('click', () => copyHash(algo, copyBtn));
+      actionCell.append(copyBtn);
+
+      tr.append(th, valueCell, actionCell);
+      body.append(tr);
+    }
+  }
+
+  function setStatus(text, cls) {
+    statusEl.className = cls || 'note';
+    statusEl.textContent = text;
+  }
+
+  function reset(message) {
+    state.seq += 1;
+    state.hashes = null;
+    clearTimeout(timer);
+    renderRows();
+    setStatus(message || '入力がありません。テキストを入力するか、ファイルを選んでください。');
+  }
+
+  function activeSource() {
+    const checked = document.querySelector('input[name="source"]:checked');
+    return checked ? checked.value : 'text';
+  }
+
+  function showSource(src) {
+    textBlock.hidden = src !== 'text';
+    fileBlock.hidden = src !== 'file';
+    for (const radio of radios) radio.checked = radio.value === src;
+  }
+
+  function setFileNote(file) {
+    if (!file) {
+      fileNote.className = 'note';
+      fileNote.textContent = 'ファイルが選択されていません。';
+      return;
+    }
+    fileNote.className = file.size > LARGE_FILE ? 'warn' : 'note';
+    fileNote.textContent = file.name + '（' + fmt(file.size) + '）' +
+      (file.size > LARGE_FILE ? '。大きなファイルのため、端末によっては時間がかかります。' : '');
+  }
+
+  async function compute(bytes, label, size) {
+    const token = ++state.seq;
+    state.hashes = null;
+    renderRows();
+    setStatus('計算中…（' + label + '、' + fmt(size) + '）');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    try {
+      const digests = await Promise.all(ALGORITHMS.map((algo) => crypto.subtle.digest(algo, bytes)));
+      if (token !== state.seq) return;
+      const hashes = {};
+      ALGORITHMS.forEach((algo, index) => {
+        hashes[algo] = hex(digests[index]);
+      });
+      state.hashes = hashes;
+      renderRows();
+      setStatus('4種類のハッシュを計算しました（' + label + '、' + fmt(size) + '）。', 'ok');
+    } catch (err) {
+      if (token !== state.seq) return;
+      renderRows();
+      setStatus('計算できませんでした：' + (err && err.message ? err.message : '不明なエラー') + '。', 'err');
+    }
+  }
+
+  function runText() {
+    clearTimeout(timer);
+    const text = textArea.value;
+    if (!text) {
+      reset();
+      return;
+    }
+    const bytes = new TextEncoder().encode(text);
+    compute(bytes, 'テキスト', bytes.length);
+  }
+
+  function scheduleText() {
+    clearTimeout(timer);
+    timer = setTimeout(runText, 300);
+  }
+
+  async function handleFile() {
+    const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+    setFileNote(file);
+    if (!file) {
+      reset('ファイルが選択されていません。ファイルを選ぶと計算します。');
+      return;
+    }
+    const token = state.seq;
+    setStatus('ファイルを読み込み中…（' + fmt(file.size) + '）');
+    let buffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch (err) {
+      setStatus('ファイルを読み込めませんでした。別のファイルでお試しください。', 'err');
+      return;
+    }
+    if (token !== state.seq) return;
+    compute(new Uint8Array(buffer), file.name || 'ファイル', file.size);
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (e) {
+        // フォールバックへ
+      }
+    }
+    try {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.top = '-1000px';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      area.setSelectionRange(0, area.value.length);
+      const ok = document.execCommand('copy');
+      area.remove();
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function copyHash(algo, btn) {
+    if (!state.hashes) return;
+    const ok = await copyText(shown(state.hashes[algo]));
+    if (!ok) {
+      setStatus('コピーできませんでした。表示されている値を選択してコピーしてください。', 'err');
+      return;
+    }
+    setStatus(algo + ' のハッシュをコピーしました。', 'ok');
+    btn.textContent = 'コピー済み';
+    setTimeout(() => {
+      btn.textContent = 'コピー';
+    }, 1500);
+  }
+
+  renderRows();
+
+  if (!(window.crypto && window.crypto.subtle)) {
+    setStatus('この環境ではハッシュ計算を利用できません。HTTPS（または localhost）で開いてください。', 'err');
+    document.querySelectorAll('#tool input, #tool textarea, #tool button').forEach((el) => {
+      el.disabled = true;
+    });
+    return;
+  }
+
+  textArea.addEventListener('input', scheduleText);
+
+  fileInput.addEventListener('change', handleFile);
+
+  upper.addEventListener('change', renderRows);
+
+  radios.forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const src = activeSource();
+      showSource(src);
+      if (src === 'text') {
+        runText();
+      } else {
+        handleFile();
+      }
+    });
+  });
+
+  sampleBtn.addEventListener('click', () => {
+    showSource('text');
+    textArea.value = 'The quick brown fox jumps over the lazy dog';
+    runText();
+    textArea.focus();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    clearTimeout(timer);
+    textArea.value = '';
+    fileInput.value = '';
+    setFileNote(null);
+    reset();
+    if (activeSource() === 'text') textArea.focus();
+  });
+
+  setFileNote(null);
+  reset();
+})();
+</script>
+</body>
+</html>

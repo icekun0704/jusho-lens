@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日付計算・和暦変換｜道具箱</title>
+<meta name="description" content="生年月日から満年齢と経過日数、2つの日付の間の日数、日付の加算・減算、曜日、うるう年、西暦と和暦（明治・大正・昭和・平成・令和）の変換をブラウザ内で計算します。改元日の境界にも対応。入力は端末の外に出ません。">
+<link rel="canonical" href="https://icekun.net/date/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  input[type="date"], input[type="time"] {
+    width: 100%; padding: 0.6rem 0.7rem; min-height: 2.6rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.875rem; line-height: 1.7;
+  }
+  .tool-block + .tool-block { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .tool-block h2 { margin: 0 0 0.25rem; }
+  .tool-block h3 { margin: 1.5rem 0 0.4rem; font-size: 0.9375rem; font-weight: 600; }
+  .tool-block h3:first-of-type { margin-top: 1rem; }
+  .result.large { margin-top: 0.75rem; }
+  #ageOut .stats, #diffOut .stats, #calcOut .stats, #infoOut .stats { margin-top: 1rem; }
+  .prose table { margin-top: 0.75rem; }
+  .prose th[scope="row"] { color: var(--ink); font-size: 0.8125rem; letter-spacing: 0; font-weight: 500; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>日付計算・和暦変換</h1>
+    <p class="lead">生年月日から満年齢と経過日数、2つの日付の差、日付の加算・減算、曜日・うるう年・和暦の変換をまとめて計算します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+
+    <div class="tool-block">
+      <h2>年齢と経過日数</h2>
+      <p class="hint">生年月日から満年齢と、生まれてからの日数を計算します。基準日を変えると、その時点での年齢になります。</p>
+      <div class="grid-2">
+        <label class="field" for="dob"><span>生年月日</span><input type="date" id="dob"></label>
+        <label class="field" for="ageBase"><span>基準日</span><input type="date" id="ageBase"></label>
+      </div>
+      <div class="row" style="margin-top:0.75rem">
+        <button class="btn secondary" type="button" id="ageToday">基準日を今日にする</button>
+      </div>
+      <div id="ageOut" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <div class="tool-block">
+      <h2>2つの日付の間</h2>
+      <p class="hint">開始日と終了日を選ぶと、間の日数を週・年月日にも換算します。</p>
+      <div class="grid-2">
+        <label class="field" for="diffFrom"><span>開始日</span><input type="date" id="diffFrom"></label>
+        <label class="field" for="diffTo"><span>終了日</span><input type="date" id="diffTo"></label>
+      </div>
+      <label class="check" style="margin-top:0.75rem"><input type="checkbox" id="diffIncl"> 開始日を1日目として数える</label>
+      <div id="diffOut" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <div class="tool-block">
+      <h2>日付の加算・減算</h2>
+      <p class="hint">基準の日付から、指定した日数・週数・月数・年数を進めるか戻します。</p>
+      <div class="grid-2">
+        <label class="field" for="calcDate"><span>基準の日付</span><input type="date" id="calcDate"></label>
+        <label class="field" for="calcNum"><span>数量</span><input type="number" id="calcNum" min="0" max="100000" step="1" value="7" inputmode="numeric"></label>
+        <label class="field" for="calcUnit"><span>単位</span>
+          <select id="calcUnit">
+            <option value="day">日</option>
+            <option value="week">週</option>
+            <option value="month">月</option>
+            <option value="year">年</option>
+          </select>
+        </label>
+        <label class="field" for="calcDir"><span>方向</span>
+          <select id="calcDir">
+            <option value="plus">後（加算）</option>
+            <option value="minus">前（減算）</option>
+          </select>
+        </label>
+      </div>
+      <div id="calcOut" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <div class="tool-block">
+      <h2>日付の情報</h2>
+      <p class="hint">選んだ日付の曜日、うるう年かどうか、和暦、年初からの通日を表示します。</p>
+      <div class="grid-2">
+        <label class="field" for="infoDate"><span>日付</span><input type="date" id="infoDate"></label>
+      </div>
+      <div class="row" style="margin-top:0.75rem">
+        <button class="btn secondary" type="button" id="infoToday">今日にする</button>
+      </div>
+      <div id="infoOut" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <div class="tool-block">
+      <h2>西暦と和暦の変換</h2>
+      <p class="hint">明治・大正・昭和・平成・令和に対応します。元号が切り替わった日は、その日が属する元号で判定します。</p>
+
+      <h3>西暦 → 和暦</h3>
+      <label class="field" for="seireki"><span>西暦の日付</span><input type="date" id="seireki" min="1868-09-08"></label>
+      <p class="result large" id="seirekiOut" aria-live="polite" aria-atomic="true">—</p>
+      <p class="hint" id="seirekiNote" style="margin:0.5rem 0 0"></p>
+
+      <h3>和暦 → 西暦</h3>
+      <div class="grid-2">
+        <label class="field" for="eraName"><span>元号</span>
+          <select id="eraName">
+            <option value="令和">令和</option>
+            <option value="平成">平成</option>
+            <option value="昭和">昭和</option>
+            <option value="大正">大正</option>
+            <option value="明治">明治</option>
+          </select>
+        </label>
+        <label class="field" for="eraYear"><span>年（元年は1）</span><input type="number" id="eraYear" min="1" max="99" step="1" value="1" inputmode="numeric"></label>
+      </div>
+      <div class="grid-2" style="margin-top:0.75rem">
+        <label class="field" for="eraMonth"><span>月</span><input type="number" id="eraMonth" min="1" max="12" step="1" value="5" inputmode="numeric"></label>
+        <label class="field" for="eraDay"><span>日</span><input type="number" id="eraDay" min="1" max="31" step="1" value="1" inputmode="numeric"></label>
+      </div>
+      <p class="result large" id="warekiOut" aria-live="polite" aria-atomic="true">—</p>
+      <p class="hint" id="warekiNote" style="margin:0.5rem 0 0"></p>
+    </div>
+
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。日付は端末のカレンダーに合わせて計算します。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「年齢と経過日数」で生年月日と基準日を選びます。基準日は最初から今日が入っています。満年齢・生まれてからの日数・次の誕生日までの日数が表示されます。</li>
+      <li>「2つの日付の間」で開始日と終了日を選ぶと、日数・週換算・年月日換算が出ます。開始日を1日目に数えたいときは「開始日を1日目として数える」をオンにします。</li>
+      <li>「日付の加算・減算」で基準の日付と数量、単位、方向を選ぶと、計算後の日付・曜日・和暦が表示されます。</li>
+      <li>「日付の情報」で任意の日付の曜日、うるう年、和暦、年初からの通日を確認できます。</li>
+      <li>「西暦と和暦の変換」では、西暦の日付から和暦を求められます。和暦から西暦を求める場合は、元号・年・月・日を入力します（元年は年を1にします）。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>日付計算について</h2>
+    <p>カレンダーの日付は、端末の時計が示す今日を起点に、日付単位で計算します。日数の差は時刻や夏時間の影響を受けないよう、暦の上の日付から求めています。</p>
+
+    <h3>満年齢と経過日数</h3>
+    <p>満年齢は、生まれた日を0歳として、誕生日が来るたびに1つ増える数え方です。基準日がその年の誕生日より前なら、1歳少なくなります。経過日数は生年月日から基準日までの日数で、生まれた日は0日目です。2月29日生まれの場合、うるう年でない年は2月28日を誕生日として扱います。</p>
+    <p>法律（年齢計算ニ関スル法律）上の年齢は誕生日の前日に加算されますが、このツールは暦の上の誕生日で判定するため、1日の差が出ることがあります。</p>
+
+    <h3>日付の差と加減算</h3>
+    <p>2つの日付の差は、開始日を含めずに数えます。「開始日を1日目として数える」をオンにすると、同じ日を1日として数えます。週換算は7日を1週とし、年月日換算は大きい方の日付から小さい方へ年・月・日の順にさかのぼって求めます。</p>
+    <p>月・年の加減算では、加算後の月に元の日が存在しない場合、その月の末日に合わせます。たとえば1月31日に1か月を加えると、2月28日（うるう年は2月29日）になります。日の加減算と週の加減算は、うるう年や月の長さを自動で反映します。</p>
+
+    <h3>うるう年と和暦</h3>
+    <p>うるう年は4で割り切れる年です。ただし100で割り切れる年は平年で、400で割り切れる年はうるう年に戻ります。2100年は平年、2000年はうるう年です。うるう年は2月が29日まであり、1年が366日になります。</p>
+    <p>和暦の境界は、明治元年1868年9月8日、大正元年1912年7月30日、昭和元年1926年12月25日、平成元年1989年1月8日、令和元年2019年5月1日としています。改元日は新しい元号の元年として扱い、その前日までは前の元号です。明治6年1月1日より前は旧暦が使われていたため、それ以前の月日の換算は参考値です。</p>
+    <table>
+      <caption class="sr-only">元号と西暦の対応</caption>
+      <thead><tr><th scope="col">元号</th><th scope="col">期間（西暦）</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">明治</th><td>1868年9月8日 〜 1912年7月29日</td></tr>
+        <tr><th scope="row">大正</th><td>1912年7月30日 〜 1926年12月24日</td></tr>
+        <tr><th scope="row">昭和</th><td>1926年12月25日 〜 1989年1月7日</td></tr>
+        <tr><th scope="row">平成</th><td>1989年1月8日 〜 2019年4月30日</td></tr>
+        <tr><th scope="row">令和</th><td>2019年5月1日 〜</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var WD = ['日', '月', '火', '水', '木', '金', '土'];
+  var MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  var ERAS = [
+    { name: '令和', start: { y: 2019, m: 5, d: 1 } },
+    { name: '平成', start: { y: 1989, m: 1, d: 8 } },
+    { name: '昭和', start: { y: 1926, m: 12, d: 25 } },
+    { name: '大正', start: { y: 1912, m: 7, d: 30 } },
+    { name: '明治', start: { y: 1868, m: 9, d: 8 } }
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function isLeap(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+  function daysInMonth(y, m) { return (m === 2 && isLeap(y)) ? 29 : MDAYS[m - 1]; }
+  function utc(d) { return Date.UTC(d.y, d.m - 1, d.d); }
+  function dayNum(d) { return Math.floor(utc(d) / 86400000); }
+  function fromDayNum(n) {
+    var t = new Date(n * 86400000);
+    return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+  }
+  function weekday(d) { return new Date(utc(d)).getUTCDay(); }
+  function todayLocal() {
+    var t = new Date();
+    return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
+  }
+  function parseISO(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    var d = { y: +m[1], m: +m[2], d: +m[3] };
+    if (d.m < 1 || d.m > 12 || d.d < 1 || d.d > daysInMonth(d.y, d.m)) return null;
+    return d;
+  }
+  function iso(d) { return d.y + '-' + pad2(d.m) + '-' + pad2(d.d); }
+  function fmtJP(d) { return d.y + '年' + d.m + '月' + d.d + '日（' + WD[weekday(d)] + '）'; }
+  function comma(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  function eraOf(d) {
+    for (var i = 0; i < ERAS.length; i++) {
+      if (dayNum(d) >= dayNum(ERAS[i].start)) {
+        return { name: ERAS[i].name, year: d.y - ERAS[i].start.y + 1, start: ERAS[i].start };
+      }
+    }
+    return null;
+  }
+  function eraYearLabel(y) { return y === 1 ? '元' : String(y); }
+  function eraLabel(d) {
+    var e = eraOf(d);
+    return e ? e.name + eraYearLabel(e.year) + '年' : null;
+  }
+  function eraFull(d) {
+    var label = eraLabel(d);
+    return label ? label + d.m + '月' + d.d + '日' : null;
+  }
+
+  function addMonthsClamped(d, n) {
+    var total = d.y * 12 + (d.m - 1) + n;
+    var y = Math.floor(total / 12);
+    var m = total - y * 12 + 1;
+    var day = Math.min(d.d, daysInMonth(y, m));
+    return { y: y, m: m, d: day, clamped: day !== d.d };
+  }
+
+  function diffYMD(a, b) {
+    var months = (b.y - a.y) * 12 + (b.m - a.m);
+    if (months < 0) months = 0;
+    var c = addMonthsClamped(a, months);
+    while (months > 0 && dayNum(c) > dayNum(b)) {
+      months--;
+      c = addMonthsClamped(a, months);
+    }
+    return {
+      y: Math.floor(months / 12),
+      m: months % 12,
+      d: dayNum(b) - dayNum(c)
+    };
+  }
+
+  function statBlock(items) {
+    var wrap = document.createElement('div');
+    wrap.className = 'stats';
+    for (var i = 0; i < items.length; i++) {
+      var s = document.createElement('div');
+      s.className = 'stat';
+      var b = document.createElement('b');
+      b.textContent = items[i][0];
+      var sp = document.createElement('span');
+      sp.textContent = items[i][1];
+      s.appendChild(b);
+      s.appendChild(sp);
+      wrap.appendChild(s);
+    }
+    return wrap;
+  }
+
+  function render(box, items, msg, cls) {
+    box.textContent = '';
+    if (items && items.length) box.appendChild(statBlock(items));
+    if (msg) {
+      var p = document.createElement('p');
+      p.className = cls || 'hint';
+      p.textContent = msg;
+      p.style.margin = '0.75rem 0 0';
+      box.appendChild(p);
+    }
+  }
+
+  function birthdayIn(y, birth) {
+    return { y: y, m: birth.m, d: Math.min(birth.d, daysInMonth(y, birth.m)) };
+  }
+
+  function updateAge() {
+    var birth = parseISO($('dob').value);
+    var base = parseISO($('ageBase').value);
+    var out = $('ageOut');
+    if (!birth || !base) {
+      render(out, null, '生年月日と基準日を選ぶと、満年齢と経過日数を計算します。');
+      return;
+    }
+    var elapsed = dayNum(base) - dayNum(birth);
+    if (elapsed < 0) {
+      render(out, null, '基準日が生年月日より前です。基準日を生年月日以降にしてください。', 'err');
+      return;
+    }
+    var thisYear = birthdayIn(base.y, birth);
+    var isBirthdayToday = dayNum(base) === dayNum(thisYear);
+    var age = base.y - birth.y - (dayNum(base) < dayNum(thisYear) ? 1 : 0);
+    var next = dayNum(base) < dayNum(thisYear) ? thisYear : birthdayIn(base.y + 1, birth);
+    var toNext = dayNum(next) - dayNum(base);
+    var items = [
+      [comma(age) + '歳', '満年齢'],
+      [comma(elapsed) + '日', '生まれてからの日数'],
+      [comma(toNext) + '日', '次の誕生日まで'],
+      [next.y + '年' + next.m + '月' + next.d + '日', '次の誕生日']
+    ];
+    var msg = '基準日 ' + fmtJP(base) + ' 時点の満年齢です。';
+    if (isBirthdayToday) msg += '今日が誕生日です。';
+    if (birth.m === 2 && birth.d === 29) {
+      msg += '2月29日生まれの年は、うるう年以外では2月28日を誕生日として数えています。';
+    }
+    render(out, items, msg);
+  }
+
+  function updateDiff() {
+    var a = parseISO($('diffFrom').value);
+    var b = parseISO($('diffTo').value);
+    var out = $('diffOut');
+    if (!a || !b) {
+      render(out, null, '2つの日付を選ぶと、間の日数を計算します。');
+      return;
+    }
+    var raw = dayNum(b) - dayNum(a);
+    var incl = $('diffIncl').checked;
+    var count = Math.abs(raw) + (incl ? 1 : 0);
+    var earlier = raw < 0 ? b : a;
+    var later = raw < 0 ? a : b;
+    var ymd = diffYMD(earlier, later);
+    var weeks = Math.floor(count / 7);
+    var rest = count % 7;
+    var items = [
+      [comma(count) + '日', incl ? '日数（開始日を含む）' : '日数'],
+      [weeks + '週' + (rest ? 'と' + rest + '日' : ''), '週換算'],
+      [ymd.y + '年' + ymd.m + 'か月' + ymd.d + '日', '年月日換算']
+    ];
+    var msg;
+    if (raw === 0) msg = '同じ日付です。';
+    else if (raw > 0) msg = '終了日は開始日の ' + comma(Math.abs(raw)) + ' 日後です。';
+    else msg = '終了日は開始日の ' + comma(Math.abs(raw)) + ' 日前です。';
+    if (incl) msg += '「開始日を含む」では同じ日を1日として数えます。';
+    render(out, items, msg);
+  }
+
+  function updateCalc() {
+    var d = parseISO($('calcDate').value);
+    var n = parseInt($('calcNum').value, 10);
+    var out = $('calcOut');
+    if (!d || !isFinite(n) || n < 0) {
+      render(out, null, '日付と数量を入力すると、加算・減算の結果を表示します。');
+      return;
+    }
+    var unit = $('calcUnit').value;
+    var sign = $('calcDir').value === 'minus' ? -1 : 1;
+    var res;
+    var clamped = false;
+    if (unit === 'day') {
+      res = fromDayNum(dayNum(d) + sign * n);
+    } else if (unit === 'week') {
+      res = fromDayNum(dayNum(d) + sign * n * 7);
+    } else if (unit === 'month') {
+      var rm = addMonthsClamped(d, sign * n);
+      res = rm;
+      clamped = rm.clamped;
+    } else {
+      var ry = addMonthsClamped(d, sign * n * 12);
+      res = ry;
+      clamped = ry.clamped;
+    }
+    var items = [
+      [fmtJP(res), '計算結果'],
+      [iso(res), 'ISO 8601'],
+      [eraFull(res) || '明治より前', '和暦']
+    ];
+    var msg = '元の日付は ' + fmtJP(d) + ' です。';
+    if (clamped) msg += '加算・減算した月に元の日がないため、月末の日に合わせました。';
+    render(out, items, msg, clamped ? 'warn' : 'hint');
+  }
+
+  function leapReason(y) {
+    if (!isLeap(y)) {
+      if (y % 100 === 0 && y % 400 !== 0) {
+        return y + '年は100で割り切れますが400で割り切れないため、平年です。';
+      }
+      return y + '年は4で割り切れないため、平年です。';
+    }
+    if (y % 400 === 0) return y + '年は400で割り切れるため、うるう年です。';
+    return y + '年は4で割り切れ、100で割り切れないため、うるう年です。';
+  }
+
+  function updateInfo() {
+    var d = parseISO($('infoDate').value);
+    var out = $('infoOut');
+    if (!d) {
+      render(out, null, '日付を選ぶと、曜日・うるう年・和暦を表示します。');
+      return;
+    }
+    var leap = isLeap(d.y);
+    var yday = dayNum(d) - dayNum({ y: d.y, m: 1, d: 1 }) + 1;
+    var rest = dayNum({ y: d.y, m: 12, d: 31 }) - dayNum(d);
+    var items = [
+      [WD[weekday(d)] + '曜日', '曜日'],
+      [leap ? '366日' : '365日', 'この年の日数'],
+      [eraLabel(d) || '—', '和暦'],
+      [comma(yday) + '日', '1月1日からの通日'],
+      [comma(rest) + '日', '12月31日まで']
+    ];
+    var msg = leapReason(d.y);
+    var e = eraOf(d);
+    if (e && dayNum(d) === dayNum(e.start)) msg += ' この日は' + e.name + '元年の初日（改元日）です。';
+    render(out, items, msg);
+  }
+
+  function updateSeireki() {
+    var d = parseISO($('seireki').value);
+    var out = $('seirekiOut');
+    var note = $('seirekiNote');
+    if (!d) {
+      out.textContent = '—';
+      note.textContent = '西暦の日付を選ぶと和暦に換算します。';
+      note.className = 'hint';
+      return;
+    }
+    var e = eraOf(d);
+    if (!e) {
+      out.textContent = '—';
+      note.textContent = '明治元年（1868年9月8日）より前の日付は、このツールの和暦換算の対象外です。';
+      note.className = 'warn';
+      return;
+    }
+    out.textContent = eraFull(d);
+    var n = '西暦 ' + fmtJP(d) + ' ／ ISO 8601: ' + iso(d);
+    if (dayNum(d) === dayNum(e.start)) n += '。改元日（' + e.name + '元年の初日）です。';
+    if (d.y < 1873) n += ' 明治6年1月1日より前は旧暦のため、月日の対応は参考値です。';
+    note.textContent = n;
+    note.className = 'hint';
+  }
+
+  function updateWareki() {
+    var out = $('warekiOut');
+    var note = $('warekiNote');
+    var name = $('eraName').value;
+    var yr = parseInt($('eraYear').value, 10);
+    var mo = parseInt($('eraMonth').value, 10);
+    var da = parseInt($('eraDay').value, 10);
+    var idx = -1;
+    for (var i = 0; i < ERAS.length; i++) {
+      if (ERAS[i].name === name) idx = i;
+    }
+    out.textContent = '—';
+    note.className = 'err';
+    if (idx < 0) {
+      note.textContent = '元号を選んでください。';
+      return;
+    }
+    if (!isFinite(yr) || !isFinite(mo) || !isFinite(da) || yr < 1 || mo < 1 || mo > 12 || da < 1) {
+      note.textContent = '年・月・日は1以上の数字で入力してください。元年は年を1にします。';
+      return;
+    }
+    var e = ERAS[idx];
+    var gy = e.start.y + yr - 1;
+    var dim = daysInMonth(gy, mo);
+    if (da > dim) {
+      note.textContent = gy + '年' + mo + '月は' + dim + '日までです。日を' + dim + '以下にしてください。';
+      return;
+    }
+    var d = { y: gy, m: mo, d: da };
+    if (dayNum(d) < dayNum(e.start)) {
+      note.textContent = e.name + '元年は' + fmtJP(e.start) + 'からです。年を1に戻すか、日付を改元日以降にしてください。';
+      return;
+    }
+    var newer = idx > 0 ? ERAS[idx - 1] : null;
+    if (newer && dayNum(d) >= dayNum(newer.start)) {
+      var actual = eraOf(d);
+      note.textContent = 'その日付はすでに' + (actual ? actual.name : newer.name) + 'の期間です。元号と年を選び直してください。';
+      return;
+    }
+    out.textContent = fmtJP(d);
+    var n = 'ISO 8601: ' + iso(d) + ' ／ ' + eraFull(d);
+    if (d.y < 1873) n += '。明治6年1月1日より前は旧暦のため、西暦への換算は参考値です。';
+    note.textContent = n;
+    note.className = 'hint';
+  }
+
+  function bind(ids, fn) {
+    ids.forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener('input', fn);
+      el.addEventListener('change', fn);
+    });
+  }
+
+  var t = todayLocal();
+  if ($('ageBase')) $('ageBase').value = iso(t);
+  if ($('diffTo')) $('diffTo').value = iso(t);
+  if ($('diffFrom')) $('diffFrom').value = t.y + '-01-01';
+  if ($('calcDate')) $('calcDate').value = iso(t);
+  if ($('infoDate')) $('infoDate').value = iso(t);
+  if ($('seireki')) $('seireki').value = iso(t);
+
+  var te = eraOf(t);
+  if (te) {
+    $('eraName').value = te.name;
+    $('eraYear').value = te.year;
+    $('eraMonth').value = t.m;
+    $('eraDay').value = t.d;
+  }
+
+  bind(['dob', 'ageBase'], updateAge);
+  bind(['diffFrom', 'diffTo'], updateDiff);
+  $('diffIncl').addEventListener('change', updateDiff);
+  bind(['calcDate', 'calcNum', 'calcUnit', 'calcDir'], updateCalc);
+  bind(['infoDate'], updateInfo);
+  bind(['seireki'], updateSeireki);
+  bind(['eraName', 'eraYear', 'eraMonth', 'eraDay'], updateWareki);
+
+  $('ageToday').addEventListener('click', function () {
+    $('ageBase').value = iso(todayLocal());
+    updateAge();
+  });
+  $('infoToday').addEventListener('click', function () {
+    $('infoDate').value = iso(todayLocal());
+    updateInfo();
+  });
+
+  updateAge();
+  updateDiff();
+  updateCalc();
+  updateInfo();
+  updateSeireki();
+  updateWareki();
+})();
+</script>
+</body>
+</html>

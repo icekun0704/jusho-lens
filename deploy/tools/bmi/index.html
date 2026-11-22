@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BMI・基礎代謝｜道具箱</title>
+<meta name="description" content="身長・体重・年齢・性別・活動量から、BMI、標準体重、基礎代謝（Mifflin-St Jeor式）、活動量別の推定消費カロリーを計算。BMI 25以上を肥満とする日本肥満学会の目安に対応。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/bmi/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .stat b { font-variant-numeric: tabular-nums; }
+  .activity-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .activity-table td:nth-child(2) { font-variant-numeric: tabular-nums; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>BMI・基礎代謝</h1>
+    <p class="lead">身長・体重・年齢・性別・活動量から、BMI、標準体重、基礎代謝、活動量別の推定消費カロリーを計算します。結果は一般的な計算式による目安です。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>体格と消費カロリー</h2>
+    <p class="hint">数値を入れると、その場で計算されます。BMIの区分は日本肥満学会の分類に合わせています。</p>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="height"><span>身長 (cm)</span></label>
+        <input type="number" id="height" min="50" max="250" step="0.1" inputmode="decimal" autocomplete="off" placeholder="170">
+      </div>
+      <div class="field">
+        <label for="weight"><span>体重 (kg)</span></label>
+        <input type="number" id="weight" min="10" max="400" step="0.1" inputmode="decimal" autocomplete="off" placeholder="65">
+      </div>
+      <div class="field">
+        <label for="age"><span>年齢 (歳)</span></label>
+        <input type="number" id="age" min="10" max="120" step="1" inputmode="numeric" autocomplete="off" placeholder="30">
+      </div>
+      <div class="field">
+        <label for="sex"><span>性別（基礎代謝の計算に使用）</span></label>
+        <select id="sex">
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label for="activity"><span>活動量</span></label>
+        <select id="activity">
+          <option value="1.2">ほぼ運動しない（デスクワーク中心）</option>
+          <option value="1.375">軽い運動（週1〜3回）</option>
+          <option value="1.55" selected>中程度の運動（週3〜5回）</option>
+          <option value="1.725">激しい運動（週6〜7回）</option>
+          <option value="1.9">非常に激しい運動（1日2回など）</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="err" id="status" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="bmi">—</b><span>BMI</span></div>
+      <div class="stat"><b id="std">—</b><span>標準体重 (kg)</span></div>
+      <div class="stat"><b id="bmr">—</b><span>基礎代謝 (kcal/日)</span></div>
+      <div class="stat"><b id="tdee">—</b><span>推定消費 (kcal/日)</span></div>
+    </div>
+
+    <p class="note" id="eval" aria-live="polite">身長・体重・年齢を入力すると判定が表示されます。</p>
+
+    <p class="warn">このツールの結果は一般的な計算式による目安であり、医学的な診断や治療の助言ではありません。BMI 25以上は日本肥満学会の分類で肥満とされますが、体調や治療中の病気がある場合は医療機関に相談してください。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="activity-h">
+    <h2 id="activity-h">活動量別の推定消費カロリー</h2>
+    <p class="hint">基礎代謝に活動係数を掛けた1日あたりの目安です。上のプルダウンで選んだ活動量には「（選択中）」を付けています。</p>
+    <div style="overflow-x:auto">
+      <table class="activity-table">
+        <thead>
+          <tr><th scope="col">活動量</th><th scope="col">係数</th><th scope="col">推定消費 (kcal/日)</th></tr>
+        </thead>
+        <tbody id="actBody">
+          <tr><td colspan="3" class="hint">身長・体重・年齢を入力すると表示されます。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>身長（cm）、体重（kg）、年齢を半角数字で入力します。</li>
+      <li>性別を選びます。基礎代謝の計算式が男女で変わります。</li>
+      <li>活動量を5段階から選ぶと、「推定消費」にその活動量での1日の目安が表示されます。</li>
+      <li>入力と同時にBMI・標準体重・基礎代謝が更新され、BMIの区分が結果の下に表示されます。</li>
+      <li>下の表では、5段階すべての活動量について推定消費カロリーを比較できます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>BMI・基礎代謝について</h2>
+    <p>BMIは体重と身長の関係から体格を見る国際的な指標で、基礎代謝は安静にしているときに体が消費するエネルギーのことです。この道具は、日々の体重管理や食事量の目安を考えるための数字を、一般的な計算式で求めます。</p>
+
+    <h3>BMIと肥満の目安</h3>
+    <p>BMIは「体重(kg) ÷ 身長(m) ÷ 身長(m)」で計算します。日本肥満学会の分類では、18.5未満が低体重（やせ）、18.5以上25未満が普通体重、25以上が肥満です。肥満はさらに、25以上30未満が1度、30以上35未満が2度、35以上40未満が3度、40以上が4度に分けられます。BMIは筋肉量や骨格、年齢による体型の違いを区別しないため、運動習慣のある人では高め、高齢者では低めに出ることがあります。</p>
+
+    <h3>標準体重と基礎代謝</h3>
+    <p>標準体重は「22 × 身長(m) × 身長(m)」で求めます。BMI 22は、日本の肥満症診療ガイドラインで標準体重の基準として使われている値です。基礎代謝はMifflin-St Jeor式で推定します。男性は「10 × 体重(kg) + 6.25 × 身長(cm) − 5 × 年齢 + 5」、女性は最後の「+5」を「−161」に置き換えます。この式は安静時の消費エネルギーを推定するもので、実際の値は筋肉量や体調、季節などで変わります。</p>
+
+    <h3>活動量と1日の消費カロリー</h3>
+    <p>1日の推定消費カロリーは、基礎代謝に活動係数を掛けて求めます。係数は、ほぼ運動しない場合は1.2、軽い運動なら1.375、中程度なら1.55、激しい運動なら1.725、非常に激しい運動なら1.9です。これらの係数は一般的な活動量の目安で、同じ生活でも歩数や作業内容によって実際の消費は変わります。減量や増量を目的にする場合は、この推定値を出発点に、数週間の体重変化を見ながら調整してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const heightEl = document.getElementById('height');
+  const weightEl = document.getElementById('weight');
+  const ageEl = document.getElementById('age');
+  const sexEl = document.getElementById('sex');
+  const activityEl = document.getElementById('activity');
+  const statusEl = document.getElementById('status');
+  const bmiEl = document.getElementById('bmi');
+  const stdEl = document.getElementById('std');
+  const bmrEl = document.getElementById('bmr');
+  const tdeeEl = document.getElementById('tdee');
+  const evalEl = document.getElementById('eval');
+  const actBody = document.getElementById('actBody');
+
+  const ACTIVITY = [
+    { value: 1.2, label: 'ほぼ運動しない（デスクワーク中心）' },
+    { value: 1.375, label: '軽い運動（週1〜3回）' },
+    { value: 1.55, label: '中程度の運動（週3〜5回）' },
+    { value: 1.725, label: '激しい運動（週6〜7回）' },
+    { value: 1.9, label: '非常に激しい運動（1日2回など）' }
+  ];
+
+  function readNumber(el) {
+    const raw = el.value.trim();
+    if (raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function bmiCategory(bmi) {
+    if (bmi < 18.5) return { label: '低体重（やせ）', cls: 'warn' };
+    if (bmi < 25) return { label: '普通体重', cls: 'ok' };
+    if (bmi < 30) return { label: '肥満（1度）', cls: 'warn' };
+    if (bmi < 35) return { label: '肥満（2度）', cls: 'warn' };
+    if (bmi < 40) return { label: '肥満（3度）', cls: 'warn' };
+    return { label: '肥満（4度）', cls: 'warn' };
+  }
+
+  function fmt1(n) {
+    return n.toFixed(1);
+  }
+
+  function fmtInt(n) {
+    return Math.round(n).toLocaleString('ja-JP');
+  }
+
+  function resetTable() {
+    actBody.replaceChildren();
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.className = 'hint';
+    td.textContent = '身長・体重・年齢を入力すると表示されます。';
+    tr.append(td);
+    actBody.append(tr);
+  }
+
+  function clearResults(message) {
+    bmiEl.textContent = '—';
+    stdEl.textContent = '—';
+    bmrEl.textContent = '—';
+    tdeeEl.textContent = '—';
+    evalEl.className = 'note';
+    evalEl.textContent = message || '身長・体重・年齢を入力すると判定が表示されます。';
+    resetTable();
+  }
+
+  function showError(message) {
+    statusEl.hidden = false;
+    statusEl.textContent = message;
+    clearResults('入力内容を確認してください。');
+  }
+
+  function hideError() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function renderActivity(bmr, selectedFactor) {
+    actBody.replaceChildren();
+    for (const item of ACTIVITY) {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = item.label + (item.value === selectedFactor ? '（選択中）' : '');
+      const tdFactor = document.createElement('td');
+      tdFactor.textContent = item.value.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+      const tdKcal = document.createElement('td');
+      tdKcal.className = 'mono';
+      tdKcal.textContent = fmtInt(bmr * item.value);
+      tr.append(th, tdFactor, tdKcal);
+      actBody.append(tr);
+    }
+  }
+
+  function calc() {
+    const cm = readNumber(heightEl);
+    const kg = readNumber(weightEl);
+    const age = readNumber(ageEl);
+
+    if (cm === null || kg === null || age === null) {
+      hideError();
+      clearResults();
+      return;
+    }
+    if (cm < 50 || cm > 250) {
+      showError('身長は 50〜250 cm の範囲で入力してください。');
+      return;
+    }
+    if (kg < 10 || kg > 400) {
+      showError('体重は 10〜400 kg の範囲で入力してください。');
+      return;
+    }
+    if (age < 10 || age > 120) {
+      showError('年齢は 10〜120 歳の範囲で入力してください。');
+      return;
+    }
+    hideError();
+
+    const m = cm / 100;
+    const bmi = kg / (m * m);
+    const standard = 22 * m * m;
+    const male = sexEl.value !== 'female';
+    const bmr = 10 * kg + 6.25 * cm - 5 * age + (male ? 5 : -161);
+
+    const selectedFactor = Number(activityEl.value);
+    const factor = Number.isFinite(selectedFactor) ? selectedFactor : 1.2;
+    const tdee = bmr * factor;
+
+    const category = bmiCategory(bmi);
+    bmiEl.textContent = fmt1(bmi);
+    stdEl.textContent = fmt1(standard);
+    bmrEl.textContent = fmtInt(bmr);
+    tdeeEl.textContent = fmtInt(tdee);
+
+    evalEl.className = category.cls;
+    evalEl.textContent = 'BMI ' + fmt1(bmi) + '：' + category.label +
+      '（標準体重 ' + fmt1(standard) + ' kg）';
+
+    renderActivity(bmr, factor);
+  }
+
+  [heightEl, weightEl, ageEl].forEach(el => {
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+  [sexEl, activityEl].forEach(el => {
+    el.addEventListener('change', calc);
+  });
+
+  calc();
+})();
+</script>
+</body>
+</html>

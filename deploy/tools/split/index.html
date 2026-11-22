@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>割り勘・消費税｜道具箱</title>
+<meta name="description" content="合計金額・人数・消費税率（10%・8%・0%）から割り勘の1人あたりの金額を計算。切捨・四捨五入・切上を選べ、端数の配分（何人いくら多く払うか）と税込・税抜の内訳をその場で表示します。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/split/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  fieldset.plain { border: 0; margin: 1.25rem 0 0; padding: 0; }
+  fieldset.plain legend { padding: 0 0 0.4rem; font-size: 0.75rem; color: var(--muted); }
+  fieldset.plain .row { gap: 0.5rem 1.5rem; }
+  #tool .stat b { overflow-wrap: anywhere; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>割り勘・消費税</h1>
+    <p class="lead">合計金額と人数から1人あたりの支払額を計算し、端数が出たときに誰がいくら多く払うかを表示します。税込・税抜の切り替えと消費税の内訳にも対応しています。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="grid-2">
+      <label class="field" for="amount">
+        <span>合計金額（円）</span>
+        <input id="amount" type="text" inputmode="numeric" autocomplete="off" value="12000">
+      </label>
+      <label class="field" for="people">
+        <span>人数</span>
+        <input id="people" type="text" inputmode="numeric" autocomplete="off" value="7">
+      </label>
+    </div>
+
+    <div class="grid-2" style="margin-top:1rem">
+      <label class="field" for="rate">
+        <span>消費税率</span>
+        <select id="rate">
+          <option value="10" selected>10%（標準税率）</option>
+          <option value="8">8%（軽減税率）</option>
+          <option value="0">0%（非課税・輸出など）</option>
+        </select>
+      </label>
+      <label class="field" for="round">
+        <span>端数処理</span>
+        <select id="round">
+          <option value="floor" selected>切り捨て</option>
+          <option value="round">四捨五入</option>
+          <option value="ceil">切り上げ</option>
+        </select>
+      </label>
+    </div>
+
+    <fieldset class="plain">
+      <legend>入力した合計金額は</legend>
+      <div class="row">
+        <label class="check"><input type="radio" name="mode" value="incl" checked> 税込（消費税を含む）</label>
+        <label class="check"><input type="radio" name="mode" value="excl"> 税抜（消費税を含まない）</label>
+      </div>
+      <p class="hint" style="margin:0.5rem 0 0">切り替えると、税込・税抜の内訳をその向きで計算し直します。</p>
+    </fieldset>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button class="btn" type="button" id="btnCopy">結果をコピー</button>
+      <button class="btn secondary" type="button" id="btnSample">サンプルに戻す</button>
+    </div>
+    <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
+    <p class="err" id="errMsg" role="alert"></p>
+
+    <div id="results" aria-live="polite" aria-atomic="false">
+      <div class="stats">
+        <div class="stat"><b id="stTotal">—</b><span>合計（税込）</span></div>
+        <div class="stat"><b id="stNet">—</b><span>税抜</span></div>
+        <div class="stat"><b id="stTax">—</b><span id="taxLabel">消費税（10%）</span></div>
+        <div class="stat"><b id="stPer">—</b><span>1人あたり（基本額）</span></div>
+      </div>
+
+      <p class="hint" id="perNote" style="margin-top:0.75rem"></p>
+
+      <h2 style="margin-top:1.75rem">端数の配分</h2>
+      <p class="hint" id="distNote"></p>
+      <table>
+        <caption class="sr-only">1人の支払額ごとの人数と小計</caption>
+        <thead>
+          <tr><th scope="col">1人の支払額（税込）</th><th scope="col">人数</th><th scope="col">小計</th></tr>
+        </thead>
+        <tbody id="distBody"></tbody>
+      </table>
+      <p class="hint" id="calcNote" style="margin-top:0.75rem"></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「合計金額」に支払った総額を円で、「人数」に割る人数を入力します。カンマ区切りの金額も入力できます。</li>
+      <li>「消費税率」で10%・8%・0%を選び、「入力した合計金額は」で税込か税抜かを指定します。</li>
+      <li>「端数処理」で切り捨て・四捨五入・切り上げを選ぶと、1人あたりの基本額と消費税の内訳が更新されます。</li>
+      <li>「端数の配分」で、何人かが1円多く（または少なく）払う組み合わせを確認します。</li>
+      <li>「結果をコピー」で、表示している計算結果をテキストとしてコピーできます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>割り勘・消費税について</h2>
+    <p>飲食店や旅行の支払いを人数で分けるとき、合計が1円単位で割り切れないことがあります。この道具は、合計（税込）を人数で割った金額を端数処理して基本額を決め、割り切れない差額を一部の人の支払額に1円単位で寄せます。全員の支払額の合計は、入力した合計（税込）と必ず一致します。</p>
+
+    <h3>割り勘の計算</h3>
+    <p>まず合計（税込）を人数で割り、選んだ端数処理で1人あたりの基本額を求めます。次に「合計 − 基本額 × 人数」を計算し、その差額の分だけ基本額より1円多い（または少ない）人を作ります。たとえば合計12,000円を7人で切り捨てると、基本額は1,714円、差額は2円なので、2人が1,715円、5人が1,714円を支払います。誰が多く払うかは決めていないため、幹事が負担する、順番に回すなど、その場のルールで調整してください。</p>
+
+    <h3>消費税の計算</h3>
+    <p>税抜から税込は「税抜金額 × 税率」で税額を求め、税抜金額に足します。税込から税抜は「税込金額 ÷（1 + 税率）」で税抜金額を求め、税込金額との差を税額とします。どちらの向きでも、税額には選んだ端数処理をそのまま適用しています。</p>
+    <p>日本の消費税率は、標準税率が10%、飲食料品と新聞（一定の条件を満たすもの）の軽減税率が8%です。輸出取引や非課税取引は0%として扱われます。税率や適用範囲は法改正で変わることがあります。また、2021年4月1日から、事業者が消費者に価格を表示する際は消費税を含む総額を表示することが義務付けられています（総額表示）。</p>
+
+    <h3>端数処理の注意</h3>
+    <p>税額の端数処理は法令で一律に決まっているわけではなく、事業者ごとに切り捨て・四捨五入・切り上げの扱いが異なります。この道具の結果は目安として使い、実際の請求額や会計のルールは店舗・契約の定めに従ってください。領収書の税額と1円ずれることがあります。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var amountEl = document.getElementById('amount');
+  var peopleEl = document.getElementById('people');
+  var rateEl = document.getElementById('rate');
+  var roundEl = document.getElementById('round');
+  var modeEls = document.querySelectorAll('input[name="mode"]');
+  var errEl = document.getElementById('errMsg');
+  var copyMsg = document.getElementById('copyMsg');
+  var distBody = document.getElementById('distBody');
+  var distNote = document.getElementById('distNote');
+  var perNote = document.getElementById('perNote');
+  var calcNote = document.getElementById('calcNote');
+  var taxLabel = document.getElementById('taxLabel');
+  var btnCopy = document.getElementById('btnCopy');
+  var st = {
+    total: document.getElementById('stTotal'),
+    net: document.getElementById('stNet'),
+    tax: document.getElementById('stTax'),
+    per: document.getElementById('stPer')
+  };
+
+  var nf = new Intl.NumberFormat('ja-JP');
+  var MAX_AMOUNT = 999999999999;
+  var MAX_PEOPLE = 999;
+  var lastSummary = '';
+
+  var RATES = {
+    '10': { num: 10, den: 100, label: '10%' },
+    '8': { num: 8, den: 100, label: '8%' },
+    '0': { num: 0, den: 100, label: '0%' }
+  };
+  var ROUND_LABEL = { floor: '切り捨て', round: '四捨五入', ceil: '切り上げ' };
+
+  function yen(n) {
+    return nf.format(n) + '円';
+  }
+
+  function parseCount(str) {
+    var s = String(str);
+    s = s.replace(/[０-９]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+    });
+    s = s.replace(/^\s+|\s+$/g, '');
+    s = s.replace(/[,，]\s*/g, '');
+    s = s.replace(/[¥￥]/g, '').replace(/円/g, '');
+    s = s.replace(/^\s+|\s+$/g, '');
+    if (s === '') return NaN;
+    if (!/^[0-9]+$/.test(s)) return NaN;
+    return Number(s);
+  }
+
+  function getMode() {
+    for (var i = 0; i < modeEls.length; i++) {
+      if (modeEls[i].checked) return modeEls[i].value;
+    }
+    return 'incl';
+  }
+
+  function roundBy(v, mode) {
+    if (mode === 'ceil') return Math.ceil(v);
+    if (mode === 'round') return Math.round(v);
+    return Math.floor(v);
+  }
+
+  function fail(msg) {
+    errEl.textContent = msg;
+    st.total.textContent = '—';
+    st.net.textContent = '—';
+    st.tax.textContent = '—';
+    st.per.textContent = '—';
+    perNote.textContent = '';
+    distNote.textContent = '';
+    calcNote.textContent = '';
+    distBody.textContent = '';
+    lastSummary = '';
+    btnCopy.disabled = true;
+  }
+
+  function compute() {
+    var amount = parseCount(amountEl.value);
+    var people = parseCount(peopleEl.value);
+    var rate = RATES[rateEl.value] || RATES['10'];
+    var rmode = roundEl.value;
+    var mode = getMode();
+
+    copyMsg.textContent = '';
+    copyMsg.className = 'ok';
+
+    if (isNaN(amount) || amount < 0) {
+      fail('合計金額は0以上の整数（円）で入力してください。');
+      return;
+    }
+    if (amount > MAX_AMOUNT) {
+      fail('合計金額は999,999,999,999円までにしてください。');
+      return;
+    }
+    if (isNaN(people) || people < 1) {
+      fail('人数は1以上の整数で入力してください。');
+      return;
+    }
+    if (people > MAX_PEOPLE) {
+      fail('人数は999人までにしてください。');
+      return;
+    }
+
+    errEl.textContent = '';
+
+    var total;
+    var net;
+    var tax;
+    if (mode === 'incl') {
+      total = amount;
+      net = roundBy(amount * rate.den / (rate.den + rate.num), rmode);
+      tax = total - net;
+    } else {
+      net = amount;
+      tax = roundBy(amount * rate.num / rate.den, rmode);
+      total = net + tax;
+    }
+
+    var per = roundBy(total / people, rmode);
+    var diff = total - per * people;
+
+    st.total.textContent = yen(total);
+    st.net.textContent = yen(net);
+    st.tax.textContent = yen(tax);
+    st.per.textContent = yen(per);
+    taxLabel.textContent = '消費税（' + rate.label + '）';
+
+    if (diff === 0) {
+      perNote.textContent = '端数は出ません。' + nf.format(people) + '人全員が同じ金額を支払います。';
+    } else if (diff > 0) {
+      perNote.textContent = '基本額 ' + yen(per) + ' に加えて、' + nf.format(diff) +
+        '人が1円ずつ多く支払います（合計 ' + yen(total) + '）。';
+    } else {
+      perNote.textContent = '基本額 ' + yen(per) + ' から、' + nf.format(-diff) +
+        '人が1円ずつ少なく支払います（合計 ' + yen(total) + '）。';
+    }
+
+    var groups = [];
+    if (diff > 0) {
+      groups.push({ pay: per + 1, count: diff });
+      if (people - diff > 0) groups.push({ pay: per, count: people - diff });
+    } else if (diff < 0) {
+      groups.push({ pay: per - 1, count: -diff });
+      if (people + diff > 0) groups.push({ pay: per, count: people + diff });
+    } else {
+      groups.push({ pay: per, count: people });
+    }
+
+    distBody.textContent = '';
+    groups.forEach(function (g) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td');
+      var td2 = document.createElement('td');
+      var td3 = document.createElement('td');
+      td1.className = 'mono';
+      td3.className = 'mono';
+      td1.textContent = yen(g.pay);
+      td2.textContent = nf.format(g.count) + '人';
+      td3.textContent = yen(g.pay * g.count);
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tr.appendChild(td3);
+      distBody.appendChild(tr);
+    });
+
+    distNote.textContent = diff === 0
+      ? '全員の支払額がそろっています。'
+      : '端数は一部の人の支払額に寄せています。誰が多く（少なく）払うかは決めていません。';
+
+    calcNote.textContent = '税額と1人あたりの金額は「' + ROUND_LABEL[rmode] + '」で計算しています。支払額の合計は ' +
+      yen(total) + ' で、入力した合計（税込）と一致します。';
+
+    var lines = [
+      '割り勘・消費税',
+      '入力金額: ' + yen(amount) + '（' + (mode === 'incl' ? '税込' : '税抜') + '）',
+      '合計（税込）: ' + yen(total),
+      '税抜: ' + yen(net),
+      '消費税（' + rate.label + '）: ' + yen(tax),
+      '人数: ' + nf.format(people) + '人',
+      '1人あたり（基本額）: ' + yen(per),
+      '端数の配分: ' + groups.map(function (g) {
+        return yen(g.pay) + ' × ' + nf.format(g.count) + '人';
+      }).join('、'),
+      '端数処理: ' + ROUND_LABEL[rmode]
+    ];
+    lastSummary = lines.join('\n');
+    btnCopy.disabled = false;
+  }
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }, function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  amountEl.addEventListener('input', compute);
+  peopleEl.addEventListener('input', compute);
+  rateEl.addEventListener('change', compute);
+  roundEl.addEventListener('change', compute);
+  for (var i = 0; i < modeEls.length; i++) {
+    modeEls[i].addEventListener('change', compute);
+  }
+
+  btnCopy.addEventListener('click', function () {
+    if (!lastSummary) {
+      copyMsg.textContent = 'コピーできる結果がありません。入力を確認してください。';
+      copyMsg.className = 'err';
+      return;
+    }
+    copyText(lastSummary).then(function (ok) {
+      if (ok) {
+        copyMsg.textContent = '計算結果をコピーしました。';
+        copyMsg.className = 'ok';
+      } else {
+        copyMsg.textContent = 'コピーできませんでした。画面の内容を選択してコピーしてください。';
+        copyMsg.className = 'err';
+      }
+    });
+  });
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    amountEl.value = '12000';
+    peopleEl.value = '7';
+    rateEl.value = '10';
+    roundEl.value = 'floor';
+    for (var i = 0; i < modeEls.length; i++) {
+      modeEls[i].checked = modeEls[i].value === 'incl';
+    }
+    compute();
+    amountEl.focus();
+  });
+
+  compute();
+})();
+</script>
+</body>
+</html>
