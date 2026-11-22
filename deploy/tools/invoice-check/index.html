@@ -14,12 +14,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
+  [hidden] { display: none !important; }
   #msg:empty { display: none; }
   .check-table td { vertical-align: top; }
   .check-table .input { font-family: var(--mono); font-size: 0.76rem; word-break: break-all; }
   .check-table .verdict { white-space: nowrap; font-size: 0.78rem; font-weight: 600; }
   .check-table .note { font-size: 0.78rem; line-height: 1.75; }
   .stat span { line-height: 1.5; }
+  .scroll-hint { display: none; }
+  @media (max-width: 40rem) {
+    .scroll-hint { display: block; }
+    .panel .btn { height: 2.75rem; }
+  }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -67,7 +73,7 @@
       <div class="stat"><b id="stErr">0</b><span>形式エラー</span></div>
     </div>
 
-    <div id="resultsWrap" hidden style="overflow-x:auto;margin-top:1rem">
+    <div id="resultsWrap" hidden style="overflow-x:auto;position:relative;margin-top:1rem">
       <table class="check-table" style="min-width:34rem">
         <caption class="sr-only">登録番号の検証結果</caption>
         <thead>
@@ -81,14 +87,15 @@
         <tbody id="body"></tbody>
       </table>
     </div>
+    <p class="hint scroll-hint" id="scrollHint" hidden>表が画面に収まらないときは、横にスクロールしてください。</p>
 
     <p class="warn">形式が正しいことと、登録済みであることは別です。実在は国税庁の公表サイトで確認してください。</p>
-    <p class="hint">「一致」は法人番号の規則に合うという意味です。法人の登録番号であることや、登録が有効であることは示しません。</p>
+    <p class="hint">「一致」は法人番号の規則に合うだけで、登録の有無は示しません。</p>
   </section>
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。外部APIは使いません。</p>
+    <p class="hint">番号は端末内で調べるだけで、外部へ問い合わせません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>登録番号を1行に1件ずつ貼ります。</li>
       <li>「検証する」を押します。</li>
@@ -110,7 +117,7 @@
     <p>この道具は、13桁の先頭がこの計算と合うかを見ます。合わなくても、個人事業者等の番号は別体系のため、誤りとは断定できません。先頭が0の13桁は、法人番号の検査用数字が1〜9なので法人番号ではありえません。</p>
     <p>検査用数字には限界があります。基礎番号の0と9を入れ替えた誤りは検出できません。一致しても実在や登録の状態は分からないため、<a href="https://www.invoice-kohyo.nta.go.jp/">適格請求書発行事業者公表サイト</a>で確認してください。</p>
     <p>計算式の出典は<a href="https://www.houjin-bangou.nta.go.jp/documents/checkdigit.pdf">国税庁「チェックデジットの計算」</a>、登録番号の構成は<a href="https://www.invoice-kohyo.nta.go.jp/about-toroku/index.html">国税庁「登録番号とは」</a>です。</p>
-    <p class="hint">この道具は形式と検査用数字だけを見ます。登録の有無や、取引時点で有効だったかは判定しません。</p>
+    <p class="hint">形式と検査用数字だけを見ます。登録の有無は判定しません。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">
@@ -140,7 +147,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -158,6 +165,7 @@
   var msg = $('msg');
   var stats = $('stats');
   var resultsWrap = $('resultsWrap');
+  var scrollHint = $('scrollHint');
   var body = $('body');
 
   var stCount = $('stCount');
@@ -187,6 +195,7 @@
     msg.textContent = '';
     stats.hidden = true;
     resultsWrap.hidden = true;
+    scrollHint.hidden = true;
     body.textContent = '';
   }
 
@@ -206,7 +215,7 @@
     var normalized = typeof raw.normalize === 'function' ? raw.normalize('NFKC') : raw;
 
     // 全角数字・全角Tは NFKC で半角になる。区切り文字を除いて番号を探す。
-    var compact = normalized.replace(/[\s　,\-‐‑‒–—―−－ー_]/g, '');
+    var compact = normalized.replace(/[\s　,\-‐‑‒–—―−－ー_\/.]/g, '');
     var m = NUMBER_RE.exec(compact);
 
     if (!m) {
@@ -243,8 +252,9 @@
       return;
     }
 
-    var lines = text.replace(/\r\n?/g, '\n').split('\n').filter(function (line) {
-      return line.trim() !== '';
+    var lines = [];
+    text.replace(/\r\n?/g, '\n').split('\n').forEach(function (line, index) {
+      if (line.trim() !== '') lines.push({ text: line, no: index + 1 });
     });
     if (lines.length > MAX_LINES) {
       showError('一度に確認できるのは1,000件までです。分けて貼り付けてください。');
@@ -257,7 +267,7 @@
     var i;
 
     for (i = 0; i < lines.length; i++) {
-      var r = extract(lines[i], i + 1);
+      var r = extract(lines[i].text, lines[i].no);
 
       if (r.type === 'format') {
         counts.format++;
@@ -334,6 +344,7 @@
     });
 
     resultsWrap.hidden = false;
+    scrollHint.hidden = false;
 
     var tail = counts.ng + counts.format > 0
       ? '一致しない番号と形式エラーは、公表サイトで確認してください。'

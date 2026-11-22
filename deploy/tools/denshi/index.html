@@ -14,14 +14,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
+  [hidden] { display: none !important; }
   #preview { display: block; margin-top: 1rem; font-size: 0.9375rem; }
   #preview.empty { color: var(--muted); font-family: var(--sans); }
   .list-table td { vertical-align: middle; }
   .list-table .name { font-family: var(--mono); font-size: 0.78rem; word-break: break-all; }
-  .list-table td:last-child { text-align: right; white-space: nowrap; }
+  .list-table td.op { text-align: right; white-space: nowrap; }
   .list-table .del { height: 1.8rem; padding: 0 0.6rem; font-size: 0.75rem; }
   .num { font-variant-numeric: tabular-nums; }
   #msg:empty, #listMsg:empty { display: none; }
+  .scroll-hint { display: none; }
+  @media (max-width: 40rem) {
+    .scroll-hint { display: block; }
+    .panel .btn { height: 2.75rem; }
+    .list-table .del { height: 2.75rem; min-width: 2.75rem; }
+  }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -96,7 +103,7 @@
   <section class="panel">
     <h2>一覧</h2>
     <p class="hint">追加したファイル名を、まとめてコピーするかCSVで保存できます。</p>
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto;position:relative">
       <table class="list-table" style="min-width:34rem">
         <caption class="sr-only">追加したファイル名の一覧</caption>
         <thead>
@@ -113,6 +120,7 @@
         </tbody>
       </table>
     </div>
+    <p class="hint scroll-hint" id="scrollHint" hidden>表が画面に収まらないときは、横にスクロールしてください。</p>
     <div class="row" style="margin-top:0.9rem">
       <button class="btn secondary" type="button" id="copyAllBtn" disabled>一覧をコピー</button>
       <button class="btn secondary" type="button" id="csvBtn" disabled>CSVで保存</button>
@@ -125,7 +133,7 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <p class="hint">入れた内容は端末内でファイル名にするだけで、保存しません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>取引年月日・取引先・金額を入れます。</li>
       <li>表示されたファイル名をコピーします。</li>
@@ -142,9 +150,9 @@
 
   <section class="prose">
     <h2>ファイル名と検索要件</h2>
-    <p>電子取引で受け取った請求書や領収書は、電子データのまま保存します。国税庁の一問一答では、取引年月日・取引金額・取引先をファイル名に統一した順序で入れる方法が、検索できる状態を作る例として示されています（令和8年7月 問19・問50）。</p>
+    <p>電子取引で受け取った請求書や領収書は、電子データのまま保存します。国税庁の一問一答では、取引年月日・取引金額・取引先をファイル名に統一した順序で入れる方法が、検索要件を満たす簡便な方法として示されています（令和8年7月 問19・問50）。</p>
     <p>例として、2021年1月31日の株式会社霞商店からの110,000円の請求書は「20210131_㈱霞商店_110000」とされています。この道具は同じ順序で、日付を西暦8桁にして出力します。</p>
-    <p>ただし、基準期間の売上高が5,000万円以下など一定の場合、検索機能の確保は不要です。税務調査でダウンロードの求めに応じられることが前提です（問19・問51）。名前を揃えることは、ファイルを探しやすくするためにも役立ちます。</p>
+    <p>ただし、基準期間の売上高が5,000万円以下など一定の場合、検索機能の確保は不要です。いずれの場合も、税務調査でダウンロードの求めに応じられるようにしておきます（問19・問51）。名前を揃えると、ファイルを探しやすくなります。</p>
     <p>ファイル名は保存要件の一部です。タイムスタンプ、訂正削除の履歴が残るシステム、事務処理規程など、改ざん防止の措置も必要です（問18）。和暦と西暦を混ぜると検索の妨げになるため、この道具は西暦に固定しています（問50）。</p>
     <p>制度の詳細は<a href="https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/r0807denshi/index.htm">国税庁の電子帳簿保存法一問一答</a>で確認してください。取引先の住所表記を確かめたいときは<a href="/jusho/">住所レンズ</a>が使えます。</p>
     <p class="hint">この道具はファイル名を組み立てるだけで、保存要件を満たしているかは判定しません。</p>
@@ -177,7 +185,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -208,6 +216,7 @@
   var clearAllBtn = $('clearAllBtn');
   var listErr = $('listErr');
   var listMsg = $('listMsg');
+  var scrollHint = $('scrollHint');
 
   var rows = [];
   var EMPTY_TEXT = '入力するとファイル名がここに出ます。';
@@ -404,6 +413,7 @@
         tr.appendChild(tdName);
 
         var tdOp = document.createElement('td');
+        tdOp.className = 'op';
         var del = document.createElement('button');
         del.type = 'button';
         del.className = 'btn secondary del';
@@ -418,6 +428,7 @@
     }
 
     count.textContent = rows.length + '件';
+    scrollHint.hidden = rows.length === 0;
     copyAllBtn.disabled = rows.length === 0;
     csvBtn.disabled = rows.length === 0;
     clearAllBtn.disabled = rows.length === 0;
@@ -495,7 +506,9 @@
     rows.push(r);
     render();
     showMessage('一覧に追加しました。');
+    var keepExt = extEl.value;
     form.reset();
+    extEl.value = keepExt;
     updatePreview();
     dateEl.focus();
   });

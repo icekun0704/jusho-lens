@@ -50,6 +50,7 @@
   .verdict.is-err { border-color: #e0b9b2; background: #f9eee9; }
 
   #tool .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .page-head .lead .keep { white-space: nowrap; }
 
   @media (max-width: 40rem) {
     input[type="text"] { font-size: 1rem; }
@@ -72,6 +73,9 @@
     .sim-table td[data-label="見本"] { flex-wrap: wrap; }
     .sim-table td[data-label="見本"] .pairhex { flex-basis: 100%; padding-left: 4rem; margin-top: 0.2rem; }
     .verdict { font-size: 0.875rem; }
+    main .btn { min-height: 2.75rem; }
+    .pickrow input[type="color"] { height: 2.75rem; }
+    .tool-nav a { display: inline-flex; align-items: center; min-height: 2.75rem; }
   }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
@@ -92,7 +96,7 @@
 <main class="wrap">
   <div class="page-head">
     <h1>色覚シミュレーション</h1>
-    <p class="lead">2色の組み合わせが、P型・D型・T型でどう見えるかを並べて比べられます。</p>
+    <p class="lead">指定した2色の見え方を、<span class="keep">P型・D型・T型それぞれで</span><span class="keep">並べて比べます。</span></p>
   </div>
 
   <section class="panel" id="tool">
@@ -123,7 +127,6 @@
       <span class="hint" style="margin:0">見本:</span>
       <button class="btn ghost" type="button" data-sample="rg">赤と緑の例</button>
       <button class="btn ghost" type="button" data-sample="gb">青と緑の例</button>
-      <button class="btn ghost" type="button" data-sample="light">明暗の例</button>
     </div>
     <p class="note" id="actionStatus" role="status" aria-live="polite"></p>
 
@@ -195,7 +198,7 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <p class="hint">選んだ2色は端末内で比べるだけで、保存もしません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>2色をカラーピッカーかHEXで選びます。</li>
       <li>表でP型・D型・T型の見え方を比べます。</li>
@@ -213,17 +216,17 @@
   <section class="prose">
     <h2>見え方の近似と色差</h2>
     <p>ヒトの色覚は、網膜にある3種類の錐体の組み合わせで決まります。P型は赤を感じる錐体、D型は緑を感じる錐体、T型は青を感じる錐体の働きが弱い状態です。P型とD型は男性に多く、日本人男性では合わせて約5%とされています。T型は非常にまれです。</p>
-    <p>このページは、Machado ら（2009）の行列を線形RGBに適用し、表示用にsRGBへ戻して近似しています。強度は最大（1.0）で計算します。実際の見え方は個人差が大きく、同じ型でも程度が異なります。</p>
+    <p>Machado ら（2009）の行列を線形RGBに適用し、表示用にsRGBへ戻して近似しています。強度は最大（1.0）で計算します。実際の見え方は個人差が大きく、同じ型でも程度が異なります。</p>
 
     <h3>色差の求め方</h3>
     <p>色差はCIE76（ΔE76）で計算します。2色をsRGBからXYZに変換し、D65の白色点でLabに直して、Lab空間のユークリッド距離を求めます。値が大きいほど色が離れて見える目安になります。</p>
-    <p>このページでは、10未満を「見分けにくい」、10以上20未満を「やや近い」、20以上を「離れている」と表示します。境界は絶対的な基準ではありません。配色を見直すきっかけとして使ってください。</p>
+    <p>10未満は「見分けにくい」、10以上20未満は「やや近い」、20以上は「離れている」と表示します。境界は絶対的な基準ではありません。配色を見直すきっかけとして使ってください。</p>
 
     <h3>色だけに頼らないために</h3>
     <p>色の違いだけで情報を伝えず、形・位置・文字・模様を組み合わせると、色覚にかかわらず読み取れます。グラフでは線の種類や直接ラベル、表では記号や並び順が助けになります。文字と背景のコントラストは<a href="/color/">カラー・コントラスト</a>で数値として確かめられます。</p>
 
     <h3>注意</h3>
-    <p>このページの結果は医療診断ではありません。色覚の型や程度を判定するものではなく、配色の参考として近似を表示しています。心配なときは眼科などの専門機関に相談してください。画面の設定や照明でも見え方は変わります。</p>
+    <p>結果は医療診断ではありません。色覚の型や程度を判定するものではなく、配色の参考として近似を表示しています。心配なときは眼科などの専門機関に相談してください。画面の設定や照明でも見え方は変わります。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">
@@ -253,7 +256,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -286,7 +289,6 @@
   const SAMPLES = {
     rg: ['#ff6666', '#66cc66'],
     gb: ['#7dcea0', '#85c1e9'],
-    light: ['#1f4e79', '#f2c14e'],
   };
 
   const colors = [

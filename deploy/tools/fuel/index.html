@@ -92,7 +92,7 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <p class="hint">給油の記録は端末内だけで計算し、保存しません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>前回の給油から今回までに走った距離を入れます。</li>
       <li>今回入れた給油量と、レシートの単価を入れます。</li>
@@ -148,7 +148,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -179,6 +179,11 @@
       .replace(/[，,]/g, '')
       .replace(/[％%]/g, '')
       .replace(/[¥￥]/g, '')
+      .replace(/円/g, '')
+      .replace(/km/gi, '')
+      .replace(/[lℓ]/gi, '')
+      .replace(/日/g, '')
+      .replace(/\//g, '')
       .replace(/\s+/g, '');
     if (s === '') return null;
     const n = Number(s);

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>User-Agentの判定｜道具箱</title>
-<meta name="description" content="User-Agent文字列から、端末の種類・OS・ブラウザ・エンジンを端末内の正規表現だけで判定します。現在のUAのコピー、ログのUAの貼り付け、よく見る記号の一覧に対応。入力はブラウザの外に出ません。">
+<meta name="description" content="User-Agent文字列から、端末の種類・OS・ブラウザ・エンジンを端末内の正規表現だけで判定します。現在のUser-Agentのコピー、ログの文字列の貼り付け、よく見る記号の一覧もあります。入力はブラウザの外に出ません。">
 <link rel="canonical" href="https://icekun.net/useragent/">
 <meta name="theme-color" content="#f7f3ea">
 <meta name="google-adsense-account" content="ca-pub-1870128904709930">
@@ -14,8 +14,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
-  #ua { min-height: 4.5rem; }
+  #ua { min-height: 7rem; }
   #verdict:empty { display: none; }
+  #detect th:first-child { width: 1%; white-space: nowrap; }
   #notes { margin: 0.75rem 0 0; padding-left: 1.1rem; }
   #notes li { font-size: 0.75rem; color: var(--muted); line-height: 1.8; }
   #notes:empty { display: none; }
@@ -23,6 +24,10 @@
   #copyStatus:empty { display: none; }
   .prose table { margin: 0.75rem 0 1rem; }
   .prose th, .prose td { font-size: 0.8125rem; }
+  .prose td.mono { word-break: normal; overflow-wrap: anywhere; }
+  @media (max-width: 40rem) {
+    #verdict { font-size: 1.15rem; line-height: 1.6; }
+  }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -72,9 +77,9 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <p class="hint">判定は端末内の照合だけで、文字列を送りません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
-      <li>この端末のUser-Agentが最初から入っています。</li>
+      <li>最初から端末の値が入っています。</li>
       <li>端末・OS・ブラウザの判定を確認します。</li>
       <li>ログの文字列を貼り付けても判定できます。</li>
     </ol>
@@ -145,7 +150,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -249,7 +254,7 @@
       result.osHint = 'Windows Phone';
     } else if ((m = /Windows NT ([\d.]+)/i.exec(ua))) {
       var win = {
-        '10.0': 'Windows 10/11',
+        '10.0': 'Windows 10/11',
         '6.3': 'Windows 8.1',
         '6.2': 'Windows 8',
         '6.1': 'Windows 7',
@@ -286,25 +291,25 @@
 
     if ((m = /Edg(?:e|A|iOS)?\/([\d.]+)/.exec(ua))) {
       result.browser = 'Edge ' + major(m[1]);
-      result.browserHint = m[0];
+      result.browserHint = m[0].split('.')[0];
     } else if ((m = /OPR\/([\d.]+)/.exec(ua)) || (m = /Opera[\/ ]([\d.]+)/.exec(ua))) {
       result.browser = 'Opera ' + major(m[1]);
-      result.browserHint = m[0];
+      result.browserHint = m[0].split('.')[0];
     } else if ((m = /SamsungBrowser\/([\d.]+)/.exec(ua))) {
       result.browser = 'Samsung Internet ' + major(m[1]);
-      result.browserHint = m[0];
+      result.browserHint = m[0].split('.')[0];
     } else if ((m = /Vivaldi\/([\d.]+)/.exec(ua))) {
       result.browser = 'Vivaldi ' + major(m[1]);
-      result.browserHint = m[0];
+      result.browserHint = m[0].split('.')[0];
     } else if ((m = /Firefox\/([\d.]+)/.exec(ua)) || (m = /FxiOS\/([\d.]+)/.exec(ua))) {
       result.browser = 'Firefox ' + major(m[1]);
-      result.browserHint = m[0];
+      result.browserHint = m[0].split('.')[0];
     } else if ((m = /CriOS\/([\d.]+)/.exec(ua)) || (m = /Chrome\/([\d.]+)/.exec(ua))) {
       result.browser = 'Chrome ' + major(m[1]);
-      result.browserHint = m[0];
+      result.browserHint = m[0].split('.')[0];
     } else if ((m = /MSIE ([\d.]+)/.exec(ua)) || (m = /Trident\/.*rv:([\d.]+)/.exec(ua))) {
       result.browser = 'Internet Explorer ' + major(m[1]);
-      result.browserHint = m[0];
+      result.browserHint = m[0].split('.')[0];
     } else if (/Safari\//.test(ua)) {
       m = /Version\/([\d.]+)/.exec(ua);
       result.browser = m ? 'Safari ' + m[1] : 'Safari';
@@ -328,7 +333,7 @@
 
     if (result.engine === 'WebKit' || result.engine === 'Blink') {
       m = /AppleWebKit\/([\d.]+)/.exec(ua);
-      result.engineHint = m ? 'AppleWebKit/' + m[1] : '—';
+      result.engineHint = m ? 'AppleWebKit' : '—';
     } else if (result.engine === 'Gecko') {
       result.engineHint = /Gecko\/\d+/.test(ua) ? 'Gecko' : '—';
     } else if (result.engine === 'Trident') {
@@ -353,10 +358,10 @@
       notes.push('Windows NT 10.0 は 10 と 11 の共通表記です。');
     }
     if (/Mac OS X 10[._]15/.test(ua) && result.browser.indexOf('Safari') === 0) {
-      notes.push('Safari の UA は macOS 10.15 のまま固定されるため、実際のバージョンと異なる場合があります。');
+      notes.push('Safari の User-Agent は macOS 10.15 のまま固定されるため、実際のバージョンと異なる場合があります。');
     }
     if (/Android/.test(ua) && /Chrome|Edg|SamsungBrowser/.test(ua)) {
-      notes.push('Chrome 系は UA の情報を減らしているため、Android のバージョンが実際と異なる場合があります。');
+      notes.push('Chrome 系は User-Agent の情報を減らしているため、Android のバージョンが実際と異なる場合があります。');
     }
     if (isCurrent && /Macintosh/.test(ua) && result.device === 'タブレット') {
       notes.push('iPad の Safari は macOS として名乗るため、タッチ対応の有無から推測しています。');
@@ -390,7 +395,7 @@
     copyStatus.textContent = '';
 
     if (!ua) {
-      verdictEl.textContent = 'UA文字列を入力してください。';
+      verdictEl.textContent = 'User-Agentを入力してください。';
       return;
     }
 

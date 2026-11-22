@@ -154,7 +154,7 @@
 
     <div class="tbl-scroll" id="preview" role="region" aria-label="結合結果のプレビュー" tabindex="0" hidden></div>
 
-    <div class="row" style="margin-top:1rem">
+    <div class="row" id="saveRow" style="margin-top:1rem" hidden>
       <button class="btn" type="button" id="btnDownload" disabled>CSVを保存</button>
       <span class="hint" id="saveNote" style="margin:0"></span>
     </div>
@@ -218,7 +218,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -243,6 +243,7 @@
   var statusEl = $('status');
   var statsOut = $('statsOut');
   var preview = $('preview');
+  var saveRow = $('saveRow');
   var btnDownload = $('btnDownload');
   var saveNote = $('saveNote');
   var warnWrap = $('warnWrap');
@@ -448,10 +449,7 @@
       var dup = entries.some(function (e) {
         return e.file.name === f.name && e.file.size === f.size && e.file.lastModified === f.lastModified;
       });
-      if (dup) {
-        accepted = accepted.filter(function (a) { return a !== f; });
-        continue;
-      }
+      if (dup) continue;
       if (f.size > MAX_BYTES) {
         msg = f.name + ' は大きすぎます（1ファイル20MBまで）。';
         continue;
@@ -546,7 +544,7 @@
       } else if (f === 'none') {
         flagEl.textContent = '空のファイル';
         flagEl.className += ' ng';
-      } else if (!f) {
+      } else if (!f || f === 'nohead') {
         flagEl.hidden = true;
       }
 
@@ -671,6 +669,7 @@
     preview.hidden = true;
     preview.textContent = '';
     btnDownload.disabled = true;
+    saveRow.hidden = true;
     saveNote.textContent = '';
     warnWrap.textContent = '';
   }
@@ -787,6 +786,7 @@
     renderStats(m);
     renderPreview(m, displayHeader);
 
+    saveRow.hidden = m.rows.length === 0;
     btnDownload.disabled = m.rows.length === 0;
     btnDownload.onclick = function () { downloadCSV(m, displayHeader); };
 
@@ -796,7 +796,7 @@
     renderWarnings(problems.concat(m.warnings));
 
     var msg = nf.format(m.fileCount) + '個のファイルから ' + nf.format(m.rows.length) + ' 行をまとめました。';
-    if (m.skipped > 0) msg += ' 見出し行を ' + nf.format(m.skipped) + ' 行はぶきました。';
+    if (m.skipped > 0) msg += ' 見出し行は ' + nf.format(m.skipped) + ' 行省きました。';
     setStatus(msg, (problems.length || m.warnings.length) ? 'warn' : 'ok');
   }
 
@@ -828,7 +828,7 @@
       lines.push(cells.join(delim));
     }
     var body = lines.join('\r\n') + '\r\n';
-    if (optBom.checked) body = '﻿' + body;
+    if (optBom.checked) body = '\uFEFF' + body;
 
     var blob = new Blob([body], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);

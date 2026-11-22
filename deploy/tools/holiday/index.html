@@ -81,6 +81,7 @@
   .mblock th, .mblock td { padding: 0.35rem 0.4rem; }
   .mblock td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
   .mblock td.wd { color: var(--muted); white-space: nowrap; }
+  .mblock td:nth-child(3), .mblock th:nth-child(3) { white-space: nowrap; }
   .mblock .none { margin: 0.2rem 0 0; font-size: 0.75rem; color: var(--muted); }
   .approx { font-size: 0.62rem; color: var(--warn); border: 1px solid #e3d2b3; border-radius: 999px; padding: 0 0.35rem; margin-left: 0.3rem; white-space: nowrap; }
 </style>
@@ -134,9 +135,9 @@
     <div class="list-grid" id="listView" aria-label="月別の祝日一覧" hidden></div>
 
     <p class="legend" id="legend">
-      <span class="swatch" aria-hidden="true"></span>薄い色の日付が祝日です。下の一覧に名前を出しています。
+      <span class="swatch" aria-hidden="true"></span>年間カレンダーの薄い色の日付が祝日です。名前は各月の下に出しています。
     </p>
-    <p class="hint" style="margin:0.5rem 0 0">振替休日と国民の休日は含みません。春分・秋分の日は概算です。実際の休みは内閣府の発表で確認してください。</p>
+    <p class="hint" style="margin:0.5rem 0 0">振替休日・国民の休日は含みません。春分・秋分は概算です。</p>
   </section>
 
   <section class="panel">
@@ -157,7 +158,7 @@
   -->
 
   <section class="prose">
-    <h2>祝日カレンダーについて</h2>
+    <h2>祝日の決まり方</h2>
     <p>2024年から2030年までの「国民の祝日」を、月ごとの欄に並べています。年間カレンダーでは曜日ごとの位置を、月別一覧では日付と曜日、決まりを確認できます。予定表や勤怠の下書きに使えます。</p>
 
     <h3>祝日の決まり方</h3>
@@ -200,7 +201,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -236,22 +237,22 @@
 
   function holidaysFor(y) {
     var list = [
-      { m: 1, d: 1, name: '元日', rule: '固定日' },
+      { m: 1, d: 1, name: '元日', rule: '固定' },
       { m: 1, d: nthMonday(y, 1, 2), name: '成人の日', rule: '第2月曜' },
-      { m: 2, d: 11, name: '建国記念の日', rule: '固定日' },
-      { m: 2, d: 23, name: '天皇誕生日', rule: '固定日' },
-      { m: 3, d: springEquinox(y), name: '春分の日', rule: '春分（概算）', approx: true },
-      { m: 4, d: 29, name: '昭和の日', rule: '固定日' },
-      { m: 5, d: 3, name: '憲法記念日', rule: '固定日' },
-      { m: 5, d: 4, name: 'みどりの日', rule: '固定日' },
-      { m: 5, d: 5, name: 'こどもの日', rule: '固定日' },
+      { m: 2, d: 11, name: '建国記念の日', rule: '固定' },
+      { m: 2, d: 23, name: '天皇誕生日', rule: '固定' },
+      { m: 3, d: springEquinox(y), name: '春分の日', rule: '概算', approx: true },
+      { m: 4, d: 29, name: '昭和の日', rule: '固定' },
+      { m: 5, d: 3, name: '憲法記念日', rule: '固定' },
+      { m: 5, d: 4, name: 'みどりの日', rule: '固定' },
+      { m: 5, d: 5, name: 'こどもの日', rule: '固定' },
       { m: 7, d: nthMonday(y, 7, 3), name: '海の日', rule: '第3月曜' },
-      { m: 8, d: 11, name: '山の日', rule: '固定日' },
+      { m: 8, d: 11, name: '山の日', rule: '固定' },
       { m: 9, d: nthMonday(y, 9, 3), name: '敬老の日', rule: '第3月曜' },
-      { m: 9, d: autumnEquinox(y), name: '秋分の日', rule: '秋分（概算）', approx: true },
+      { m: 9, d: autumnEquinox(y), name: '秋分の日', rule: '概算', approx: true },
       { m: 10, d: nthMonday(y, 10, 2), name: 'スポーツの日', rule: '第2月曜' },
-      { m: 11, d: 3, name: '文化の日', rule: '固定日' },
-      { m: 11, d: 23, name: '勤労感謝の日', rule: '固定日' }
+      { m: 11, d: 3, name: '文化の日', rule: '固定' },
+      { m: 11, d: 23, name: '勤労感謝の日', rule: '固定' }
     ];
     list.sort(function (a, b) { return (a.m - b.m) || (a.d - b.d); });
     return list;
@@ -334,6 +335,10 @@
               td.className = (td.className ? td.className + ' ' : '') + 'hol';
               td.setAttribute('aria-label', y + '年' + m + '月' + day + '日 ' + WD[wd] + '曜日 ' + hol.name);
               td.title = hol.name;
+              var sr = document.createElement('span');
+              sr.className = 'sr-only';
+              sr.textContent = ' ' + hol.name;
+              td.appendChild(sr);
             }
             if (today.y === y && today.m === m && today.d === day) {
               td.className = (td.className ? td.className + ' ' : '') + 'today';
@@ -458,7 +463,7 @@
     renderList(y);
 
     var n = holidaysFor(y).length;
-    $('summary').textContent = y + '年の祝日は ' + n + ' 日です。春分の日と秋分の日は概算で求めています。';
+    $('summary').textContent = y + '年の祝日は' + n + '日です。春分の日と秋分の日は概算で求めています。';
     $('summary').className = 'hint';
   }
 

@@ -32,8 +32,8 @@
   fieldset.plain legend { padding: 0 0 0.35rem; font-size: 0.75rem; color: var(--muted); }
   @media (max-width: 40rem) {
     .item-row { grid-template-columns: 1fr 1fr; align-items: start; }
-    .item-out { grid-column: 1 / -1; padding-bottom: 0; }
-    .item-remove { grid-column: 1 / -1; justify-self: start; }
+    .item-out { grid-column: 1 / 2; padding-bottom: 0; }
+    .item-remove { grid-column: 2 / 3; justify-self: end; align-self: center; }
   }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
@@ -90,7 +90,7 @@
       </label>
       <label class="field" for="extraRate">
         <span>追加割引（％・任意）</span>
-        <input type="text" id="extraRate" inputmode="decimal" autocomplete="off" placeholder="10">
+        <input type="text" id="extraRate" inputmode="decimal" autocomplete="off">
       </label>
     </div>
     <p class="err" id="priceErr" role="alert" hidden></p>
@@ -102,7 +102,7 @@
       <div class="stat"><b id="priceEffective">—</b><span>実質割引率</span></div>
     </div>
     <p class="result" id="priceSummary" role="status" aria-live="polite">—</p>
-    <p class="note">円未満は四捨五入しています。追加割引は、1回目の割引後の価格にさらにかけます。</p>
+    <p class="note">追加割引がなければ空欄にします。円未満は四捨五入し、追加割引は1回目の割引後の価格にかけます。</p>
 
     <h2 style="margin-top:2rem">表示価格から割引率</h2>
     <p class="hint">定価と、いまの価格を同じ税区分で入れると、何％引きかを出します。</p>
@@ -125,7 +125,7 @@
     <p class="note">税込どうし、または税抜どうしで入れてください。同じ税率なら割引率は同じになります。</p>
 
     <h2 style="margin-top:2rem">まとめ買いの合計</h2>
-    <p class="hint">商品ごとの価格と割引率から、割引後と税込の合計を出します。空欄の行は使いません。</p>
+    <p class="hint">商品ごとの価格と割引率から、割引後と税込の合計を出します。空欄は除きます。</p>
     <div id="itemList" class="item-list"></div>
     <div class="row" style="margin-top:0.75rem">
       <button class="btn secondary" type="button" id="addItem">行を追加</button>
@@ -138,7 +138,7 @@
       <div class="stat"><b id="itemsCount">—</b><span>点数</span></div>
     </div>
     <p class="result" id="itemsSummary" role="status" aria-live="polite">—</p>
-    <p class="note">割引率が空欄なら0％として計算します。商品ごとに円未満を四捨五入して合計しています。</p>
+    <p class="note">価格は上の税込・税抜の設定に合わせます。割引率が空欄なら0％として計算します。商品ごとに円未満を四捨五入して合計しています。</p>
 
     <div class="row" style="margin-top:1.5rem">
       <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
@@ -147,7 +147,7 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <p class="hint">価格の計算は端末内だけで行います。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>定価と割引率を入れると、セール価格が出ます。</li>
       <li>定価と現在の価格から、何％引きかを出します。</li>
@@ -203,7 +203,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -245,7 +245,7 @@
 
   const resetBtn = document.getElementById('resetBtn');
 
-  const MAX_ROWS = 12;
+  const MAX_ROWS = 30;
   const MAX_PRICE = 100000000;
   const yenFormatter = new Intl.NumberFormat('ja-JP');
 
@@ -256,6 +256,7 @@
       .replace(/[，,]/g, '')
       .replace(/[％%]/g, '')
       .replace(/[¥￥]/g, '')
+      .replace(/円/g, '')
       .replace(/\s+/g, '');
     if (s === '') return null;
     const n = Number(s);
@@ -267,6 +268,7 @@
   }
 
   function formatRate(n) {
+    if (n > 0 && n < 0.1) return '0.1％未満';
     const r = Math.round(n * 10) / 10;
     return (Number.isInteger(r) ? String(r) : r.toFixed(1)) + '％';
   }
@@ -359,7 +361,8 @@
       return;
     }
 
-    let text = '定価 ' + yen(price) + ' から ' + formatRate(rate) + ' 引き。';
+    let text = '定価 ' + yen(price) + (mode === 'incl' ? '（税込）' : '（税抜）') +
+      ' から ' + formatRate(rate) + ' 引き。';
     if (extra > 0) {
       text += 'さらに ' + formatRate(extra) + ' 引きで、実質 ' + formatRate(effective) + ' 引きです。';
     }
@@ -452,7 +455,7 @@
     priceInput.type = 'text';
     priceInput.inputMode = 'decimal';
     priceInput.autocomplete = 'off';
-    priceInput.placeholder = '1,280';
+    priceInput.placeholder = '例：1,280';
     priceInput.value = priceValue == null ? '' : String(priceValue);
     priceLabel.append(priceText, priceInput);
 
@@ -464,7 +467,7 @@
     rateInput.type = 'text';
     rateInput.inputMode = 'decimal';
     rateInput.autocomplete = 'off';
-    rateInput.placeholder = '20';
+    rateInput.placeholder = '例：20';
     rateInput.value = rateValue == null ? '' : String(rateValue);
     rateLabel.append(rateText, rateInput);
 

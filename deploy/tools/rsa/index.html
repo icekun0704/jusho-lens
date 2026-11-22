@@ -36,7 +36,7 @@
 
   <section class="panel" id="tool">
     <h2>1. 鍵を生成</h2>
-    <p class="hint">RSA-OAEP（SHA-256）の鍵ペアを作ります。鍵はメモリ上にだけ置きます。</p>
+    <p class="hint">RSA-OAEP（SHA-256）の鍵ペアを作ります。鍵はメモリ上だけに置きます。</p>
     <div class="row">
       <label class="field" style="max-width:12rem">
         <span>鍵長</span>
@@ -152,7 +152,7 @@ openssl rsa -pubout -in private-key.pem -out public-key.pem</pre>
     <p>暗号文は Base64 で受け渡し、改行や空白が混ざっていても復号のときに無視します。</p>
 
     <h2>注意</h2>
-    <p>このページは仕組みを確かめるためのデモです。本番の秘密情報の暗号化や秘密鍵の保管には使わないでください。鍵と入力はブラウザのメモリ上だけで扱い、サーバーへ送信したり localStorage に保存したりしません。Web Crypto API は HTTPS または localhost でのみ動作します。</p>
+    <p>仕組みを試すためのデモです。秘密鍵はブラウザのメモリ上だけに置き、サーバーへ送りません。Web Crypto API は HTTPS または localhost でのみ動作します。</p>
     <p>PKCS#1 形式（<code>BEGIN RSA PRIVATE KEY</code>、<code>BEGIN RSA PUBLIC KEY</code>）と、パスフレーズ付きの秘密鍵（<code>BEGIN ENCRYPTED PRIVATE KEY</code>）には対応していません。パスフレーズ付きの鍵は <code>openssl pkcs8 -topk8 -nocrypt</code> で暗号化を外してから使ってください。</p>
   </section>
 
@@ -182,7 +182,7 @@ openssl rsa -pubout -in private-key.pem -out public-key.pem</pre>
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 

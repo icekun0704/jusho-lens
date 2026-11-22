@@ -22,8 +22,8 @@
   .seg label { position: relative; }
   .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .seg label span {
-    display: inline-flex; align-items: center; height: 2rem; padding: 0 0.9rem;
-    border-radius: 6px; font-size: 0.8125rem; color: var(--muted);
+    display: inline-flex; align-items: center; height: 2rem; padding: 0 0.75rem;
+    border-radius: 3px; font-size: 0.8125rem; color: var(--muted);
     cursor: pointer; white-space: nowrap;
   }
   .seg input:checked + span {
@@ -40,11 +40,19 @@
   .qr-stage canvas, .qr-stage svg { display: block; max-width: 100%; height: auto; }
   .qr-stage svg { width: 100%; }
   input[type="color"] {
-    width: 100%; height: 2.25rem; padding: 0.2rem;
+    width: 4.5rem; height: 2.75rem; padding: 0.2rem;
     border: 1px solid var(--rule); border-radius: 6px;
     background: var(--bg); cursor: pointer;
   }
   .val { margin: 0.35rem 0 0; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+  #tool .btn { min-height: 2.75rem; }
+  #tool input[type="text"], #tool input[type="password"], #tool select { min-height: 2.75rem; }
+  #tool input[type="range"] { min-height: 2.75rem; }
+  @media (pointer: coarse) {
+    #tool .seg label span { height: 2.75rem; }
+    #tool .check { min-height: 2.75rem; }
+    #tool input[type="checkbox"] { width: 1.25rem; height: 1.25rem; }
+  }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -130,6 +138,8 @@
         </select>
         <p class="val">高いほど汚れに強い</p>
       </div>
+    </div>
+    <div class="row" style="margin-top:1rem">
       <div class="field">
         <label for="qrFg"><span>前景色</span></label>
         <input type="color" id="qrFg" value="#000000">
@@ -159,10 +169,7 @@
           <div class="row">
             <button type="button" class="btn" id="dlPng" disabled>PNGをダウンロード</button>
             <button type="button" class="btn secondary" id="dlSvg" disabled>SVGをダウンロード</button>
-          </div>
-          <div class="row" style="margin-top:0.75rem">
             <button type="button" class="btn ghost" id="copyPng" disabled>PNGをコピー</button>
-            <button type="button" class="btn ghost" id="clearBtn">クリア</button>
           </div>
         </div>
         <p class="hint" id="msg" role="status" aria-live="polite"></p>
@@ -179,7 +186,7 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <p class="hint">入力した内容は端末内でQRコードにするだけで、送信しません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>URLやWiFi設定を入力します。</li>
       <li>大きさ、余白、色を整えます。</li>
@@ -195,7 +202,7 @@
   -->
 
   <section class="prose">
-    <h2>QRコードについて</h2>
+    <h2>QRコードの基本</h2>
     <p>QRコードは、文字やURLを縦横の格子に変えた二次元コードです。スマートフォンのカメラで読み取ると、書かれた内容を開いたり保存したりできます。名刺、チラシ、店頭の案内など、短い案内を貼る用途に向きます。</p>
 
     <h2>読み取りやすくするには</h2>
@@ -235,7 +242,7 @@
       </div>
       <div><p style="margin:0">© 2026 icekun tools</p></div>
     </div>
-    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
   </div>
 </footer>
 
@@ -278,7 +285,6 @@
   var dlPng = document.getElementById('dlPng');
   var dlSvg = document.getElementById('dlSvg');
   var copyPng = document.getElementById('copyPng');
-  var clearBtn = document.getElementById('clearBtn');
 
   var state = { valid: false, svg: '' };
   var timer = 0;
@@ -397,7 +403,11 @@
       }
       var root = doc.documentElement;
       if (root && root.nodeName.toLowerCase() === 'svg') {
-        qrSvg.replaceChildren(document.importNode(root, true));
+        var node = document.importNode(root, true);
+        node.setAttribute('role', 'img');
+        node.setAttribute('aria-label', '生成したQRコード');
+        node.setAttribute('focusable', 'false');
+        qrSvg.replaceChildren(node);
       } else {
         qrSvg.replaceChildren();
       }
@@ -609,18 +619,6 @@
         setMsg('コピーできませんでした。ブラウザの権限を確認してください。', 'err');
       });
     }, 'image/png');
-  });
-
-  clearBtn.addEventListener('click', function () {
-    textIn.value = '';
-    wifiSsid.value = '';
-    wifiPass.value = '';
-    wifiAuth.value = 'WPA';
-    wifiHidden.checked = false;
-    syncWifiPass();
-    updatePayloadInfo('', qrEc.value);
-    setIdle('内容を入力すると、ここにQRコードが表示されます。');
-    setMsg('', '');
   });
 
   syncWifiPass();
