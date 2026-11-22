@@ -586,7 +586,7 @@
         ['phone', '電話番号'],
         ['address', '住所'],
         ['email', 'メール'],
-        ['text', 'そのまま']
+        ['text', 'テキスト']
       ].forEach(function (opt) {
         var o = document.createElement('option');
         o.value = opt[0];
@@ -885,7 +885,6 @@
 
   $('btnClear').addEventListener('click', function () {
     clearTimeout(timer);
-    src.value = '';
     src.value = '';
     fileInput.value = '';
     clearOutput();

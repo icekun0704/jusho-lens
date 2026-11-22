@@ -643,6 +643,7 @@
   [baseEl, endEl, nEl, countBaseEl, incStartEl, incEndEl].forEach(function (el) {
     el.addEventListener('change', update);
   });
+  nEl.addEventListener('input', schedule);
   closuresEl.addEventListener('input', schedule);
 
   var now = todayKey();
