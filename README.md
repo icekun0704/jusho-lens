@@ -2,7 +2,8 @@
 
 英語の住所を日本語に戻して確認するツールです。Amazon の自動翻訳、Wise の登録住所、DS-160 の申請書など、海外フォームが生成した英語住所が本当に自分の住所を指しているかを確かめられます。
 
-https://icekun0704.github.io/jusho-lens/
+- 本番: https://icekun.net/jusho/ （Xserver）
+- 予備: https://icekun0704.github.io/jusho-lens/ （GitHub Pages）
 
 **すべて無料**です。運営費はページの広告で賄います。
 
@@ -27,6 +28,7 @@ https://icekun0704.github.io/jusho-lens/
 npm install
 npm run dev          # http://localhost:5199/jusho-lens/
 npm run build
+bash tools/deploy-xserver.sh   # Xserver へビルドして配置
 npx tsx tools/build-data.ts   # 辞書の再生成（data/ に公式 CSV を置く）
 npx tsx tools/test-parse.ts   # 住所変換の回帰テスト
 node tools/test-romaji.ts     # ローマ字規則のテスト
@@ -47,6 +49,8 @@ export const config = {
   adsenseSlot: '1234567890',
 }
 ```
+
+配置の詳細は [deploy/xserver.md](deploy/xserver.md)。
 
 ## データ
 
