@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>漢数字・大字変換｜道具箱</title>
+<meta name="description" content="算用数字を漢数字や大字（壱・拾・百・阡・萬）に、漢数字を算用数字に変換します。領収書の金額欄向けの「金壱拾弐万参阡円也」形式、位取り表記、0〜兆の整数に対応。負数・小数は非対応。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/kanji-number/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+  .tool-block + .tool-block { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }
+  .tool-block h2 { margin: 0 0 0.25rem; }
+  #numOut .stat b { font-size: 1.15rem; line-height: 1.55; word-break: break-all; }
+  #numOut .stat:last-child b { font-size: 1.35rem; }
+  #copyMsg { min-height: 1.5rem; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>漢数字・大字変換</h1>
+    <p class="lead">算用数字を漢数字や大字（壱・弐・参）に、漢数字を算用数字に変換します。領収書の金額欄向けの「金壱拾弐万参阡円也」形式にも対応しています。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="tool-block">
+      <h2>算用数字 → 漢数字・大字</h2>
+      <p class="hint">0から9999兆9999億9999万9999までの整数を変換します。カンマ・全角数字・「円」が付いた入力も受け付けます。</p>
+
+      <div class="field">
+        <label for="num"><span>金額・数値（算用数字）</span></label>
+        <input type="text" id="num" inputmode="numeric" autocomplete="off" placeholder="例: 1234567">
+      </div>
+      <p class="err" id="numErr" role="alert" hidden></p>
+
+      <div class="stats" id="numOut" aria-live="polite" aria-atomic="true">
+        <div class="stat"><b id="outKanji">—</b><span>漢数字</span></div>
+        <div class="stat"><b id="outDaiji">—</b><span>大字</span></div>
+        <div class="stat" style="grid-column:1/-1"><b id="outReceipt">—</b><span>領収書の金額欄（例）</span></div>
+      </div>
+
+      <div class="row" style="margin-top:0.75rem">
+        <button class="btn secondary" type="button" id="copyBtn" disabled>領収書形式をコピー</button>
+        <p class="hint" id="copyMsg" role="status" aria-live="polite" style="margin:0"></p>
+      </div>
+
+      <p class="note">大字は壱・弐・参・肆・伍・陸・漆・捌・玖・拾・百・阡・萬で表記します。領収書形式は例に合わせて「万」を使い、先頭に「金」、末尾に「円也」を付けます。</p>
+    </div>
+
+    <div class="tool-block">
+      <h2>漢数字・大字 → 算用数字</h2>
+      <p class="hint">「三億五千万」「壱萬弐阡参百」「二〇二六」「3万5千」などを算用数字に戻します。「金」「円」「也」、カンマ、空白は無視します。</p>
+
+      <div class="field">
+        <label for="kanji"><span>漢数字・大字</span></label>
+        <input type="text" id="kanji" autocomplete="off" placeholder="例: 金壱拾弐万参阡円也">
+      </div>
+      <p class="err" id="kanjiErr" role="alert" hidden></p>
+
+      <div id="kanjiOut" aria-live="polite" aria-atomic="true">
+        <p class="result large" id="outNumber" style="margin-top:0.75rem">—</p>
+      </div>
+      <p class="note">負数・小数には対応していません。読み取れない文字がある場合は、その文字を示してエラーを表示します。</p>
+    </div>
+
+    <noscript><p class="warn">この道具はJavaScriptを使って変換します。ブラウザでJavaScriptを有効にしてください。</p></noscript>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>上の欄に算用数字を入力します。カンマや「円」が付いていても構いません。</li>
+      <li>漢数字・大字・領収書形式が表示されます。領収書形式は「領収書形式をコピー」でコピーできます。</li>
+      <li>逆方向に変換するときは、下の欄に「金壱拾弐万参阡円也」などを入力します。</li>
+      <li>負数や小数を入力するとエラーになります。範囲は0〜9999兆9999億9999万9999です。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>漢数字・大字変換について</h2>
+    <p>漢数字は、一・二・三・十・百・千・万・億・兆のように位を表す文字で数を書く表記です。大字（だいじ）は、壱・弐・参・拾・阡・萬のように画数の多い字を使い、一を二や十に書き換えるといった改ざんを防ぐために、領収書・小切手・契約書などの金額欄で使われます。</p>
+
+    <h3>位取りの書き方</h3>
+    <p>一般的な漢数字では、十・百の前の「一」は書きません（十五、百二十）。千は、数全体が1,000から9,999のときは「千」と書き、万以上に付くときは「一千万」「一万一千」のように「一」を付けます。途中の0は書かないため、1,005は「千五」、10,100は「一万百」になります。一方、大字では改ざん防止のため「壱拾」「壱百」「壱阡」のように「壱」を省きません。この道具の領収書形式は、例に合わせて先頭に「金」、末尾に「円也」を付け、「万」を使って表記します。</p>
+
+    <h3>使える範囲と注意</h3>
+    <p>変換できるのは0から9999兆9999億9999万9999までの整数です。負数と小数には対応していません。逆変換では、通常の漢数字と大字のほか、「二〇二六」のような位取り表記や「3万5千」のように算用数字と漢数字が混ざった表記も読み取ります。「金」「円」「也」、カンマ、空白は無視します。大字の字体は書式によって異なり、四〜九を肆・伍・陸・漆・捌・玖と書く場合や、百を佰、千を仟と書く場合もあります。実際の記入は、取引先や提出先の書式に合わせてください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var MAX = 9999999999999999n;
+
+  var DIGITS = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+  var DIGITS_D = ['零', '壱', '弐', '参', '肆', '伍', '陸', '漆', '捌', '玖'];
+  var BIG_N = [[1000000000000n, '兆'], [100000000n, '億'], [10000n, '万']];
+  var BIG_D = [[1000000000000n, '兆'], [100000000n, '億'], [10000n, '萬']];
+  var BIG_R = [[1000000000000n, '兆'], [100000000n, '億'], [10000n, '万']];
+
+  var DIGIT_VAL = {
+    '〇': 0, '零': 0,
+    '一': 1, '壱': 1,
+    '二': 2, '弐': 2,
+    '三': 3, '参': 3,
+    '四': 4, '肆': 4,
+    '五': 5, '伍': 5,
+    '六': 6, '陸': 6,
+    '七': 7, '漆': 7,
+    '八': 8, '捌': 8,
+    '九': 9, '玖': 9
+  };
+  var SMALL = { '十': 10n, '拾': 10n, '百': 100n, '佰': 100n, '千': 1000n, '阡': 1000n, '仟': 1000n };
+  var BIG = { '万': 10000n, '萬': 10000n, '億': 100000000n, '兆': 1000000000000n };
+
+  var numInput = document.getElementById('num');
+  var numErr = document.getElementById('numErr');
+  var outKanji = document.getElementById('outKanji');
+  var outDaiji = document.getElementById('outDaiji');
+  var outReceipt = document.getElementById('outReceipt');
+  var copyBtn = document.getElementById('copyBtn');
+  var copyMsg = document.getElementById('copyMsg');
+  var kanjiInput = document.getElementById('kanji');
+  var kanjiErr = document.getElementById('kanjiErr');
+  var outNumber = document.getElementById('outNumber');
+
+  function fourDigit(g, style, whole) {
+    var out = '';
+    var places = [
+      [1000n, '千', '阡'],
+      [100n, '百', '百'],
+      [10n, '十', '拾'],
+      [1n, '', '']
+    ];
+    for (var i = 0; i < places.length; i++) {
+      var v = places[i][0];
+      var uN = places[i][1];
+      var uD = places[i][2];
+      var d = Number((g / v) % 10n);
+      if (d === 0) continue;
+      if (style === 'normal') {
+        if (d === 1 && v > 1n) {
+          if (v === 1000n && whole >= 10000n) out += '一';
+          out += uN;
+        } else {
+          out += DIGITS[d] + uN;
+        }
+      } else {
+        out += DIGITS_D[d] + uD;
+      }
+    }
+    return out;
+  }
+
+  function toKanji(n, style) {
+    if (n === 0n) return '零';
+    var out = '';
+    var rest = n;
+    var bigs = style === 'normal' ? BIG_N : (style === 'daiji' ? BIG_D : BIG_R);
+    for (var i = 0; i < bigs.length; i++) {
+      var v = bigs[i][0];
+      var ch = bigs[i][1];
+      var q = rest / v;
+      if (q > 0n) {
+        out += fourDigit(q, style, n) + ch;
+        rest = rest % v;
+      }
+    }
+    if (rest > 0n) out += fourDigit(rest, style, n);
+    return out;
+  }
+
+  function groupDigits(s) {
+    return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function parseArabic(raw) {
+    var s = raw.normalize('NFKC').replace(/[\s,，、¥￥円]/g, '');
+    if (s === '') return { empty: true };
+    if (!/^[0-9]+$/.test(s)) return { invalid: true };
+    var v = BigInt(s);
+    if (v > MAX) return { tooBig: true };
+    return { value: v };
+  }
+
+  function clearForward() {
+    outKanji.textContent = '—';
+    outDaiji.textContent = '—';
+    outReceipt.textContent = '—';
+    copyBtn.disabled = true;
+  }
+
+  function renderForward() {
+    var r = parseArabic(numInput.value);
+    copyMsg.textContent = '';
+    if (r.empty) {
+      clearForward();
+      numErr.hidden = true;
+      return;
+    }
+    if (r.invalid) {
+      clearForward();
+      numErr.textContent = '0以上の整数を入力してください。負数・小数は扱えません。';
+      numErr.hidden = false;
+      return;
+    }
+    if (r.tooBig) {
+      clearForward();
+      numErr.textContent = '0から9999兆9999億9999万9999までの範囲で入力してください。';
+      numErr.hidden = false;
+      return;
+    }
+    numErr.hidden = true;
+    outKanji.textContent = toKanji(r.value, 'normal');
+    outDaiji.textContent = toKanji(r.value, 'daiji');
+    outReceipt.textContent = '金' + toKanji(r.value, 'receipt') + '円也';
+    copyBtn.disabled = false;
+  }
+
+  function has(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  function parseKanji(raw) {
+    var s = raw.normalize('NFKC');
+    if (/[-−]/.test(s)) return { error: '負数には対応していません。' };
+    s = s.replace(/[金円也圓\s,，、¥￥約]/g, '');
+    if (s === '') return { empty: true };
+    if (s.indexOf('.') !== -1) return { error: '小数には対応していません。' };
+
+    var total = 0n;
+    var section = 0n;
+    var current = 0n;
+    var seen = false;
+    var chars = Array.from(s);
+
+    for (var i = 0; i < chars.length; i++) {
+      var ch = chars[i];
+      if (ch >= '0' && ch <= '9') {
+        current = current * 10n + BigInt(ch);
+        seen = true;
+      } else if (has(DIGIT_VAL, ch)) {
+        current = current * 10n + BigInt(DIGIT_VAL[ch]);
+        seen = true;
+      } else if (has(SMALL, ch)) {
+        if (current === 0n) current = 1n;
+        section += current * SMALL[ch];
+        current = 0n;
+        seen = true;
+      } else if (has(BIG, ch)) {
+        section += current;
+        if (section === 0n) section = 1n;
+        total += section * BIG[ch];
+        section = 0n;
+        current = 0n;
+        seen = true;
+      } else {
+        return { error: '「' + ch + '」は数字として読み取れません。' };
+      }
+    }
+
+    total += section + current;
+    if (!seen) return { empty: true };
+    if (total > MAX) return { error: '0から9999兆9999億9999万9999までの範囲で入力してください。' };
+    return { value: total };
+  }
+
+  function renderBack() {
+    var r = parseKanji(kanjiInput.value);
+    if (r.empty) {
+      outNumber.textContent = '—';
+      kanjiErr.hidden = true;
+      return;
+    }
+    if (r.error) {
+      outNumber.textContent = '—';
+      kanjiErr.textContent = r.error;
+      kanjiErr.hidden = false;
+      return;
+    }
+    kanjiErr.hidden = true;
+    outNumber.textContent = groupDigits(r.value.toString());
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function copyReceipt() {
+    var text = outReceipt.textContent;
+    if (!text || text === '—') return;
+    var done = function () { copyMsg.textContent = 'コピーしました。'; };
+    var fail = function () { copyMsg.textContent = 'コピーできませんでした。選択して手動でコピーしてください。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () {
+        if (fallbackCopy(text)) done(); else fail();
+      });
+    } else {
+      if (fallbackCopy(text)) done(); else fail();
+    }
+  }
+
+  numInput.addEventListener('input', renderForward);
+  kanjiInput.addEventListener('input', renderBack);
+  copyBtn.addEventListener('click', copyReceipt);
+
+  renderForward();
+  renderBack();
+})();
+</script>
+</body>
+</html>

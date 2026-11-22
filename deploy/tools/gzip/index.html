@@ -284,7 +284,7 @@
 
     var bytes = new TextEncoder().encode(text);
     if (bytes.byteLength > MAX_BYTES) {
-      setMsg(gzipMsg, 'テキストが大きすぎます（' + formatBytes(bytes.byteLength) + '）。上限は ' + formatBytes(MAX_BYTES) + ' です。', 'err');
+      setMsg(gzipMsg, 'テキストが大きすぎます（' + nf.format(bytes.byteLength) + ' バイト）。上限は 20MB（' + nf.format(MAX_BYTES) + ' バイト）です。', 'err');
       return;
     }
 
@@ -340,7 +340,7 @@
       return;
     }
     if (file.size > MAX_BYTES) {
-      setMsg(gunzipMsg, '.gz ファイルが大きすぎます（' + formatBytes(file.size) + '）。上限は ' + formatBytes(MAX_BYTES) + ' です。', 'err');
+      setMsg(gunzipMsg, '.gz ファイルが大きすぎます（' + nf.format(file.size) + ' バイト）。上限は 20MB（' + nf.format(MAX_BYTES) + ' バイト）です。', 'err');
       return;
     }
 

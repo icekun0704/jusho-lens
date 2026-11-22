@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>坪・平米・畳の変換｜道具箱</title>
+<meta name="description" content="坪・平米（㎡）・畳を相互変換する計算ツール。1坪=約3.30579㎡として、入力と同時に3単位を換算します。畳は不動産表示（1畳=1.62㎡）と京間・中京間・江戸間・団地間から選べ、小数桁も指定できます。計算はブラウザ内で完結します。">
+<link rel="canonical" href="https://icekun.net/tsubo/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  #tsubo, #m2, #jo { font-variant-numeric: tabular-nums; }
+  .conv-table td:first-child { white-space: nowrap; }
+  .conv-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  @media (max-width: 30rem) { .conv-table { font-size: 0.78rem; } }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>坪・平米・畳の変換</h1>
+    <p class="lead">坪・平米（㎡）・畳を相互に換算します。畳は不動産表示の1.62㎡のほか、京間・中京間・江戸間・団地間の大きさを選べます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>3つの単位を換算する</h2>
+    <p class="hint">どれか1つに数値を入れると、残り2つがその場で計算されます。1坪は400/121㎡（約3.30579㎡）として計算します。</p>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="tsubo"><span>坪</span></label>
+        <input type="text" id="tsubo" inputmode="decimal" autocomplete="off" value="1">
+      </div>
+      <div class="field">
+        <label for="m2"><span>平米（㎡）</span></label>
+        <input type="text" id="m2" inputmode="decimal" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="jo"><span>畳</span></label>
+        <input type="text" id="jo" inputmode="decimal" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="joType"><span>畳の種類（1畳あたりの面積）</span></label>
+        <select id="joType">
+          <option value="1.62" selected>不動産表示（1.62㎡）</option>
+          <option value="1.82405">京間（約1.824㎡）</option>
+          <option value="1.6562">中京間（約1.656㎡）</option>
+          <option value="1.5488">江戸間（約1.549㎡）</option>
+          <option value="1.445">団地間（約1.445㎡）</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="dp"><span>小数桁</span></label>
+        <select id="dp">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
+      <div class="field" style="align-self:end">
+        <button type="button" class="btn ghost" id="clear">クリア</button>
+      </div>
+    </div>
+
+    <p class="err" id="status" role="alert" hidden></p>
+    <p class="result" id="equation" aria-live="polite">値を入力すると換算結果が表示されます。</p>
+
+    <p class="warn">不動産広告の畳数は、1畳=1.62㎡として計算した目安です。実際の畳の大きさは地域や建物によって異なるため、部屋の広さは㎡（平米）で確認してください。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="types-h">
+    <h2 id="types-h">畳の地域別比較</h2>
+    <p class="hint">いま入力されている面積を、地域ごとの畳の大きさで表した枚数です。1畳の面積は代表的な値を用いた概算です。</p>
+    <div style="overflow-x:auto">
+      <table class="conv-table">
+        <caption class="sr-only">畳の種類ごとの1畳の面積と、入力面積に相当する畳数</caption>
+        <thead>
+          <tr><th scope="col">畳の種類</th><th scope="col">1畳の面積</th><th scope="col">畳数</th></tr>
+        </thead>
+        <tbody id="typeBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>坪・平米・畳のどれか1つに数値を入力します。全角数字や桁区切りのカンマも使えます。</li>
+      <li>残りの2つの欄が自動で計算されます。入力した欄の値はそのまま残ります。</li>
+      <li>畳の種類を変えると、畳数の換算に使う1畳の面積が変わります。</li>
+      <li>小数桁を変えると、表示する桁数が変わります。末尾の0は表示しません。</li>
+      <li>下の表で、同じ面積を地域別の畳で表した枚数を比べられます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>坪・平米・畳について</h2>
+    <p>坪は不動産や土地の面積でよく使われる尺貫法の単位、平米（㎡）はメートル法の面積、畳は部屋の広さを表す日本の慣用単位です。この道具は、この3つを同じ面積として相互に換算します。</p>
+
+    <h3>坪と平米の関係</h3>
+    <p>1坪は400/121平方メートルで、小数にすると約3.30579㎡です。逆に1㎡は約0.3025坪になります。坪は1間（6尺）四方の面積で、1尺は10/33メートルなので、1坪は(60/33)²=400/121㎡となります。不動産の土地面積は坪と㎡のどちらでも表示されるため、広さを比べるときは同じ単位にそろえると分かりやすくなります。</p>
+
+    <h3>畳の大きさは地域で違う</h3>
+    <p>畳1枚の面積は地域や建物によって異なります。代表的なものとして、京間（本間）は約1.824㎡、中京間は約1.656㎡、江戸間は約1.549㎡、団地間は約1.445㎡が目安として使われます。一方、不動産広告では、不動産の表示に関する公正競争規約により、畳1枚を1.62㎡として計算する決まりがあります。そのため、広告の「10畳」は実際の畳の枚数や部屋の広さと一致しないことがあります。</p>
+
+    <h3>表示と実寸は異なる</h3>
+    <p>不動産広告の畳数は目安であり、実際の部屋の広さとは異なります。マンションの面積は壁の中心線で測る壁芯（かべしん）で表示されることが多く、戸建てでは内法（うちのり）で測る場合もあります。柱や壁、押し入れ、バルコニーの扱いによっても有効な広さは変わります。契約や重要事項説明では、畳数ではなく㎡の面積を確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const TSUBO_M2 = 400 / 121;
+  const JO_TYPES = [
+    { key: 'real', label: '不動産表示', m2: 1.62 },
+    { key: 'kyo', label: '京間', m2: 1.82405 },
+    { key: 'chukyo', label: '中京間', m2: 1.6562 },
+    { key: 'edo', label: '江戸間', m2: 1.5488 },
+    { key: 'danchi', label: '団地間', m2: 1.445 }
+  ];
+
+  const tsuboEl = document.getElementById('tsubo');
+  const m2El = document.getElementById('m2');
+  const joEl = document.getElementById('jo');
+  const joTypeEl = document.getElementById('joType');
+  const dpEl = document.getElementById('dp');
+  const statusEl = document.getElementById('status');
+  const equationEl = document.getElementById('equation');
+  const typeBody = document.getElementById('typeBody');
+  const clearBtn = document.getElementById('clear');
+
+  let areaM2 = TSUBO_M2;
+
+  function parseNumber(value) {
+    let s = String(value).trim();
+    if (s === '') return null;
+    s = s
+      .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .replace(/．/g, '.')
+      .replace(/[－−]/g, '-')
+      .replace(/[,，\s]/g, '')
+      .replace(/(㎡|m²|m2|平米|坪|畳|帖)$/u, '');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function fmt(n, dp) {
+    if (!Number.isFinite(n)) return '—';
+    if (n === 0) return '0';
+    let s = n.toFixed(dp);
+    if (s.indexOf('.') !== -1) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    if (s === '-0') s = '0';
+    return s;
+  }
+
+  function selectedType() {
+    const value = joTypeEl.value;
+    return JO_TYPES.find(t => String(t.m2) === value) || JO_TYPES[0];
+  }
+
+  function joM2() {
+    const n = Number(joTypeEl.value);
+    return Number.isFinite(n) && n > 0 ? n : JO_TYPES[0].m2;
+  }
+
+  function showError(message) {
+    statusEl.hidden = false;
+    statusEl.textContent = message;
+  }
+
+  function hideError() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function clearOtherFields(source) {
+    if (source !== 'tsubo') tsuboEl.value = '';
+    if (source !== 'm2') m2El.value = '';
+    if (source !== 'jo') joEl.value = '';
+  }
+
+  function setFields(source, dp) {
+    if (source !== 'tsubo') tsuboEl.value = fmt(areaM2 / TSUBO_M2, dp);
+    if (source !== 'm2') m2El.value = fmt(areaM2, dp);
+    if (source !== 'jo') joEl.value = fmt(areaM2 / joM2(), dp);
+  }
+
+  function renderTypes(dp) {
+    typeBody.replaceChildren();
+    const selected = selectedType();
+    for (const type of JO_TYPES) {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = type.label + (type === selected ? '（選択中）' : '');
+      const tdM2 = document.createElement('td');
+      tdM2.className = 'mono';
+      tdM2.textContent = type.m2.toFixed(3) + '㎡';
+      const tdJo = document.createElement('td');
+      tdJo.className = 'mono';
+      tdJo.textContent = (areaM2 === null || !Number.isFinite(areaM2))
+        ? '—'
+        : fmt(areaM2 / type.m2, dp);
+      tr.append(th, tdM2, tdJo);
+      typeBody.append(tr);
+    }
+  }
+
+  function renderMeta(dp) {
+    if (areaM2 === null || !Number.isFinite(areaM2)) {
+      equationEl.textContent = '値を入力すると換算結果が表示されます。';
+    } else {
+      equationEl.textContent =
+        fmt(areaM2 / TSUBO_M2, dp) + '坪 = ' +
+        fmt(areaM2, dp) + '㎡ = ' +
+        fmt(areaM2 / joM2(), dp) + '畳（' + selectedType().label + '）';
+    }
+    renderTypes(dp);
+  }
+
+  function compute(source) {
+    const dp = Number(dpEl.value);
+    const inputEl = source === 'tsubo' ? tsuboEl : source === 'm2' ? m2El : joEl;
+    const parsed = parseNumber(inputEl.value);
+
+    if (parsed === null) {
+      hideError();
+      areaM2 = null;
+      clearOtherFields(source);
+      renderMeta(dp);
+      return;
+    }
+    if (parsed < 0) {
+      showError('0以上の数値を入力してください。');
+      areaM2 = null;
+      clearOtherFields(source);
+      renderMeta(dp);
+      return;
+    }
+
+    hideError();
+    if (source === 'tsubo') areaM2 = parsed * TSUBO_M2;
+    else if (source === 'm2') areaM2 = parsed;
+    else areaM2 = parsed * joM2();
+
+    setFields(source, dp);
+    renderMeta(dp);
+  }
+
+  function reformatAll() {
+    const dp = Number(dpEl.value);
+    if (areaM2 !== null && Number.isFinite(areaM2)) {
+      tsuboEl.value = fmt(areaM2 / TSUBO_M2, dp);
+      m2El.value = fmt(areaM2, dp);
+      joEl.value = fmt(areaM2 / joM2(), dp);
+    }
+    renderMeta(dp);
+  }
+
+  tsuboEl.addEventListener('input', () => compute('tsubo'));
+  m2El.addEventListener('input', () => compute('m2'));
+  joEl.addEventListener('input', () => compute('jo'));
+  [tsuboEl, m2El, joEl].forEach(el => {
+    el.addEventListener('change', reformatAll);
+  });
+  joTypeEl.addEventListener('change', reformatAll);
+  dpEl.addEventListener('change', reformatAll);
+
+  clearBtn.addEventListener('click', () => {
+    hideError();
+    areaM2 = null;
+    tsuboEl.value = '';
+    m2El.value = '';
+    joEl.value = '';
+    renderMeta(Number(dpEl.value));
+    tsuboEl.focus();
+  });
+
+  tsuboEl.value = '1';
+  compute('tsubo');
+})();
+</script>
+</body>
+</html>

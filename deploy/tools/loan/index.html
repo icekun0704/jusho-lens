@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>住宅ローン返済シミュレーション｜道具箱</title>
+<meta name="description" content="借入額・年利・返済期間から、元利均等返済と元金均等返済の毎月返済額、総返済額、利息総額を計算します。計算式を明記。ボーナス返済・繰上返済は扱いません。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/loan/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .stat b { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+  .result { font-variant-numeric: tabular-nums; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>住宅ローン返済シミュレーション</h1>
+    <p class="lead">借入額・年利・返済期間から、元利均等返済と元金均等返済の毎月返済額、総返済額、利息総額を並べて計算します。ボーナス返済と繰上返済は扱いません。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>借入条件</h2>
+    <p class="hint">借入額は万円、金利は年利（％）、期間は年で入力します。入力すると自動で計算されます。</p>
+
+    <form id="loanForm" novalidate>
+      <div class="grid-2">
+        <div class="field">
+          <label for="principal"><span>借入額（万円）</span></label>
+          <input type="number" id="principal" min="1" max="100000" step="1" inputmode="decimal" autocomplete="off" value="3500">
+        </div>
+        <div class="field">
+          <label for="rate"><span>年利（％）</span></label>
+          <input type="number" id="rate" min="0" max="20" step="0.01" inputmode="decimal" autocomplete="off" value="0.5">
+        </div>
+        <div class="field">
+          <label for="years"><span>返済期間（年）</span></label>
+          <input type="number" id="years" min="1" max="50" step="1" inputmode="numeric" autocomplete="off" value="35">
+        </div>
+      </div>
+      <div class="row" style="margin-top:1rem">
+        <button class="btn" type="submit">計算する</button>
+        <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
+      </div>
+    </form>
+
+    <p class="err" id="status" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="levelMonthly">—</b><span>元利均等・毎月返済</span></div>
+      <div class="stat"><b id="levelTotal">—</b><span>元利均等・総返済額</span></div>
+      <div class="stat"><b id="levelInterest">—</b><span>元利均等・利息総額</span></div>
+      <div class="stat"><b id="equalFirst">—</b><span>元金均等・初回返済</span></div>
+      <div class="stat"><b id="equalTotal">—</b><span>元金均等・総返済額</span></div>
+      <div class="stat"><b id="equalInterest">—</b><span>元金均等・利息総額</span></div>
+    </div>
+
+    <p class="result" id="summary" role="status" aria-live="polite">—</p>
+    <p class="note">返済回数 <span class="mono" id="times">—</span> 回／月利 <span class="mono" id="monthlyRate">—</span></p>
+    <p class="ok" id="compare"></p>
+
+    <p class="warn">ボーナス返済、繰上返済、借換え、事務手数料、保証料、団体信用生命保険料は含みません。金利は全期間固定として計算しています。実際の返済額は金融機関の計算と異なる場合があります。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>借入額を万円で入力します。3,500万円なら「3500」と入れます。</li>
+      <li>年利を％で入力します。0.5％なら「0.5」、1.2％なら「1.2」です。</li>
+      <li>返済期間を年で入力します。35年なら「35」です。</li>
+      <li>「計算する」を押すか、入力欄を変えると、その場で結果が更新されます。</li>
+      <li>元利均等と元金均等の毎月返済額・総返済額・利息総額を並べて比較します。</li>
+      <li>条件を最初の値に戻すときは「初期値に戻す」を押します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>住宅ローンの返済額について</h2>
+    <p>住宅ローンの返済方式には、毎月の返済額が一定の元利均等返済と、毎月返す元金が一定の元金均等返済があります。同じ借入額・金利・期間なら、利息総額は元金均等のほうが少なくなり、その分だけ初回の返済額は高くなります。この道具は、両方式の毎月返済額（元金均等は初回と最終回）、総返済額、利息総額を並べて比較します。</p>
+
+    <h3>元利均等返済の計算式</h3>
+    <p>借入額を <code>P</code>、月利を <code>i</code>（年利 ÷ 12 ÷ 100）、返済回数を <code>n</code>（年数 × 12）とすると、毎月の返済額は <code>P × i ÷ (1 − (1 + i)<sup>−n</sup>)</code> です。年利が0％のときは <code>P ÷ n</code> になります。総返済額は毎月返済額 × <code>n</code>、利息総額は総返済額 − <code>P</code> です。</p>
+
+    <h3>元金均等返済の計算式</h3>
+    <p>毎月の元金は <code>P ÷ n</code> で一定です。<code>k</code> 回目の返済額は <code>P ÷ n + (P − P ÷ n × (k − 1)) × i</code> で、初回が最も高く、最終回が最も低くなります。利息総額は <code>P × i × (n + 1) ÷ 2</code>、総返済額は <code>P</code> + 利息総額です。</p>
+
+    <h3>結果の見方と制限</h3>
+    <p>表示する金額は円未満を四捨五入しています。ボーナス返済、繰上返済、借換え、事務手数料、保証料、団体信用生命保険料は含みません。金利は全期間固定として計算し、変動金利の途中変更や金融機関独自の端数処理は反映しません。実際の返済額は金融機関の計算と一致しないことがあります。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const form = document.getElementById('loanForm');
+  const principalEl = document.getElementById('principal');
+  const rateEl = document.getElementById('rate');
+  const yearsEl = document.getElementById('years');
+  const statusEl = document.getElementById('status');
+  const summaryEl = document.getElementById('summary');
+  const compareEl = document.getElementById('compare');
+  const timesEl = document.getElementById('times');
+  const monthlyRateEl = document.getElementById('monthlyRate');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const OUT = {
+    levelMonthly: document.getElementById('levelMonthly'),
+    levelTotal: document.getElementById('levelTotal'),
+    levelInterest: document.getElementById('levelInterest'),
+    equalFirst: document.getElementById('equalFirst'),
+    equalTotal: document.getElementById('equalTotal'),
+    equalInterest: document.getElementById('equalInterest')
+  };
+
+  const DEFAULTS = {
+    principal: '3500',
+    rate: '0.5',
+    years: '35'
+  };
+
+  function yen(n) {
+    return Math.round(n).toLocaleString('ja-JP') + '円';
+  }
+
+  function readNumber(el) {
+    const raw = el.value.trim();
+    if (raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function hideError() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function clearResults() {
+    Object.keys(OUT).forEach(key => {
+      OUT[key].textContent = '—';
+    });
+    summaryEl.textContent = '借入額・年利・返済期間を入力すると計算結果が表示されます。';
+    timesEl.textContent = '—';
+    monthlyRateEl.textContent = '—';
+    compareEl.className = 'note';
+    compareEl.textContent = '';
+  }
+
+  function showError(message) {
+    statusEl.hidden = false;
+    statusEl.textContent = message;
+    clearResults();
+  }
+
+  function calc() {
+    const principalMan = readNumber(principalEl);
+    const annualRate = readNumber(rateEl);
+    const years = readNumber(yearsEl);
+
+    if (principalMan === null || annualRate === null || years === null) {
+      hideError();
+      clearResults();
+      return;
+    }
+    if (principalMan < 1 || principalMan > 100000) {
+      showError('借入額は 1〜100,000 万円の範囲で入力してください。');
+      return;
+    }
+    if (annualRate < 0 || annualRate > 20) {
+      showError('年利は 0〜20％ の範囲で入力してください。');
+      return;
+    }
+    if (!Number.isInteger(years) || years < 1 || years > 50) {
+      showError('返済期間は 1〜50 年の整数で入力してください。');
+      return;
+    }
+    hideError();
+
+    const principal = principalMan * 10000;
+    const n = years * 12;
+    const monthlyRate = annualRate / 100 / 12;
+
+    const levelMonthly = monthlyRate === 0
+      ? principal / n
+      : principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -n));
+    const levelTotal = levelMonthly * n;
+    const levelInterest = levelTotal - principal;
+
+    const principalPart = principal / n;
+    const equalFirst = principalPart + principal * monthlyRate;
+    const equalLast = principalPart + principalPart * monthlyRate;
+    const equalTotal = principal + principal * monthlyRate * (n + 1) / 2;
+    const equalInterest = equalTotal - principal;
+
+    OUT.levelMonthly.textContent = yen(levelMonthly);
+    OUT.levelTotal.textContent = yen(levelTotal);
+    OUT.levelInterest.textContent = yen(levelInterest);
+    OUT.equalFirst.textContent = yen(equalFirst);
+    OUT.equalTotal.textContent = yen(equalTotal);
+    OUT.equalInterest.textContent = yen(equalInterest);
+
+    summaryEl.textContent =
+      '元利均等は毎月 ' + yen(levelMonthly) + '（' + n.toLocaleString('ja-JP') + '回）。' +
+      '元金均等は初回 ' + yen(equalFirst) + '、最終回 ' + yen(equalLast) + 'です。';
+    timesEl.textContent = n.toLocaleString('ja-JP');
+    monthlyRateEl.textContent = (annualRate / 12).toFixed(4) + '％';
+
+    const interestDiff = Math.round(levelInterest) - Math.round(equalInterest);
+    const totalDiff = Math.round(levelTotal) - Math.round(equalTotal);
+
+    if (annualRate === 0 || (interestDiff === 0 && totalDiff === 0)) {
+      compareEl.className = 'note';
+      compareEl.textContent = '年利0％のため、元利均等と元金均等の総返済額・利息総額は同じです。';
+    } else {
+      compareEl.className = 'ok';
+      compareEl.textContent =
+        '元金均等の利息総額は元利均等より ' + yen(interestDiff) +
+        '少なく、総返済額も ' + yen(totalDiff) + '少なくなります。';
+    }
+  }
+
+  [principalEl, rateEl, yearsEl].forEach(el => {
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    calc();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    principalEl.value = DEFAULTS.principal;
+    rateEl.value = DEFAULTS.rate;
+    yearsEl.value = DEFAULTS.years;
+    calc();
+    principalEl.focus();
+  });
+
+  calc();
+})();
+</script>
+</body>
+</html>

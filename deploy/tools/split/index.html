@@ -17,7 +17,14 @@
   fieldset.plain { border: 0; margin: 1.25rem 0 0; padding: 0; }
   fieldset.plain legend { padding: 0 0 0.4rem; font-size: 0.75rem; color: var(--muted); }
   fieldset.plain .row { gap: 0.5rem 1.5rem; }
-  #tool .stat b { overflow-wrap: anywhere; }
+  #tool .stats { grid-template-columns: repeat(2, 1fr); }
+  #tool .stat b { font-size: clamp(1.1rem, 2.2vw, 1.5rem); overflow-wrap: anywhere; }
+  @media (min-width: 48rem) {
+    #tool .stats { grid-template-columns: repeat(4, 1fr); }
+  }
+  details summary { cursor: pointer; font-size: 0.8125rem; color: var(--muted); }
+  details summary:hover { color: var(--ink); }
+  details[open] summary { margin-bottom: 0.5rem; }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -106,7 +113,13 @@
         </thead>
         <tbody id="distBody"></tbody>
       </table>
-      <p class="hint" id="calcNote" style="margin-top:0.75rem"></p>
+      <p class="note" id="calcNote" style="margin-top:0.75rem"></p>
+      <p class="warn">税額の端数処理は事業者ごとに異なります。実際の請求額と1円ずれることがあります。</p>
+
+      <details style="margin-top:1rem">
+        <summary>コピーされるテキストを表示</summary>
+        <div class="result" id="summaryText"></div>
+      </details>
     </div>
   </section>
 
@@ -189,6 +202,7 @@
   var distNote = document.getElementById('distNote');
   var perNote = document.getElementById('perNote');
   var calcNote = document.getElementById('calcNote');
+  var summaryText = document.getElementById('summaryText');
   var taxLabel = document.getElementById('taxLabel');
   var btnCopy = document.getElementById('btnCopy');
   var st = {
@@ -251,6 +265,7 @@
     distNote.textContent = '';
     calcNote.textContent = '';
     distBody.textContent = '';
+    summaryText.textContent = '';
     lastSummary = '';
     btnCopy.disabled = true;
   }
@@ -365,6 +380,7 @@
       '端数処理: ' + ROUND_LABEL[rmode]
     ];
     lastSummary = lines.join('\n');
+    summaryText.textContent = lastSummary;
     btnCopy.disabled = false;
   }
 

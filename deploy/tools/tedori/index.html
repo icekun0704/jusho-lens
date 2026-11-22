@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手取り給与の概算｜道具箱</title>
+<meta name="description" content="額面月収・賞与・年齢・都道府県・扶養人数から、社会保険料と所得税・住民税を引いた手取り給与を概算します。健康保険・介護保険・厚生年金・雇用保険の料率は令和8年度の公表値をもとに編集できます。">
+<link rel="canonical" href="https://icekun.net/tedori/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .stat b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  .result { font-variant-numeric: tabular-nums; }
+  .breakdown th[scope="row"] { font-size: 0.8125rem; color: var(--ink); font-weight: 400; letter-spacing: 0; }
+  .breakdown td.mono { font-variant-numeric: tabular-nums; }
+  .breakdown tr.sum th, .breakdown tr.sum td { font-weight: 600; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>手取り給与の概算</h1>
+    <p class="lead">額面月収と賞与、年齢、都道府県、扶養人数から、社会保険料と税を引いた手取りの概算を出します。料率と控除は編集できます。結果は概算で、手取り額を保証するものではありません。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>収入と家族</h2>
+    <p class="hint">額面は税・社会保険料を引く前の金額です。入力すると自動で計算されます。</p>
+
+    <form id="payForm" novalidate>
+      <div class="grid-2">
+        <div class="field">
+          <label for="monthly"><span>額面月収（円）</span></label>
+          <input type="number" id="monthly" min="0" max="10000000" step="1000" inputmode="numeric" autocomplete="off" value="300000">
+        </div>
+        <div class="field">
+          <label for="bonus"><span>賞与（年間合計・円）</span></label>
+          <input type="number" id="bonus" min="0" max="100000000" step="10000" inputmode="numeric" autocomplete="off" value="600000">
+        </div>
+        <div class="field">
+          <label for="age"><span>年齢（歳）</span></label>
+          <input type="number" id="age" min="18" max="100" step="1" inputmode="numeric" autocomplete="off" value="35">
+        </div>
+        <div class="field">
+          <label for="pref"><span>都道府県（健康保険料率の初期値）</span></label>
+          <select id="pref">
+            <optgroup label="北海道・東北">
+              <option value="10.28">北海道（10.28％）</option>
+              <option value="9.85">青森県（9.85％）</option>
+              <option value="9.51">岩手県（9.51％）</option>
+              <option value="10.10">宮城県（10.10％）</option>
+              <option value="10.01">秋田県（10.01％）</option>
+              <option value="9.75">山形県（9.75％）</option>
+              <option value="9.50">福島県（9.50％）</option>
+            </optgroup>
+            <optgroup label="関東">
+              <option value="9.52">茨城県（9.52％）</option>
+              <option value="9.82">栃木県（9.82％）</option>
+              <option value="9.68">群馬県（9.68％）</option>
+              <option value="9.67">埼玉県（9.67％）</option>
+              <option value="9.73">千葉県（9.73％）</option>
+              <option value="9.85" selected>東京都（9.85％）</option>
+              <option value="9.92">神奈川県（9.92％）</option>
+            </optgroup>
+            <optgroup label="中部">
+              <option value="9.21">新潟県（9.21％）</option>
+              <option value="9.59">富山県（9.59％）</option>
+              <option value="9.70">石川県（9.70％）</option>
+              <option value="9.71">福井県（9.71％）</option>
+              <option value="9.55">山梨県（9.55％）</option>
+              <option value="9.63">長野県（9.63％）</option>
+              <option value="9.80">岐阜県（9.80％）</option>
+              <option value="9.61">静岡県（9.61％）</option>
+              <option value="9.93">愛知県（9.93％）</option>
+            </optgroup>
+            <optgroup label="近畿">
+              <option value="9.77">三重県（9.77％）</option>
+              <option value="9.88">滋賀県（9.88％）</option>
+              <option value="9.89">京都府（9.89％）</option>
+              <option value="10.13">大阪府（10.13％）</option>
+              <option value="10.12">兵庫県（10.12％）</option>
+              <option value="9.91">奈良県（9.91％）</option>
+              <option value="10.06">和歌山県（10.06％）</option>
+            </optgroup>
+            <optgroup label="中国">
+              <option value="9.86">鳥取県（9.86％）</option>
+              <option value="9.94">島根県（9.94％）</option>
+              <option value="10.05">岡山県（10.05％）</option>
+              <option value="9.78">広島県（9.78％）</option>
+              <option value="10.15">山口県（10.15％）</option>
+            </optgroup>
+            <optgroup label="四国">
+              <option value="10.24">徳島県（10.24％）</option>
+              <option value="10.02">香川県（10.02％）</option>
+              <option value="9.98">愛媛県（9.98％）</option>
+              <option value="10.05">高知県（10.05％）</option>
+            </optgroup>
+            <optgroup label="九州・沖縄">
+              <option value="10.11">福岡県（10.11％）</option>
+              <option value="10.55">佐賀県（10.55％）</option>
+              <option value="10.06">長崎県（10.06％）</option>
+              <option value="10.08">熊本県（10.08％）</option>
+              <option value="10.08">大分県（10.08％）</option>
+              <option value="9.77">宮崎県（9.77％）</option>
+              <option value="10.13">鹿児島県（10.13％）</option>
+              <option value="9.44">沖縄県（9.44％）</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="field">
+          <label for="dependents"><span>扶養人数（扶養控除の対象）</span></label>
+          <input type="number" id="dependents" min="0" max="10" step="1" inputmode="numeric" autocomplete="off" value="0">
+        </div>
+      </div>
+      <div class="row" style="margin-top:1rem">
+        <button class="btn" type="submit">計算する</button>
+        <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
+      </div>
+    </form>
+
+    <p class="err" id="status" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="netAnnual">—</b><span>手取り（年額）</span></div>
+      <div class="stat"><b id="netMonthly">—</b><span>手取り（月平均）</span></div>
+      <div class="stat"><b id="socialTotal">—</b><span>社会保険料（年額）</span></div>
+      <div class="stat"><b id="taxTotal">—</b><span>税（年額）</span></div>
+    </div>
+
+    <p class="result" id="summary" role="status" aria-live="polite">—</p>
+    <p class="note">手取り月平均は、賞与を含む年額を12で割った金額です。介護保険料は年齢が40〜64歳のときだけ加算します。</p>
+    <p class="warn">この結果は概算です。実際の手取りは、勤務先の健康保険組合や年金制度、住所地の自治体、年度、各種控除、標準報酬月額の等級・上限などで変わります。この計算は手取り額を保証するものではありません。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="rates-h">
+    <h2 id="rates-h">料率と控除の前提（編集できます）</h2>
+    <p class="hint">社会保険料率の初期値は令和8年度（2026年度）の公表値にもとづく従業員負担分です。都道府県を変えると健康保険料率の欄を、その都道府県の令和8年度の率の半分に戻します。</p>
+
+    <div class="grid-3">
+      <div class="field">
+        <label for="healthRate"><span>健康保険料率（従業員負担・令和8年度・％）</span></label>
+        <input type="number" id="healthRate" min="0" max="30" step="0.001" inputmode="decimal" autocomplete="off" value="4.925">
+      </div>
+      <div class="field">
+        <label for="nursingRate"><span>介護保険料率（40〜64歳・令和8年度・％）</span></label>
+        <input type="number" id="nursingRate" min="0" max="10" step="0.001" inputmode="decimal" autocomplete="off" value="0.81">
+      </div>
+      <div class="field">
+        <label for="supportRate"><span>子ども・子育て支援金率（令和8年度・％）</span></label>
+        <input type="number" id="supportRate" min="0" max="5" step="0.001" inputmode="decimal" autocomplete="off" value="0.115">
+      </div>
+      <div class="field">
+        <label for="pensionRate"><span>厚生年金保険料率（従業員負担・％）</span></label>
+        <input type="number" id="pensionRate" min="0" max="30" step="0.001" inputmode="decimal" autocomplete="off" value="9.15">
+      </div>
+      <div class="field">
+        <label for="employmentRate"><span>雇用保険料率（従業員負担・令和8年度・％）</span></label>
+        <input type="number" id="employmentRate" min="0" max="5" step="0.001" inputmode="decimal" autocomplete="off" value="0.5">
+      </div>
+      <div class="field">
+        <label for="residentRate"><span>住民税所得割率（令和8年度・％）</span></label>
+        <input type="number" id="residentRate" min="0" max="20" step="0.1" inputmode="decimal" autocomplete="off" value="10">
+      </div>
+      <div class="field">
+        <label for="reconstructionRate"><span>復興特別所得税率（令和8年分・％）</span></label>
+        <input type="number" id="reconstructionRate" min="0" max="10" step="0.1" inputmode="decimal" autocomplete="off" value="2.1">
+      </div>
+      <div class="field">
+        <label for="dependentIncome"><span>扶養控除（所得税・1人あたり・円）</span></label>
+        <input type="number" id="dependentIncome" min="0" max="2000000" step="10000" inputmode="numeric" autocomplete="off" value="380000">
+      </div>
+      <div class="field">
+        <label for="dependentResident"><span>扶養控除（住民税・1人あたり・円）</span></label>
+        <input type="number" id="dependentResident" min="0" max="2000000" step="10000" inputmode="numeric" autocomplete="off" value="330000">
+      </div>
+      <div class="field">
+        <label for="residentBase"><span>住民税の基礎控除（令和8年度・円）</span></label>
+        <input type="number" id="residentBase" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="580000">
+      </div>
+      <div class="field">
+        <label for="residentFlat"><span>住民税の均等割（令和8年度・円）</span></label>
+        <input type="number" id="residentFlat" min="0" max="100000" step="500" inputmode="numeric" autocomplete="off" value="5000">
+      </div>
+    </div>
+
+    <p class="ok">健康保険は協会けんぽの都道府県単位保険料率を労使折半、厚生年金は18.3％、雇用保険は一般の事業の労働者負担 <span class="mono">5/1,000</span>、介護保険は1.62％（40〜64歳）、子ども・子育て支援金は0.23％をそれぞれ折半した値を初期値にしています。</p>
+    <p class="note">所得税は令和8年分（2026年分）の給与所得控除（最低74万円）と基礎控除（合計所得489万円以下は104万円、655万円以下は67万円、2,350万円以下は62万円）で計算します。住民税は令和8年度の基礎控除58万円・所得割10％・均等割5,000円で計算します。どちらも扶養控除は人数×単価、社会保険料は全額控除として扱い、調整控除・配偶者控除・特定扶養控除・非課税判定は省略しています。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="breakdown-h">
+    <h2 id="breakdown-h">内訳</h2>
+    <p class="hint">金額は年額です。社会保険料と控除は円未満を四捨五入、税は所定の単位で切り捨てています。</p>
+    <div style="overflow-x:auto">
+      <table class="breakdown">
+        <thead>
+          <tr><th scope="col">項目</th><th scope="col">金額</th><th scope="col">備考</th></tr>
+        </thead>
+        <tbody id="breakdown"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>額面月収を円で入力します。残業代を含める場合は含めた金額にします。</li>
+      <li>賞与がある場合は年間合計を円で入力します。ない場合は0にします。</li>
+      <li>年齢を入力します。40〜64歳のときだけ介護保険料を加算します。</li>
+      <li>都道府県を選ぶと、健康保険料率の欄がその都道府県の令和8年度の率の半分になります。率は自由に書き換えられます。</li>
+      <li>扶養人数を入力します。扶養控除の人数として、所得税と住民税のそれぞれの単価で計算します。</li>
+      <li>結果と内訳を確認します。概算なので、実際の給与明細とは一致しないことがあります。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>手取り給与の決まり方</h2>
+    <p>給与の額面からは、社会保険料（健康保険・介護保険・厚生年金・雇用保険など）と税金（所得税・住民税）が引かれます。残った金額が手取りです。社会保険料は額面に対する料率で、所得税は課税所得に応じた累進税率で、住民税は所得割と均等割で計算します。この道具は、それぞれを簡易な式に当てはめて概算します。</p>
+
+    <h3>社会保険料の料率（令和8年度）</h3>
+    <p>健康保険は、協会けんぽに加入している場合、都道府県単位保険料率を労使で折半します。東京都の令和8年度の率は9.85％なので、従業員負担は4.925％です。40〜64歳の介護保険第2号被保険者は、全国一律1.62％の介護保険料率も折半して0.81％を加えます。子ども・子育て支援金は令和8年4月分以降0.23％で、従業員負担は0.115％です。厚生年金は18.3％の折半で9.15％、雇用保険は一般の事業の労働者負担が5/1,000（0.5％）です。</p>
+
+    <h3>所得税と住民税の簡易計算</h3>
+    <p>所得税は、額面年収から給与所得控除を引いて給与所得を出し、さらに社会保険料・基礎控除・扶養控除を引いた課税所得に、5〜45％の速算表を当てはめます。令和8年分の基礎控除は、合計所得489万円以下なら104万円、655万円以下なら67万円、2,350万円以下なら62万円です。給与所得控除は最低74万円です。税額には復興特別所得税2.1％を加算します。住民税は、同じ給与所得から社会保険料・基礎控除58万円・扶養控除を引き、所得割10％と均等割5,000円で計算します。</p>
+
+    <h3>結果の見方と制限</h3>
+    <p>社会保険料は額面全体に料率を掛ける簡易計算で、標準報酬月額の等級・上限や賞与の上限、健康保険組合独自の料率は反映しません。税は各種控除（配偶者控除、特定扶養控除、生命保険料控除、調整控除など）と非課税判定を省略しています。年度や勤務先、自治体で結果は変わるため、金額は目安として使ってください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const form = document.getElementById('payForm');
+  const monthlyEl = document.getElementById('monthly');
+  const bonusEl = document.getElementById('bonus');
+  const ageEl = document.getElementById('age');
+  const prefEl = document.getElementById('pref');
+  const dependentsEl = document.getElementById('dependents');
+  const statusEl = document.getElementById('status');
+  const summaryEl = document.getElementById('summary');
+  const breakdownEl = document.getElementById('breakdown');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const healthRateEl = document.getElementById('healthRate');
+  const nursingRateEl = document.getElementById('nursingRate');
+  const supportRateEl = document.getElementById('supportRate');
+  const pensionRateEl = document.getElementById('pensionRate');
+  const employmentRateEl = document.getElementById('employmentRate');
+  const residentRateEl = document.getElementById('residentRate');
+  const reconstructionRateEl = document.getElementById('reconstructionRate');
+  const dependentIncomeEl = document.getElementById('dependentIncome');
+  const dependentResidentEl = document.getElementById('dependentResident');
+  const residentBaseEl = document.getElementById('residentBase');
+  const residentFlatEl = document.getElementById('residentFlat');
+
+  const OUT = {
+    netAnnual: document.getElementById('netAnnual'),
+    netMonthly: document.getElementById('netMonthly'),
+    socialTotal: document.getElementById('socialTotal'),
+    taxTotal: document.getElementById('taxTotal')
+  };
+
+  const DEFAULTS = {
+    monthly: '300000',
+    bonus: '600000',
+    age: '35',
+    pref: '9.85',
+    dependents: '0',
+    healthRate: '4.925',
+    nursingRate: '0.81',
+    supportRate: '0.115',
+    pensionRate: '9.15',
+    employmentRate: '0.5',
+    residentRate: '10',
+    reconstructionRate: '2.1',
+    dependentIncome: '380000',
+    dependentResident: '330000',
+    residentBase: '580000',
+    residentFlat: '5000'
+  };
+
+  const RATE_SPECS = [
+    { key: 'health', el: healthRateEl, label: '健康保険料率', min: 0, max: 30 },
+    { key: 'support', el: supportRateEl, label: '子ども・子育て支援金率', min: 0, max: 5 },
+    { key: 'pension', el: pensionRateEl, label: '厚生年金保険料率', min: 0, max: 30 },
+    { key: 'employment', el: employmentRateEl, label: '雇用保険料率', min: 0, max: 5 },
+    { key: 'residentRate', el: residentRateEl, label: '住民税所得割率', min: 0, max: 20 },
+    { key: 'reconstruction', el: reconstructionRateEl, label: '復興特別所得税率', min: 0, max: 10 },
+    { key: 'dependentIncome', el: dependentIncomeEl, label: '扶養控除（所得税）', min: 0, max: 2000000 },
+    { key: 'dependentResident', el: dependentResidentEl, label: '扶養控除（住民税）', min: 0, max: 2000000 },
+    { key: 'residentBase', el: residentBaseEl, label: '住民税の基礎控除', min: 0, max: 10000000 },
+    { key: 'residentFlat', el: residentFlatEl, label: '住民税の均等割', min: 0, max: 100000 }
+  ];
+
+  const TAX_BRACKETS = [
+    { limit: 1950000, rate: 0.05, deduct: 0 },
+    { limit: 3300000, rate: 0.10, deduct: 97500 },
+    { limit: 6950000, rate: 0.20, deduct: 427500 },
+    { limit: 9000000, rate: 0.23, deduct: 636000 },
+    { limit: 18000000, rate: 0.33, deduct: 1536000 },
+    { limit: 40000000, rate: 0.40, deduct: 2796000 },
+    { limit: Infinity, rate: 0.45, deduct: 4796000 }
+  ];
+
+  function yen(n) {
+    return Math.round(n).toLocaleString('ja-JP') + '円';
+  }
+
+  function pct(n) {
+    return n.toLocaleString('ja-JP', { maximumFractionDigits: 3 }) + '％';
+  }
+
+  function readNumber(el, fallback) {
+    const raw = el.value.trim();
+    if (raw === '') return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function hideError() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function clearResults() {
+    Object.keys(OUT).forEach(key => {
+      OUT[key].textContent = '—';
+    });
+    summaryEl.textContent = '額面月収と年齢を入力すると計算結果が表示されます。';
+    breakdownEl.replaceChildren();
+  }
+
+  function showError(message) {
+    statusEl.hidden = false;
+    statusEl.textContent = message;
+    clearResults();
+  }
+
+  function salaryDeduction2026(gross) {
+    if (gross <= 2200000) return 740000;
+    if (gross <= 3600000) return gross * 0.3 + 80000;
+    if (gross <= 6600000) return gross * 0.2 + 440000;
+    if (gross <= 8500000) return gross * 0.1 + 1100000;
+    return 1950000;
+  }
+
+  function baseDeduction2026(income) {
+    if (income <= 4890000) return 1040000;
+    if (income <= 6550000) return 670000;
+    if (income <= 23500000) return 620000;
+    if (income <= 24000000) return 480000;
+    if (income <= 24500000) return 320000;
+    if (income <= 25000000) return 160000;
+    return 0;
+  }
+
+  function progressiveTax(taxable) {
+    for (const bracket of TAX_BRACKETS) {
+      if (taxable <= bracket.limit) {
+        return Math.max(0, taxable * bracket.rate - bracket.deduct);
+      }
+    }
+    return 0;
+  }
+
+  function floorTo(value, unit) {
+    return Math.floor(value / unit) * unit;
+  }
+
+  function addRow(label, value, note, className) {
+    const tr = document.createElement('tr');
+    if (className) tr.className = className;
+    const th = document.createElement('th');
+    th.scope = 'row';
+    th.textContent = label;
+    const tdValue = document.createElement('td');
+    tdValue.className = 'mono';
+    tdValue.textContent = value;
+    const tdNote = document.createElement('td');
+    tdNote.textContent = note;
+    tr.append(th, tdValue, tdNote);
+    breakdownEl.append(tr);
+  }
+
+  function calc() {
+    const monthly = readNumber(monthlyEl, null);
+    const bonus = readNumber(bonusEl, 0);
+    const age = readNumber(ageEl, null);
+    const dependents = readNumber(dependentsEl, 0);
+
+    if (monthly === null || age === null) {
+      hideError();
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(monthly)) {
+      showError('額面月収は数字で入力してください。');
+      return;
+    }
+    if (monthly < 0 || monthly > 10000000) {
+      showError('額面月収は 0〜10,000,000 円の範囲で入力してください。');
+      return;
+    }
+    if (Number.isNaN(bonus) || bonus < 0 || bonus > 100000000) {
+      showError('賞与は 0〜100,000,000 円の範囲で入力してください。');
+      return;
+    }
+    if (Number.isNaN(age) || !Number.isInteger(age) || age < 18 || age > 100) {
+      showError('年齢は 18〜100 歳の整数で入力してください。');
+      return;
+    }
+    if (Number.isNaN(dependents) || !Number.isInteger(dependents) || dependents < 0 || dependents > 10) {
+      showError('扶養人数は 0〜10 人の整数で入力してください。');
+      return;
+    }
+
+    const rates = {};
+    for (const spec of RATE_SPECS) {
+      const value = readNumber(spec.el, NaN);
+      if (Number.isNaN(value)) {
+        showError(spec.label + 'を入力してください。');
+        return;
+      }
+      if (value < spec.min || value > spec.max) {
+        showError(spec.label + 'は ' + spec.min + '〜' + spec.max + ' の範囲で入力してください。');
+        return;
+      }
+      rates[spec.key] = value;
+    }
+
+    const nursingApplies = age >= 40 && age <= 64;
+    rates.nursing = 0;
+    if (nursingApplies) {
+      const nursingValue = readNumber(nursingRateEl, NaN);
+      if (Number.isNaN(nursingValue)) {
+        showError('介護保険料率を入力してください。');
+        return;
+      }
+      if (nursingValue < 0 || nursingValue > 10) {
+        showError('介護保険料率は 0〜10 の範囲で入力してください。');
+        return;
+      }
+      rates.nursing = nursingValue;
+    }
+
+    hideError();
+
+    const gross = monthly * 12 + bonus;
+    const health = gross * rates.health / 100;
+    const nursing = gross * rates.nursing / 100;
+    const support = gross * rates.support / 100;
+    const pension = gross * rates.pension / 100;
+    const employment = gross * rates.employment / 100;
+    const social = health + nursing + support + pension + employment;
+
+    const salaryDeduction = salaryDeduction2026(gross);
+    const salaryIncome = Math.max(0, gross - salaryDeduction);
+    const baseDeduction = baseDeduction2026(salaryIncome);
+
+    const dependentIncomeTotal = dependents * rates.dependentIncome;
+    const incomeTaxableRaw = Math.max(0, salaryIncome - social - baseDeduction - dependentIncomeTotal);
+    const incomeTaxable = floorTo(incomeTaxableRaw, 1000);
+    const incomeTax = Math.floor(progressiveTax(incomeTaxable) * (1 + rates.reconstruction / 100));
+
+    const dependentResidentTotal = dependents * rates.dependentResident;
+    const residentTaxableRaw = Math.max(0, salaryIncome - social - rates.residentBase - dependentResidentTotal);
+    const residentTaxable = floorTo(residentTaxableRaw, 1000);
+    const residentIncomeTax = floorTo(residentTaxable * rates.residentRate / 100, 100);
+    const residentTax = salaryIncome > 0 ? residentIncomeTax + rates.residentFlat : 0;
+
+    const totalTax = incomeTax + residentTax;
+    const net = gross - social - totalTax;
+    const netMonthly = net / 12;
+
+    OUT.netAnnual.textContent = yen(net);
+    OUT.netMonthly.textContent = yen(netMonthly);
+    OUT.socialTotal.textContent = yen(social);
+    OUT.taxTotal.textContent = yen(totalTax);
+
+    if (gross === 0) {
+      summaryEl.textContent = '額面年収が0円のため、社会保険料・税・手取りはすべて0円です。';
+    } else {
+      summaryEl.textContent =
+        '額面年収 ' + yen(gross) + ' → 手取り ' + yen(net) +
+        '（額面の ' + (net / gross * 100).toFixed(1) + '％）。' +
+        '社会保険料 ' + yen(social) + '、税 ' + yen(totalTax) + '。';
+    }
+
+    breakdownEl.replaceChildren();
+
+    addRow('額面年収', yen(gross), '月収 ' + yen(monthly) + ' × 12 + 賞与 ' + yen(bonus));
+    addRow('健康保険料', yen(health), '額面 × ' + pct(rates.health));
+    addRow('介護保険料', yen(nursing), nursingApplies ? '額面 × ' + pct(rates.nursing) + '（40〜64歳）' : '40〜64歳のみ加算');
+    addRow('子ども・子育て支援金', yen(support), '額面 × ' + pct(rates.support));
+    addRow('厚生年金保険料', yen(pension), '額面 × ' + pct(rates.pension));
+    addRow('雇用保険料', yen(employment), '額面 × ' + pct(rates.employment));
+    addRow('社会保険料 計', yen(social), '額面の ' + (gross > 0 ? (social / gross * 100).toFixed(1) : '0.0') + '％', 'sum');
+    addRow('給与所得控除', yen(salaryDeduction), '令和8年分の速算式');
+    addRow('給与所得', yen(salaryIncome), '額面年収 − 給与所得控除');
+    addRow('所得税の基礎控除', yen(baseDeduction), '合計所得に応じて自動');
+    addRow('扶養控除（所得税）', yen(dependentIncomeTotal), dependents + '人 × ' + yen(rates.dependentIncome));
+    addRow('課税所得（所得税）', yen(incomeTaxable), '1,000円未満切捨て');
+    addRow('所得税（復興特別所得税込み）', yen(incomeTax), '速算表 × ' + (1 + rates.reconstruction / 100).toFixed(3));
+    addRow('住民税の基礎控除', yen(rates.residentBase), '令和8年度');
+    addRow('扶養控除（住民税）', yen(dependentResidentTotal), dependents + '人 × ' + yen(rates.dependentResident));
+    addRow('課税標準（住民税）', yen(residentTaxable), '1,000円未満切捨て');
+    addRow('住民税', yen(residentTax), '所得割 ' + yen(residentIncomeTax) + ' + 均等割 ' + yen(rates.residentFlat));
+    addRow('税 計', yen(totalTax), '所得税 + 住民税', 'sum');
+    addRow('手取り年額', yen(net), gross > 0 ? '額面の ' + (net / gross * 100).toFixed(1) + '％' : '', 'sum');
+    addRow('手取り月平均', yen(netMonthly), '年額 ÷ 12（賞与を含む平均）', 'sum');
+  }
+
+  [monthlyEl, bonusEl, ageEl, dependentsEl].forEach(el => {
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+
+  [healthRateEl, nursingRateEl, supportRateEl, pensionRateEl, employmentRateEl,
+    residentRateEl, reconstructionRateEl, dependentIncomeEl, dependentResidentEl,
+    residentBaseEl, residentFlatEl].forEach(el => {
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+
+  prefEl.addEventListener('change', () => {
+    const total = Number(prefEl.value);
+    if (Number.isFinite(total)) {
+      healthRateEl.value = (total / 2).toFixed(3);
+    }
+    calc();
+  });
+
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    calc();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    Object.keys(DEFAULTS).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = DEFAULTS[id];
+    });
+    calc();
+    monthlyEl.focus();
+  });
+
+  calc();
+})();
+</script>
+</body>
+</html>

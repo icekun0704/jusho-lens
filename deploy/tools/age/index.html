@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>年齢・学年・干支｜道具箱</title>
+<meta name="description" content="生年月日と基準日から満年齢・数え年・生後日数・次の誕生日までを計算。4月2日〜翌年4月1日区切りの学年（早生まれ対応）と、十二支・十干の干支、生年から年齢を引く早見表も表示します。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/age/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  input[type="date"] {
+    width: 100%; padding: 0.6rem 0.7rem; min-height: 2.6rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.875rem; line-height: 1.7;
+  }
+  .age-table th:nth-child(3), .age-table th:nth-child(4), .age-table th:nth-child(5),
+  .age-table td:nth-child(3), .age-table td:nth-child(4), .age-table td:nth-child(5) {
+    text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .age-table td:nth-child(1), .age-table td:nth-child(2), .age-table td:nth-child(6) { white-space: nowrap; }
+  .age-table tr.match { background: #efe9dd; }
+  .age-table tr.match th, .age-table tr.match td { color: var(--ink); }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>年齢・学年・干支</h1>
+    <p class="lead">生年月日から満年齢・数え年・生後日数・次の誕生日までを計算し、学年（4月2日〜翌年4月1日区切り、早生まれ対応）と干支（十二支・十干）を表示します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>生年月日から計算</h2>
+    <p class="hint">生年月日と基準日を選ぶと、その基準日時点の年齢・学年・干支を表示します。基準日は最初から今日が入っています。学年は小学校〜大学の在学段階の目安です。</p>
+
+    <div class="grid-2">
+      <label class="field" for="dob"><span>生年月日</span>
+        <input type="date" id="dob" min="1900-01-01" autocomplete="bday">
+      </label>
+      <label class="field" for="base"><span>基準日</span>
+        <input type="date" id="base" autocomplete="off">
+      </label>
+    </div>
+
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn secondary" type="button" id="todayBtn">基準日を今日にする</button>
+    </div>
+
+    <p class="err" id="status" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="ageFull">—</b><span>満年齢</span></div>
+      <div class="stat"><b id="ageKazo">—</b><span>数え年</span></div>
+      <div class="stat"><b id="daysAlive">—</b><span>生後日数</span></div>
+      <div class="stat"><b id="toNext">—</b><span>次の誕生日まで</span></div>
+      <div class="stat"><b id="grade">—</b><span>学年</span></div>
+      <div class="stat"><b id="eto">—</b><span>干支</span></div>
+    </div>
+
+    <p class="note" id="detail" aria-live="polite" aria-atomic="true">生年月日を選ぶと、その基準日時点の年齢・学年・干支を表示します。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="chart-h">
+    <h2 id="chart-h">年齢早見表</h2>
+    <p class="hint" id="chartHint">基準日時点の満年齢を生年ごとにまとめた表です。</p>
+    <div style="overflow-x:auto">
+      <table class="age-table">
+        <caption class="sr-only">生年ごとの満年齢・数え年・干支</caption>
+        <thead>
+          <tr>
+            <th scope="col">生年</th>
+            <th scope="col">和暦</th>
+            <th scope="col">満年齢（誕生日前）</th>
+            <th scope="col">満年齢（誕生日後）</th>
+            <th scope="col">数え年</th>
+            <th scope="col">干支</th>
+          </tr>
+        </thead>
+        <tbody id="chartBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。日付は端末のカレンダーに合わせて計算します。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「生年月日」を選びます。西暦のカレンダーから選ぶか、年月日を直接入力します。</li>
+      <li>必要なら「基準日」を変えます。最初は今日が入っています。過去や未来の日付を入れると、その日時点の年齢になります。</li>
+      <li>満年齢・数え年・生後日数・次の誕生日まで・学年・干支（十干と十二支の組み合わせ）がその場で表示されます。</li>
+      <li>結果の下の文章に、次の誕生日の日付、十二支と十干の読み、同学年の生まれ日の範囲が出ます。</li>
+      <li>「年齢早見表」では、生年ごとの満年齢の範囲・数え年・干支を一覧できます。生年月日を入れた行は色が付きます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>年齢・学年・干支について</h2>
+    <p>年齢の数え方には、誕生日ごとに1歳を加える満年齢と、生まれた年を1歳として元日ごとに加える数え年があります。学年は誕生日ではなく、4月2日から翌年4月1日までを同じ学年とする区切りで決まります。干支は十二支と十干を組み合わせた60年周期の表し方です。</p>
+
+    <h3>満年齢と数え年</h3>
+    <p>満年齢は、生まれた日を0歳として、誕生日が来るたびに1つ増える数え方で、現在の法律や行政の手続きではこちらが使われます。基準日がその年の誕生日より前なら、満年齢は1歳少なくなります。数え年は「基準日の年 − 生年 + 1」で求め、生まれた年が1歳、翌年の元日が2歳になります。数え年は昔の習慣に基づくもので、現在の年齢の届け出には使いません。</p>
+    <p>法律（年齢計算ニ関スル法律）では、満年齢は誕生日の前日に加算されます。このツールは暦の上の誕生日で判定するため、法律上の年齢と1日の差が出ることがあります。2月29日生まれの人は、うるう年以外の年では2月28日を誕生日として扱っています。</p>
+
+    <h3>学年の区切りと早生まれ</h3>
+    <p>日本の学校の学年は、4月2日から翌年4月1日までに生まれた人を同じ学年とする区切りです。小学校には、4月1日時点で満6歳になっている人が入学するため、1月1日から4月1日までに生まれた「早生まれ」の人は、同じ学年の4月から12月生まれの人より学年の上では小さく数えられます。たとえば2019年1月生まれと2018年4月生まれは同じ学年です。</p>
+    <p>このツールは、生年月日から入学する年（4月に小学1年になる年）を求め、基準日が属する学年との差から現在の学年を出します。大学以降や卒業後の学年は表示しません。</p>
+
+    <h3>干支（十二支・十干）</h3>
+    <p>十二支は子・丑・寅・卯・辰・巳・午・未・申・酉・戌・亥の12種類で、12年で一巡します。十干は甲・乙・丙・丁・戊・己・庚・辛・壬・癸の10種類で、10年で一巡します。この2つを組み合わせると60年で一巡し、たとえば2024年は甲辰、2026年は丙午です。このツールは西暦の年から十二支と十干を求めています。立春や旧正月で干支が切り替わるという考え方もありますが、ここでは1月1日から12月31日までを同じ干支の年として扱います。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var WD = ['日', '月', '火', '水', '木', '金', '土'];
+  var MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  var BRANCHES = [
+    { name: '子', kana: 'ね', animal: '鼠' },
+    { name: '丑', kana: 'うし', animal: '牛' },
+    { name: '寅', kana: 'とら', animal: '虎' },
+    { name: '卯', kana: 'う', animal: '兎' },
+    { name: '辰', kana: 'たつ', animal: '竜' },
+    { name: '巳', kana: 'み', animal: '蛇' },
+    { name: '午', kana: 'うま', animal: '馬' },
+    { name: '未', kana: 'ひつじ', animal: '羊' },
+    { name: '申', kana: 'さる', animal: '猿' },
+    { name: '酉', kana: 'とり', animal: '鶏' },
+    { name: '戌', kana: 'いぬ', animal: '犬' },
+    { name: '亥', kana: 'い', animal: '猪' }
+  ];
+  var STEMS = [
+    { name: '甲', kana: 'きのえ' },
+    { name: '乙', kana: 'きのと' },
+    { name: '丙', kana: 'ひのえ' },
+    { name: '丁', kana: 'ひのと' },
+    { name: '戊', kana: 'つちのえ' },
+    { name: '己', kana: 'つちのと' },
+    { name: '庚', kana: 'かのえ' },
+    { name: '辛', kana: 'かのと' },
+    { name: '壬', kana: 'みずのえ' },
+    { name: '癸', kana: 'みずのと' }
+  ];
+  var ERAS = [
+    { name: '令和', start: { y: 2019, m: 5, d: 1 } },
+    { name: '平成', start: { y: 1989, m: 1, d: 8 } },
+    { name: '昭和', start: { y: 1926, m: 12, d: 25 } },
+    { name: '大正', start: { y: 1912, m: 7, d: 30 } },
+    { name: '明治', start: { y: 1868, m: 9, d: 8 } }
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function isLeap(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+  function daysInMonth(y, m) { return (m === 2 && isLeap(y)) ? 29 : MDAYS[m - 1]; }
+  function utc(d) { return Date.UTC(d.y, d.m - 1, d.d); }
+  function dayNum(d) { return Math.floor(utc(d) / 86400000); }
+  function weekday(d) { return new Date(utc(d)).getUTCDay(); }
+  function fmtJP(d) { return d.y + '年' + d.m + '月' + d.d + '日（' + WD[weekday(d)] + '）'; }
+  function comma(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function todayLocal() {
+    var t = new Date();
+    return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
+  }
+  function parseISO(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    var d = { y: +m[1], m: +m[2], d: +m[3] };
+    if (d.m < 1 || d.m > 12 || d.d < 1 || d.d > daysInMonth(d.y, d.m)) return null;
+    return d;
+  }
+  function iso(d) { return d.y + '-' + pad2(d.m) + '-' + pad2(d.d); }
+
+  function eraOf(d) {
+    for (var i = 0; i < ERAS.length; i++) {
+      if (dayNum(d) >= dayNum(ERAS[i].start)) {
+        return { name: ERAS[i].name, year: d.y - ERAS[i].start.y + 1 };
+      }
+    }
+    return null;
+  }
+  function eraYearLabel(y) { return y === 1 ? '元' : String(y); }
+  function eraSpanOfYear(y) {
+    var a = eraOf({ y: y, m: 1, d: 1 });
+    var b = eraOf({ y: y, m: 12, d: 31 });
+    if (!a) return '—';
+    var left = a.name + eraYearLabel(a.year) + '年';
+    if (!b || a.name === b.name) return left;
+    return left + '・' + b.name + eraYearLabel(b.year) + '年';
+  }
+
+  function zodiac(y) {
+    var bi = ((y - 4) % 12 + 12) % 12;
+    var si = ((y - 4) % 10 + 10) % 10;
+    return { branch: BRANCHES[bi], stem: STEMS[si] };
+  }
+
+  function birthdayIn(y, birth) {
+    return { y: y, m: birth.m, d: Math.min(birth.d, daysInMonth(y, birth.m)) };
+  }
+  function cohortYear(b) {
+    var afterApr2 = b.m > 4 || (b.m === 4 && b.d >= 2);
+    return b.y + 6 + (afterApr2 ? 1 : 0);
+  }
+  function schoolYearOf(d) { return d.m >= 4 ? d.y : d.y - 1; }
+  function gradeLabel(g) {
+    if (g < 1) return '未就学';
+    if (g <= 6) return '小学' + g + '年';
+    if (g <= 9) return '中学' + (g - 6) + '年';
+    if (g <= 12) return '高校' + (g - 9) + '年';
+    if (g <= 16) return '大学' + (g - 12) + '年';
+    return '—';
+  }
+
+  function hideError() {
+    var el = $('status');
+    el.hidden = true;
+    el.textContent = '';
+  }
+  function showError(message, base) {
+    var el = $('status');
+    el.hidden = false;
+    el.textContent = message;
+    resetStats();
+    $('detail').className = 'note';
+    $('detail').textContent = '入力内容を確認してください。';
+    buildChart(base || todayLocal(), null);
+  }
+  function resetStats() {
+    ['ageFull', 'ageKazo', 'daysAlive', 'toNext', 'grade', 'eto'].forEach(function (id) {
+      $(id).textContent = '—';
+    });
+  }
+
+  function update() {
+    var birth = parseISO($('dob').value);
+    var base = parseISO($('base').value);
+
+    if (!birth || !base) {
+      hideError();
+      resetStats();
+      $('detail').className = 'note';
+      $('detail').textContent = '生年月日を選ぶと、その基準日時点の年齢・学年・干支を表示します。';
+      buildChart(base || todayLocal(), birth);
+      return;
+    }
+    if (birth.y < 1900) {
+      showError('生年月日は1900年以降の日付を選んでください。', base);
+      return;
+    }
+    if (dayNum(base) < dayNum(birth)) {
+      showError('基準日が生年月日より前です。基準日を生年月日以降にしてください。', base);
+      return;
+    }
+    hideError();
+
+    var elapsed = dayNum(base) - dayNum(birth);
+    var thisBirthday = birthdayIn(base.y, birth);
+    var isTodayBirthday = dayNum(base) === dayNum(thisBirthday);
+    var passed = dayNum(base) >= dayNum(thisBirthday);
+    var age = base.y - birth.y - (passed ? 0 : 1);
+    var kazo = base.y - birth.y + 1;
+
+    var next, toNext;
+    if (isTodayBirthday) {
+      next = thisBirthday;
+      toNext = 0;
+    } else if (!passed) {
+      next = thisBirthday;
+      toNext = dayNum(next) - dayNum(base);
+    } else {
+      next = birthdayIn(base.y + 1, birth);
+      toNext = dayNum(next) - dayNum(base);
+    }
+
+    var z = zodiac(birth.y);
+    var cohort = cohortYear(birth);
+    var grade = schoolYearOf(base) - cohort + 1;
+
+    $('ageFull').textContent = comma(age) + '歳';
+    $('ageKazo').textContent = comma(kazo) + '歳';
+    $('daysAlive').textContent = comma(elapsed) + '日';
+    $('toNext').textContent = toNext === 0 ? '今日' : comma(toNext) + '日';
+    $('grade').textContent = gradeLabel(grade);
+    $('eto').textContent = z.stem.name + z.branch.name;
+
+    var parts = [];
+    parts.push('基準日 ' + fmtJP(base) + '時点の満年齢は ' + comma(age) + '歳です。');
+    if (isTodayBirthday) parts.push('基準日は誕生日です。');
+    parts.push('次の誕生日は ' + fmtJP(next) + (toNext === 0 ? '（今日）' : '（あと' + comma(toNext) + '日）') + '。');
+    parts.push('十二支は' + z.branch.name + '（' + z.branch.kana + '）・' + z.branch.animal +
+      '、十干は' + z.stem.name + '（' + z.stem.kana + '）で、60干支では' + z.stem.name + z.branch.name + 'です。');
+    var rangeText = (cohort - 7) + '年4月2日〜' + (cohort - 6) + '年4月1日生まれ';
+    if (grade >= 1) {
+      parts.push('同学年は ' + rangeText + 'です。');
+    } else {
+      parts.push('同学年は ' + rangeText + 'で、基準日時点ではまだ入学前です。');
+    }
+    if (birth.m === 2 && birth.d === 29) {
+      parts.push('2月29日生まれは、うるう年以外の年では2月28日を誕生日として扱っています。');
+    }
+    $('detail').className = 'note';
+    $('detail').textContent = parts.join('');
+
+    buildChart(base, birth);
+  }
+
+  function buildChart(base, birth) {
+    var R = base.y;
+    var startY = Math.max(1900, R - 100);
+    if (birth && birth.y < startY) startY = birth.y;
+
+    $('chartHint').textContent = '基準日（' + fmtJP(base) + '）時点の満年齢です。' +
+      '「誕生日前」はその年の誕生日がまだ来ていない場合、「誕生日後」は誕生日が来た後の年齢です。' +
+      '数え年は基準日の年から生年を引いて1を足した値です。';
+
+    var body = $('chartBody');
+    body.replaceChildren();
+    for (var y = R; y >= startY; y--) {
+      var tr = document.createElement('tr');
+      if (birth && y === birth.y) tr.className = 'match';
+
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = y + '年';
+      tr.appendChild(th);
+
+      var z = zodiac(y);
+      var cells = [
+        eraSpanOfYear(y),
+        (R - y - 1) < 0 ? '—' : comma(R - y - 1) + '歳',
+        (R - y) < 0 ? '—' : comma(R - y) + '歳',
+        comma(R - y + 1) + '歳',
+        z.stem.name + z.branch.name
+      ];
+      for (var i = 0; i < cells.length; i++) {
+        var td = document.createElement('td');
+        td.textContent = cells[i];
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    }
+  }
+
+  var initial = todayLocal();
+  $('base').value = iso(initial);
+
+  ['dob', 'base'].forEach(function (id) {
+    var el = $(id);
+    el.addEventListener('input', update);
+    el.addEventListener('change', update);
+  });
+  $('todayBtn').addEventListener('click', function () {
+    $('base').value = iso(todayLocal());
+    update();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

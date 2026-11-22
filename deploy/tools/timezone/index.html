@@ -313,7 +313,11 @@
   function fillSelect(sel, selected) {
     sel.textContent = '';
     var device = deviceZone();
-    if (device) {
+    var deviceInCurated = false;
+    for (var di = 0; di < CURATED.length; di++) {
+      if (CURATED[di][0] === device) deviceInCurated = true;
+    }
+    if (device && !deviceInCurated) {
       var g0 = document.createElement('optgroup');
       g0.label = 'この端末';
       g0.appendChild(makeOpt(device, '端末のタイムゾーン — ' + device));
@@ -322,8 +326,8 @@
     var g1 = document.createElement('optgroup');
     g1.label = '主要都市';
     for (var i = 0; i < CURATED.length; i++) {
-      if (CURATED[i][0] === device) continue;
-      g1.appendChild(makeOpt(CURATED[i][0], CURATED[i][1] + ' — ' + CURATED[i][0]));
+      var suffix = CURATED[i][0] === device ? '（この端末）' : '';
+      g1.appendChild(makeOpt(CURATED[i][0], CURATED[i][1] + ' — ' + CURATED[i][0] + suffix));
     }
     sel.appendChild(g1);
 

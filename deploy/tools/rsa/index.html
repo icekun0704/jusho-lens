@@ -94,8 +94,8 @@
     <div class="result" id="rsa-enc-out" aria-live="polite" hidden></div>
     <div id="rsa-enc-actions" hidden>
       <div class="row" style="margin-top:0.5rem">
-        <button class="btn secondary" type="button" data-copy="rsa-enc-out" data-label="暗号文">コピー</button>
-        <button class="btn secondary" type="button" data-dl="rsa-enc-out" data-name="ciphertext.txt" data-label="暗号文">ダウンロード</button>
+        <button class="btn secondary" type="button" data-copy="rsa-enc-out" data-msg="rsa-enc-msg" data-label="暗号文">コピー</button>
+        <button class="btn secondary" type="button" data-dl="rsa-enc-out" data-name="ciphertext.txt" data-msg="rsa-enc-msg" data-label="暗号文">ダウンロード</button>
       </div>
     </div>
 
@@ -116,8 +116,8 @@
     <div class="result" id="rsa-dec-out" aria-live="polite" hidden></div>
     <div id="rsa-dec-actions" hidden>
       <div class="row" style="margin-top:0.5rem">
-        <button class="btn secondary" type="button" data-copy="rsa-dec-out" data-label="平文">コピー</button>
-        <button class="btn secondary" type="button" data-dl="rsa-dec-out" data-name="plaintext.txt" data-label="平文">ダウンロード</button>
+        <button class="btn secondary" type="button" data-copy="rsa-dec-out" data-msg="rsa-dec-msg" data-label="平文">コピー</button>
+        <button class="btn secondary" type="button" data-dl="rsa-dec-out" data-name="plaintext.txt" data-msg="rsa-dec-msg" data-label="平文">ダウンロード</button>
       </div>
     </div>
 
@@ -145,7 +145,7 @@
 
   <section class="prose">
     <h2>RSA暗号化・復号について</h2>
-    <p>RSA は公開鍵暗号の一つで、公開鍵で暗号化した内容は、対になる秘密鍵でしか復号できません。このページはブラウザの Web Crypto API にある RSA-OAEP（ハッシュ SHA-256）を使います。OAEP はパディング方式の一つで、同じ平文でも暗号化のたびに異なる暗号文になります。復号結果が同じ平文になるので、暗号文を比べても内容は推測できません。</p>
+    <p>RSA は公開鍵暗号の一つで、公開鍵で暗号化した内容は、対になる秘密鍵でしか復号できません。このページはブラウザの Web Crypto API にある RSA-OAEP（ハッシュ SHA-256）を使います。OAEP はパディング方式の一つで、同じ平文でも暗号化のたびに異なる暗号文になります。そのため、暗号文を見比べても同じ内容かどうかは分かりません。</p>
     <p>RSA で一度に暗号化できるデータ量は鍵長から決まり、「鍵長（ビット）÷ 8 − 66 バイト」が上限です。2048 ビットなら 190 バイト、3072 ビットなら 318 バイト、4096 ビットなら 446 バイトまでです。長い文書は AES などの共通鍵暗号で暗号化し、その鍵だけを RSA で包む「ハイブリッド暗号」が一般的で、TLS もこの方式を使っています。</p>
     <h2>鍵の形式</h2>
     <p>公開鍵は SPKI（<code>-----BEGIN PUBLIC KEY-----</code>）、秘密鍵は PKCS#8（<code>-----BEGIN PRIVATE KEY-----</code>）の PEM 形式（RFC 7468）で入出力します。OpenSSL なら次のコマンドで作れます。</p>
@@ -544,28 +544,30 @@ openssl rsa -pubout -in private-key.pem -out public-key.pem</pre>
 
   Array.prototype.forEach.call(document.querySelectorAll('button[data-copy]'), function (btn) {
     btn.addEventListener('click', function () {
+      var msgEl = btn.getAttribute('data-msg') ? $(btn.getAttribute('data-msg')) : els.copyMsg;
       var label = btn.getAttribute('data-label') || '内容';
       var text = getText(btn.getAttribute('data-copy'));
       if (!text) {
-        setMsg(els.copyMsg, label + 'がまだありません。', 'warn');
+        setMsg(msgEl, label + 'がまだありません。', 'warn');
         return;
       }
       copyText(text).then(function (ok) {
-        setMsg(els.copyMsg, ok ? label + 'をコピーしました。' : 'コピーできませんでした。欄を選択して手動でコピーしてください。', ok ? 'ok' : 'err');
+        setMsg(msgEl, ok ? label + 'をコピーしました。' : 'コピーできませんでした。欄を選択して手動でコピーしてください。', ok ? 'ok' : 'err');
       });
     });
   });
 
   Array.prototype.forEach.call(document.querySelectorAll('button[data-dl]'), function (btn) {
     btn.addEventListener('click', function () {
+      var msgEl = btn.getAttribute('data-msg') ? $(btn.getAttribute('data-msg')) : els.copyMsg;
       var label = btn.getAttribute('data-label') || '内容';
       var text = getText(btn.getAttribute('data-dl'));
       if (!text) {
-        setMsg(els.copyMsg, label + 'がまだありません。', 'warn');
+        setMsg(msgEl, label + 'がまだありません。', 'warn');
         return;
       }
       downloadText(btn.getAttribute('data-name') || 'download.txt', text, 'text/plain;charset=utf-8');
-      setMsg(els.copyMsg, label + 'をダウンロードしました。', 'ok');
+      setMsg(msgEl, label + 'をダウンロードしました。', 'ok');
     });
   });
 

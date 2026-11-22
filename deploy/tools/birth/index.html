@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>出産予定日｜道具箱</title>
+<meta name="description" content="最終月経開始日から280日後（ネーゲレ概算法）、排卵日・受精日から266日後で出産予定日を計算します。現在の妊娠週数・日数、出産までの日数、産休開始（予定日の6週前）と復帰目安も表示。入力はブラウザ内で処理され、サーバーに送信されません。">
+<link rel="canonical" href="https://icekun.net/birth/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  input[type="date"] {
+    width: 100%; padding: 0.6rem 0.7rem; min-height: 2.6rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.875rem; line-height: 1.7;
+  }
+  #out .result.large { margin-top: 0.25rem; }
+  @media (max-width: 30rem) {
+    .stat b { font-size: 1.25rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>出産予定日</h1>
+    <p class="lead">最終月経開始日または排卵日・受精日から出産予定日を計算し、現在の妊娠週数と産休開始・復帰の目安を表示します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>基準日を入力</h2>
+    <p class="hint">妊娠週数は、最終月経開始日を0週0日として数えます。排卵日・受精日を基準にした場合は、その14日前を最終月経開始日とみなします。</p>
+
+    <div class="grid-2">
+      <label class="field" for="basis"><span>計算の基準</span>
+        <select id="basis">
+          <option value="lmp">最終月経開始日</option>
+          <option value="ovu">排卵日・受精日</option>
+        </select>
+      </label>
+      <label class="field" for="baseDate"><span id="dateLabel">最終月経開始日</span>
+        <input type="date" id="baseDate" min="1900-01-01" max="2100-12-31">
+      </label>
+    </div>
+
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn secondary" type="button" id="clearBtn">入力をクリア</button>
+    </div>
+
+    <div id="out" aria-live="polite" aria-atomic="true"></div>
+
+    <p class="warn">妊娠週数と出産予定日は、最終月経開始日や排卵日を基準にした計算上の目安です。月経周期の長さや個人差、超音波検査の結果により実際の週数は異なります。医療上の判断は医師の診断を優先してください。産休・育休の取得要件や手続きは、勤務先や自治体の案内を確認してください。</p>
+    <p class="note">産前休業は出産予定日の6週間前（42日前）から、産後休業は出産日から8週間（56日）が目安です。多胎妊娠の産前休業は14週間前（98日前）です。産後6週間を経過した後は、本人の請求と医師の許可により就業できます。出産日が予定日と異なる場合、産後休業の終了日は出産日を基準に変わります。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「計算の基準」で、最終月経開始日か排卵日・受精日を選びます。</li>
+      <li>選んだ基準の日付を入力します。入力すると自動で計算されます。</li>
+      <li>出産予定日、現在の妊娠週数と日数、出産まで（または予定日からの経過）の日数が表示されます。</li>
+      <li>産休開始の目安（予定日の42日前）と、復帰の目安（予定日の56日後）もあわせて表示されます。</li>
+      <li>日付を変えると再計算されます。「入力をクリア」で日付を空にできます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>出産予定日について</h2>
+    <p>このツールは、最終月経開始日または排卵日・受精日から出産予定日を計算し、今日時点の妊娠週数と産休の目安を表示します。計算はブラウザ内で完結し、入力した日付はサーバーに送信されません。</p>
+
+    <h3>出産予定日の計算方法</h3>
+    <p>最終月経開始日を基準にする場合は、その日から280日後（40週0日）を出産予定日とします。これはネーゲレ概算法と呼ばれる一般的な計算方法で、月経周期が28日であることを前提にしています。排卵日・受精日を基準にする場合は、その日から266日後（38週0日）を予定日とします。280日と266日の差の14日は、排卵までの期間の目安です。</p>
+    <p>月経周期が28日より長い場合は排卵が遅れるため、最終月経開始日だけを基準にすると予定日が実際より早く出ることがあります。排卵日や受精日が分かる場合は、そちらを基準にしたほうが実際に近づきます。医師は超音波検査の結果から予定日を再計算することがあります。</p>
+
+    <h3>妊娠週数の数え方</h3>
+    <p>妊娠週数は、最終月経開始日を0週0日として、7日ごとに1週と数えます。たとえば最終月経開始日から87日後は12週3日です。40週0日が280日後にあたり、これが出産予定日の目安になります。排卵日・受精日を基準にした場合も、その14日前を最終月経開始日とみなして同じように数えます。</p>
+    <p>妊娠週数は医療機関でも同じ考え方で数えますが、月経周期や排卵の時期には個人差があります。実際の週数や予定日は、医師の診断や超音波検査の結果が優先されます。</p>
+
+    <h3>産休の目安</h3>
+    <p>産前休業は、出産予定日の6週間前（42日前）から取得できます。多胎妊娠の場合は14週間前（98日前）です。産後休業は出産日から8週間（56日）で、産後6週間を経過した後は、本人の請求と医師の許可により就業できます。</p>
+    <p>このツールの産休開始日と復帰の目安は、出産予定日を基準にした計算値です。出産日が予定日と異なれば、産後休業の起算日も変わります。取得できる期間や手続きは、勤務先の就業規則や自治体の案内を確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  var WD = ['日', '月', '火', '水', '木', '金', '土'];
+
+  function $(id) { return document.getElementById(id); }
+  function comma(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function isLeap(y) { return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; }
+  function daysInMonth(y, m) { return (m === 2 && isLeap(y)) ? 29 : MDAYS[m - 1]; }
+  function dayNum(d) { return Math.floor(Date.UTC(d.y, d.m - 1, d.d) / 86400000); }
+  function fromDayNum(n) {
+    var t = new Date(n * 86400000);
+    return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+  }
+  function addDays(d, n) { return fromDayNum(dayNum(d) + n); }
+  function weekday(d) { return new Date(Date.UTC(d.y, d.m - 1, d.d)).getUTCDay(); }
+  function parseISO(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    var d = { y: +m[1], m: +m[2], d: +m[3] };
+    if (d.y < 1900 || d.y > 2100) return null;
+    if (d.m < 1 || d.m > 12) return null;
+    if (d.d < 1 || d.d > daysInMonth(d.y, d.m)) return null;
+    return d;
+  }
+  function todayLocal() {
+    var t = new Date();
+    return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
+  }
+  function fmtJP(d) {
+    return d.y + '年' + d.m + '月' + d.d + '日（' + WD[weekday(d)] + '）';
+  }
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function addStats(box, items) {
+    var wrap = el('div', 'stats');
+    items.forEach(function (item) {
+      var stat = el('div', 'stat');
+      stat.appendChild(el('b', null, item[0]));
+      stat.appendChild(el('span', null, item[1]));
+      wrap.appendChild(stat);
+    });
+    box.appendChild(wrap);
+  }
+
+  function showHint(box, text, cls) {
+    var p = el('p', cls || 'hint', text);
+    p.style.margin = '0.75rem 0 0';
+    box.appendChild(p);
+  }
+
+  function update() {
+    var out = $('out');
+    out.textContent = '';
+
+    var basis = $('basis').value;
+    $('dateLabel').textContent = basis === 'ovu' ? '排卵日・受精日' : '最終月経開始日';
+
+    var base = parseISO($('baseDate').value);
+    if (!base) {
+      showHint(out, '基準日を選ぶと、出産予定日・妊娠週数・産休の目安を計算します。', 'hint');
+      return;
+    }
+
+    var lmp, due, basisName, offset;
+    if (basis === 'ovu') {
+      lmp = addDays(base, -14);
+      due = addDays(base, 266);
+      basisName = '排卵日・受精日';
+      offset = 266;
+    } else {
+      lmp = base;
+      due = addDays(base, 280);
+      basisName = '最終月経開始日';
+      offset = 280;
+    }
+
+    var today = todayLocal();
+    var gestDays = dayNum(today) - dayNum(lmp);
+    var remain = dayNum(due) - dayNum(today);
+    var leaveStart = addDays(due, -42);
+    var returnDate = addDays(due, 56);
+    var toLeave = dayNum(leaveStart) - dayNum(today);
+    var toReturn = dayNum(returnDate) - dayNum(today);
+
+    var weekText = '—';
+    if (gestDays >= 0) {
+      weekText = Math.floor(gestDays / 7) + '週' + (gestDays % 7) + '日';
+    }
+
+    var dueLabel = el('p', 'hint', '出産予定日');
+    dueLabel.style.margin = '1rem 0 0';
+    out.appendChild(dueLabel);
+    out.appendChild(el('p', 'result large', fmtJP(due)));
+
+    addStats(out, [
+      [weekText, '現在の妊娠週数'],
+      [remain >= 0 ? comma(remain) + '日' : comma(-remain) + '日経過', remain >= 0 ? '出産まで' : '予定日から'],
+      [toLeave >= 0 ? comma(toLeave) + '日' : comma(-toLeave) + '日経過', toLeave >= 0 ? '産休開始まで' : '産休開始から'],
+      [toReturn >= 0 ? comma(toReturn) + '日' : comma(-toReturn) + '日経過', toReturn >= 0 ? '復帰目安まで' : '復帰目安から']
+    ]);
+
+    var lines = [
+      '・基準: ' + basisName + ' ' + fmtJP(base),
+      '・予定日: ' + basisName + ' + ' + offset + '日 = ' + fmtJP(due),
+      '・妊娠週数: ' + (gestDays >= 0 ? fmtJP(lmp) + 'から' + comma(gestDays) + '日 = ' + weekText : '基準日が今日より後のため未計算'),
+      '・出産まで: ' + fmtJP(today) + 'から' + fmtJP(due) + 'まで' + (remain >= 0 ? comma(remain) + '日' : '（予定日を' + comma(-remain) + '日経過）'),
+      '・産前休業: 予定日の42日前 = ' + fmtJP(leaveStart),
+      '・産後休業: 予定日の56日後 = ' + fmtJP(returnDate)
+    ];
+    if (basis === 'ovu') {
+      lines.splice(2, 0, '・週数の基準: 排卵日の14日前の ' + fmtJP(lmp) + ' を最終月経開始日とみなす');
+    }
+    out.appendChild(el('div', 'result', lines.join('\n')));
+
+    if (gestDays < 0) {
+      showHint(out, '基準日が今日より後です。妊娠週数は基準日以降に表示されます。', 'warn');
+    } else if (gestDays > 294) {
+      showHint(out, '予定日から2週間以上経過しています。医療機関に相談してください。', 'warn');
+    } else if (gestDays > 280) {
+      showHint(out, '出産予定日を過ぎています。医療機関に相談してください。', 'warn');
+    }
+    if (toLeave >= 0 && toLeave <= 42) {
+      showHint(out, '産前休業の開始目安が近づいています。勤務先の手続きを確認してください。', 'note');
+    }
+    showHint(out, '出産予定日は40週0日（280日）を目安にした計算値です。', 'hint');
+  }
+
+  $('basis').addEventListener('change', update);
+  $('baseDate').addEventListener('input', update);
+  $('baseDate').addEventListener('change', update);
+  $('clearBtn').addEventListener('click', function () {
+    $('baseDate').value = '';
+    update();
+    $('baseDate').focus();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

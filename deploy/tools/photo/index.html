@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>証明写真メーカー｜道具箱</title>
+<meta name="description" content="証明写真をブラウザ内で作成するツール。履歴書・パスポート・マイナンバーカードなどの規格を選び、ドラッグとスライダーで位置と拡大率を調整します。規格サイズのJPEGとL判シート（300dpi相当）を保存でき、アップロードは不要です。">
+<link rel="canonical" href="https://icekun.net/photo/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+.drop {
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  padding: 1.75rem 1rem; border: 1px dashed var(--rule); border-radius: 8px;
+  background: var(--bg); text-align: center;
+}
+.drop.over { border-color: var(--ox); background: var(--mark); }
+.drop:focus-within { outline: 2px solid var(--ox); outline-offset: 3px; }
+.crop-shell {
+  position: relative; width: 240px; max-width: 100%; margin: 0 auto;
+  border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
+  background: #efe9dd; line-height: 0; touch-action: none;
+}
+#preview { display: block; width: 100%; height: auto; cursor: grab; }
+#preview:active { cursor: grabbing; }
+#preview:focus-visible { outline: 2px solid var(--ox); outline-offset: -2px; }
+.crop-empty {
+  position: absolute; inset: 0; margin: 0; display: flex;
+  align-items: center; justify-content: center; padding: 1rem;
+  background: var(--bg); text-align: center; line-height: 1.7;
+  font-size: 0.8125rem; color: var(--muted);
+}
+.crop-empty[hidden] { display: none; }
+.swatch {
+  display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15); margin-right: 0.35rem; vertical-align: -0.1em;
+}
+.sheet-title { margin: 0 0 0.5rem; font-family: var(--serif); font-weight: 500; font-size: 1rem; }
+#sheetPreview {
+  display: block; width: 150px; max-width: 100%; height: auto;
+  border: 1px solid var(--rule); border-radius: 4px;
+}
+.stats[hidden] { display: none; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>証明写真メーカー</h1>
+    <p class="lead">写真を選び、規格に合わせて切り抜いて証明写真を作ります。規格サイズのJPEGと、L判に並べた印刷用シートを保存できます。画像はブラウザ内で処理され、サーバーには送信されません。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="drop" id="drop">
+      <input class="sr-only" type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif" tabindex="-1" aria-hidden="true">
+      <button type="button" class="btn" id="pick">画像を選ぶ</button>
+      <span class="hint" style="margin:0">またはこの枠にドラッグ&amp;ドロップ（JPEG・PNG・WebP など）</span>
+      <span class="hint" id="fileInfo" style="margin:0"></span>
+    </div>
+
+    <div class="grid-2" style="margin-top:1.25rem">
+      <label class="field" for="spec"><span>規格</span>
+        <select id="spec">
+          <option value="rirekisho" selected>履歴書（3.0×4.0cm・354×472px）</option>
+          <option value="passport">パスポート（3.5×4.5cm・413×531px）</option>
+          <option value="mynumber">マイナンバーカード（3.5×4.5cm・413×531px）</option>
+          <option value="license">運転免許証（2.4×3.0cm・283×354px）</option>
+          <option value="generic">各種申請書（4.0×5.0cm・472×591px）</option>
+        </select>
+      </label>
+      <div class="field" role="group" aria-labelledby="bgLabel">
+        <span id="bgLabel">背景色（L判シートの余白）</span>
+        <div class="row" style="margin-top:0.1rem">
+          <label class="check"><input type="radio" name="bg" value="white" checked><span class="swatch" style="background:#ffffff" aria-hidden="true"></span>白</label>
+          <label class="check"><input type="radio" name="bg" value="blue"><span class="swatch" style="background:#d3e3f5" aria-hidden="true"></span>青</label>
+          <label class="check"><input type="radio" name="bg" value="gray"><span class="swatch" style="background:#dedede" aria-hidden="true"></span>グレー</label>
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="specHint" style="margin-top:0.75rem"></p>
+
+    <div class="grid-2" style="margin-top:1.25rem">
+      <div class="stack">
+        <div class="crop-shell">
+          <canvas id="preview" width="240" height="320" tabindex="0" role="img" aria-label="写真のプレビュー。枠の中をドラッグするか、矢印キーで写真の位置を調整できます。"></canvas>
+          <p class="crop-empty" id="empty">画像を選ぶとここにプレビューが表示されます</p>
+        </div>
+        <p class="hint" style="margin:0">枠の中をドラッグすると位置が動きます。矢印キーでも調整できます（Shiftで大きく移動）。</p>
+      </div>
+      <div class="stack">
+        <label class="field" for="zoom"><span>拡大 <b id="zoomVal">100%</b></span>
+          <input type="range" id="zoom" min="100" max="300" step="1" value="100" disabled>
+        </label>
+        <div class="row">
+          <button type="button" class="btn secondary" id="reset" disabled>位置と倍率をリセット</button>
+        </div>
+        <div class="stats" id="stats" hidden></div>
+        <p class="warn" id="qualityNote" hidden></p>
+        <p class="note" style="margin:0">背景色は写真の外側（L判シートの余白）に使う色です。元画像の背景は置き換えません。</p>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:1.25rem">
+      <button type="button" class="btn" id="saveSingle" disabled>単体JPEGを保存</button>
+      <button type="button" class="btn secondary" id="saveSheet" disabled>L判シートを保存</button>
+    </div>
+
+    <div id="sheetWrap" hidden style="margin-top:1.5rem">
+      <h3 class="sheet-title" id="sheetTitle">L判シートのプレビュー</h3>
+      <canvas id="sheetPreview" width="300" height="428"></canvas>
+      <p class="hint" id="sheetInfo" style="margin:0.5rem 0 0"></p>
+    </div>
+
+    <p class="warn" style="margin-top:1.25rem">顔の自動検出や背景の置き換えは行いません。証明写真の規格は提出先の機関によって異なるため、最終的なサイズ・背景・余白などの適合は、各機関の指示に従って確認してください。</p>
+
+    <p id="status" class="hint" role="status" aria-live="polite" style="margin:0.75rem 0 0"></p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「画像を選ぶ」を押すか、枠に画像をドラッグ&amp;ドロップします。</li>
+      <li>規格を選びます。規格ごとの推奨解像度（300dpi相当）が下に表示されます。</li>
+      <li>プレビューをドラッグするか矢印キーで位置を合わせ、スライダーで拡大率を調整します。</li>
+      <li>L判シートの余白に使う背景色を、白・青・グレーから選びます。</li>
+      <li>「単体JPEGを保存」または「L判シートを保存」でダウンロードします。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>証明写真の規格と推奨解像度</h2>
+    <p>証明写真のサイズは用途ごとにミリメートル単位で決まっています。本ツールが扱う代表的な規格と、300dpi相当のピクセル数は次のとおりです。300dpiは印刷でよく使われる解像度で、1インチ（25.4mm）あたり300ピクセルを意味します。</p>
+    <table>
+      <thead>
+        <tr><th>規格</th><th>仕上がり（横×縦）</th><th>300dpi相当（横×縦 px）</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>履歴書</td><td>30 × 40 mm</td><td>354 × 472 px</td></tr>
+        <tr><td>パスポート</td><td>35 × 45 mm</td><td>413 × 531 px</td></tr>
+        <tr><td>マイナンバーカード</td><td>35 × 45 mm</td><td>413 × 531 px</td></tr>
+        <tr><td>運転免許証</td><td>24 × 30 mm</td><td>283 × 354 px</td></tr>
+        <tr><td>各種申請書</td><td>40 × 50 mm</td><td>472 × 591 px</td></tr>
+      </tbody>
+    </table>
+    <p>ピクセル数はミリメートルを25.4で割ってインチに直し、300を掛けて求めています。端数は四捨五入しているため、印刷所やアプリによっては1ピクセル程度異なることがあります。</p>
+
+    <h2>切り抜きと仕上がりの考え方</h2>
+    <p>読み込んだ写真は、選択した規格の枠全体を覆うように拡大して表示されます。枠の外にはみ出した部分は出力に含まれません。プレビュー上で写真をドラッグすると表示位置が変わり、スライダーで拡大率を100〜300%の範囲で調整できます。枠の縦横比は規格に固定しているため、操作しても仕上がりの比率は変わりません。</p>
+    <p>背景色はL判シートの余白に使う色で、写真そのものの背景を置き換える機能ではありません。顔の位置を自動で検出することもしないため、頭頂から顎までの位置や余白はご自身で合わせてください。</p>
+
+    <h2>保存形式と注意点</h2>
+    <p>単体の保存は規格サイズのJPEG、シートの保存はL判（89×127mm）相当の300dpi JPEGです。L判シートには同じ写真を複数枚並べるため、家庭用プリンターで印刷して切り分けられます。写真の枚数は規格の大きさに応じて自動で決まります。</p>
+    <p>元画像の解像度が低い場合や、拡大率を上げた場合は実効解像度が下がり、印刷が粗くなる可能性があります。実効解像度は画面の統計に表示されます。また、ブラウザのcanvasを経由するため、撮影日時やカメラ情報などのExifメタデータは出力に含まれません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var DPI = 300;
+  var MM_PER_INCH = 25.4;
+  var FRAME_W = 240;
+
+  var SPECS = {
+    rirekisho: { key: 'rirekisho', label: '履歴書', w: 30, h: 40 },
+    passport: { key: 'passport', label: 'パスポート', w: 35, h: 45 },
+    mynumber: { key: 'mynumber', label: 'マイナンバーカード', w: 35, h: 45 },
+    license: { key: 'license', label: '運転免許証', w: 24, h: 30 },
+    generic: { key: 'generic', label: '各種申請書', w: 40, h: 50 }
+  };
+
+  var BG = {
+    white: '#ffffff',
+    blue: '#d3e3f5',
+    gray: '#dedede'
+  };
+
+  var SHEET_W = mmToPx(89);
+  var SHEET_H = mmToPx(127);
+  var SHEET_MARGIN = mmToPx(3);
+  var SHEET_GAP = mmToPx(2);
+
+  var drop = document.getElementById('drop');
+  var fileInput = document.getElementById('file');
+  var pick = document.getElementById('pick');
+  var fileInfo = document.getElementById('fileInfo');
+  var specSel = document.getElementById('spec');
+  var specHint = document.getElementById('specHint');
+  var preview = document.getElementById('preview');
+  var empty = document.getElementById('empty');
+  var zoom = document.getElementById('zoom');
+  var zoomVal = document.getElementById('zoomVal');
+  var resetBtn = document.getElementById('reset');
+  var stats = document.getElementById('stats');
+  var qualityNote = document.getElementById('qualityNote');
+  var saveSingleBtn = document.getElementById('saveSingle');
+  var saveSheetBtn = document.getElementById('saveSheet');
+  var sheetWrap = document.getElementById('sheetWrap');
+  var sheetTitle = document.getElementById('sheetTitle');
+  var sheetPreview = document.getElementById('sheetPreview');
+  var sheetInfo = document.getElementById('sheetInfo');
+  var statusEl = document.getElementById('status');
+
+  var state = {
+    bitmap: null,
+    iw: 0,
+    ih: 0,
+    spec: SPECS.rirekisho,
+    FW: FRAME_W,
+    FH: FRAME_W * SPECS.rirekisho.h / SPECS.rirekisho.w,
+    k0: 1,
+    zoom: 1,
+    offX: 0,
+    offY: 0,
+    bg: 'white',
+    layout: null
+  };
+
+  var busy = false;
+  var drag = null;
+  var sheetTimer = 0;
+
+  function mmToPx(mm) {
+    return Math.round(mm / MM_PER_INCH * DPI);
+  }
+
+  function fmtCm(mm) {
+    return (mm / 10).toFixed(1);
+  }
+
+  function bgValue() {
+    return BG[state.bg] || BG.white;
+  }
+
+  function say(text, kind) {
+    statusEl.textContent = text || '';
+    statusEl.className = kind || 'hint';
+  }
+
+  function stamp() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+
+  function statEl(value, label) {
+    var box = document.createElement('div');
+    box.className = 'stat';
+    var b = document.createElement('b');
+    b.textContent = value;
+    var s = document.createElement('span');
+    s.textContent = label;
+    box.appendChild(b);
+    box.appendChild(s);
+    return box;
+  }
+
+  function syncButtons() {
+    var has = !!state.bitmap;
+    zoom.disabled = !has || busy;
+    resetBtn.disabled = !has || busy;
+    saveSingleBtn.disabled = !has || busy;
+    saveSheetBtn.disabled = !has || busy;
+  }
+
+  function computeK0() {
+    if (!state.iw || !state.ih) return;
+    state.k0 = Math.max(state.FW / state.iw, state.FH / state.ih);
+  }
+
+  function clampOffsets() {
+    var z = state.k0 * state.zoom;
+    var dw = state.iw * z;
+    var dh = state.ih * z;
+    var mx = Math.max(0, (dw - state.FW) / 2);
+    var my = Math.max(0, (dh - state.FH) / 2);
+    state.offX = Math.min(mx, Math.max(-mx, state.offX));
+    state.offY = Math.min(my, Math.max(-my, state.offY));
+  }
+
+  function setupPreviewCanvas() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    preview.width = Math.max(1, Math.round(state.FW * dpr));
+    preview.height = Math.max(1, Math.round(state.FH * dpr));
+  }
+
+  function drawCrop(ctx, dx, dy, dw, dh, bg) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(dx, dy, dw, dh);
+    ctx.clip();
+    ctx.fillStyle = bg;
+    ctx.fillRect(dx, dy, dw, dh);
+    if (state.bitmap) {
+      var sx = dw / state.FW;
+      var sy = dh / state.FH;
+      var zd = state.k0 * state.zoom;
+      var drawW = state.iw * zd * sx;
+      var drawH = state.ih * zd * sy;
+      var px = (state.FW - state.iw * zd) / 2 + state.offX;
+      var py = (state.FH - state.ih * zd) / 2 + state.offY;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(state.bitmap, dx + px * sx, dy + py * sy, drawW, drawH);
+    }
+    ctx.restore();
+  }
+
+  function drawPreview() {
+    var ctx = preview.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, preview.width, preview.height);
+    drawCrop(ctx, 0, 0, preview.width, preview.height, bgValue());
+  }
+
+  function computeSheetLayout() {
+    var cw = mmToPx(state.spec.w);
+    var ch = mmToPx(state.spec.h);
+    var availW = SHEET_W - SHEET_MARGIN * 2;
+    var availH = SHEET_H - SHEET_MARGIN * 2;
+    var cols = Math.max(1, Math.floor((availW + SHEET_GAP) / (cw + SHEET_GAP)));
+    var rows = Math.max(1, Math.floor((availH + SHEET_GAP) / (ch + SHEET_GAP)));
+    var totalW = cols * cw + (cols - 1) * SHEET_GAP;
+    var totalH = rows * ch + (rows - 1) * SHEET_GAP;
+    return {
+      cols: cols,
+      rows: rows,
+      cw: cw,
+      ch: ch,
+      gap: SHEET_GAP,
+      startX: Math.round((SHEET_W - totalW) / 2),
+      startY: Math.round((SHEET_H - totalH) / 2)
+    };
+  }
+
+  function paintSheet(ctx, W, H, k) {
+    var L = state.layout || computeSheetLayout();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = bgValue();
+    ctx.fillRect(0, 0, W, H);
+    for (var r = 0; r < L.rows; r++) {
+      for (var c = 0; c < L.cols; c++) {
+        var x = (L.startX + c * (L.cw + L.gap)) * k;
+        var y = (L.startY + r * (L.ch + L.gap)) * k;
+        drawCrop(ctx, x, y, L.cw * k, L.ch * k, bgValue());
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawSheetPreview() {
+    if (!state.bitmap) return;
+    var W = 300;
+    var H = Math.round(W * SHEET_H / SHEET_W);
+    sheetPreview.width = W;
+    sheetPreview.height = H;
+    var ctx = sheetPreview.getContext('2d');
+    if (!ctx) return;
+    paintSheet(ctx, W, H, W / SHEET_W);
+  }
+
+  function scheduleSheet() {
+    if (!state.bitmap) return;
+    clearTimeout(sheetTimer);
+    sheetTimer = setTimeout(drawSheetPreview, 120);
+  }
+
+  function updateSpecHint() {
+    var w = mmToPx(state.spec.w);
+    var h = mmToPx(state.spec.h);
+    specHint.textContent = '推奨解像度（300dpi相当）: 横 ' + w + ' × 縦 ' + h + ' px。仕上がりは横 ' +
+      fmtCm(state.spec.w) + ' × 縦 ' + fmtCm(state.spec.h) + ' cm です。';
+  }
+
+  function updateSheetInfo() {
+    var L = state.layout || computeSheetLayout();
+    var n = L.cols * L.rows;
+    sheetTitle.textContent = 'L判シートのプレビュー（' + n + '枚）';
+    sheetInfo.textContent = 'L判 89 × 127 mm（' + SHEET_W + ' × ' + SHEET_H + ' px・300dpi相当）。写真 ' +
+      n + '枚、余白 3mm、間隔 2mm。';
+  }
+
+  function effectiveDpi() {
+    var z = state.k0 * state.zoom;
+    if (!z) return 0;
+    var srcW = state.FW / z;
+    return srcW * MM_PER_INCH / state.spec.w;
+  }
+
+  function updateStats() {
+    if (!state.bitmap) {
+      stats.hidden = true;
+      qualityNote.hidden = true;
+      return;
+    }
+    var outW = mmToPx(state.spec.w);
+    var outH = mmToPx(state.spec.h);
+    var L = state.layout || computeSheetLayout();
+    var dpi = effectiveDpi();
+    stats.textContent = '';
+    stats.appendChild(statEl('横 ' + outW + ' × 縦 ' + outH, '単体JPEG（px）'));
+    stats.appendChild(statEl('約 ' + Math.round(dpi), '実効解像度（dpi）'));
+    stats.appendChild(statEl((L.cols * L.rows) + ' 枚', 'L判シート'));
+    stats.hidden = false;
+    if (Math.round(dpi) < DPI) {
+      qualityNote.textContent = '実効解像度が約 ' + Math.round(dpi) +
+        ' dpi です。300dpiを下回るため、印刷すると粗く見える可能性があります。拡大率を下げるか、より高解像度の写真を使ってください。';
+      qualityNote.hidden = false;
+    } else {
+      qualityNote.textContent = '';
+      qualityNote.hidden = true;
+    }
+  }
+
+  function applySpec() {
+    var spec = SPECS[specSel.value] || SPECS.rirekisho;
+    state.spec = spec;
+    state.FW = FRAME_W;
+    state.FH = FRAME_W * spec.h / spec.w;
+    state.zoom = 1;
+    state.offX = 0;
+    state.offY = 0;
+    state.layout = computeSheetLayout();
+    zoom.value = '100';
+    zoomVal.textContent = '100%';
+    if (state.bitmap) {
+      computeK0();
+      clampOffsets();
+    }
+    setupPreviewCanvas();
+    drawPreview();
+    updateSpecHint();
+    updateSheetInfo();
+    updateStats();
+    if (state.bitmap) drawSheetPreview();
+  }
+
+  function isImageFile(file) {
+    return !!file && typeof file.type === 'string' &&
+      file.type.indexOf('image/') === 0 && file.type !== 'image/svg+xml';
+  }
+
+  async function loadImage(file) {
+    if (!isImageFile(file)) {
+      say('画像ファイルを選んでください（JPEG・PNG・WebP など）。SVGは読み込めません。', 'err');
+      return;
+    }
+    say('画像を読み込んでいます…', 'hint');
+    var bmp = null;
+    try {
+      bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch (e1) {
+      try {
+        bmp = await createImageBitmap(file);
+      } catch (e2) {
+        bmp = null;
+      }
+    }
+    if (!bmp || !bmp.width || !bmp.height) {
+      say('この画像は読み込めませんでした。別のファイルを試してください。', 'err');
+      return;
+    }
+    if (state.bitmap && typeof state.bitmap.close === 'function') state.bitmap.close();
+    state.bitmap = bmp;
+    state.iw = bmp.width;
+    state.ih = bmp.height;
+    computeK0();
+    state.zoom = 1;
+    state.offX = 0;
+    state.offY = 0;
+    zoom.value = '100';
+    zoomVal.textContent = '100%';
+    clampOffsets();
+    setupPreviewCanvas();
+    drawPreview();
+    empty.hidden = true;
+    fileInfo.textContent = '画像: ' + file.name + '（' + state.iw + ' × ' + state.ih + ' px）';
+    pick.textContent = '別の画像を選ぶ';
+    sheetWrap.hidden = false;
+    updateSpecHint();
+    updateSheetInfo();
+    updateStats();
+    drawSheetPreview();
+    syncButtons();
+    say('画像を読み込みました。枠の中をドラッグするか矢印キーで位置を合わせ、スライダーで拡大率を調整してください。', 'ok');
+  }
+
+  function resetView() {
+    if (!state.bitmap || busy) return;
+    state.zoom = 1;
+    state.offX = 0;
+    state.offY = 0;
+    zoom.value = '100';
+    zoomVal.textContent = '100%';
+    clampOffsets();
+    drawPreview();
+    updateStats();
+    scheduleSheet();
+    say('位置と倍率をリセットしました。', 'hint');
+  }
+
+  function canvasToBlob(canvas, mime, q) {
+    return new Promise(function (resolve, reject) {
+      canvas.toBlob(function (blob) {
+        if (blob) resolve(blob);
+        else reject(new Error('blob'));
+      }, mime, q);
+    });
+  }
+
+  function download(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
+  }
+
+  async function saveSingle() {
+    if (busy || !state.bitmap) return;
+    busy = true;
+    syncButtons();
+    say('単体のJPEGを作成しています…', 'hint');
+    try {
+      var w = mmToPx(state.spec.w);
+      var h = mmToPx(state.spec.h);
+      var canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('canvas');
+      drawCrop(ctx, 0, 0, w, h, bgValue());
+      var blob = await canvasToBlob(canvas, 'image/jpeg', 0.92);
+      download(blob, 'photo-' + state.spec.key + '-' + stamp() + '-' + w + 'x' + h + '.jpg');
+      say('単体のJPEGを保存しました（' + w + ' × ' + h + ' px）。', 'ok');
+    } catch (e) {
+      say('JPEGを作成できませんでした。ブラウザのメモリ不足などの可能性があります。', 'err');
+    } finally {
+      busy = false;
+      syncButtons();
+    }
+  }
+
+  async function saveSheet() {
+    if (busy || !state.bitmap) return;
+    busy = true;
+    syncButtons();
+    say('L判シートのJPEGを作成しています…', 'hint');
+    try {
+      state.layout = computeSheetLayout();
+      var canvas = document.createElement('canvas');
+      canvas.width = SHEET_W;
+      canvas.height = SHEET_H;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('canvas');
+      paintSheet(ctx, SHEET_W, SHEET_H, 1);
+      var blob = await canvasToBlob(canvas, 'image/jpeg', 0.92);
+      download(blob, 'photo-sheet-L-' + stamp() + '-' + SHEET_W + 'x' + SHEET_H + '.jpg');
+      var n = state.layout.cols * state.layout.rows;
+      say('L判シートを保存しました（' + n + '枚・' + SHEET_W + ' × ' + SHEET_H + ' px）。', 'ok');
+    } catch (e) {
+      say('L判シートを作成できませんでした。ブラウザのメモリ不足などの可能性があります。', 'err');
+    } finally {
+      busy = false;
+      syncButtons();
+    }
+  }
+
+  function handleFiles(files) {
+    if (!files || !files.length) return;
+    loadImage(files[0]);
+  }
+
+  pick.addEventListener('click', function () {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', function () {
+    if (fileInput.files && fileInput.files.length) handleFiles(fileInput.files);
+    fileInput.value = '';
+  });
+
+  ['dragenter', 'dragover'].forEach(function (type) {
+    drop.addEventListener(type, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.add('over');
+    });
+  });
+  ['dragleave', 'dragend'].forEach(function (type) {
+    drop.addEventListener(type, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      drop.classList.remove('over');
+    });
+  });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    drop.classList.remove('over');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+
+  specSel.addEventListener('change', applySpec);
+
+  var bgRadios = document.getElementsByName('bg');
+  for (var i = 0; i < bgRadios.length; i++) {
+    bgRadios[i].addEventListener('change', function () {
+      if (!this.checked) return;
+      state.bg = this.value;
+      drawPreview();
+      drawSheetPreview();
+    });
+  }
+
+  zoom.addEventListener('input', function () {
+    if (!state.bitmap) return;
+    state.zoom = Number(zoom.value) / 100;
+    zoomVal.textContent = Math.round(state.zoom * 100) + '%';
+    clampOffsets();
+    drawPreview();
+    updateStats();
+    scheduleSheet();
+  });
+
+  resetBtn.addEventListener('click', resetView);
+  saveSingleBtn.addEventListener('click', saveSingle);
+  saveSheetBtn.addEventListener('click', saveSheet);
+
+  preview.addEventListener('pointerdown', function (e) {
+    if (!state.bitmap || busy) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    try { preview.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  });
+
+  preview.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.id) return;
+    e.preventDefault();
+    var rect = preview.getBoundingClientRect();
+    var unit = state.FW / (rect.width || 1);
+    state.offX += (e.clientX - drag.x) * unit;
+    state.offY += (e.clientY - drag.y) * unit;
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+    clampOffsets();
+    drawPreview();
+    scheduleSheet();
+  });
+
+  function endDrag(e) {
+    if (!drag) return;
+    if (e && typeof e.pointerId === 'number' && e.pointerId !== drag.id) return;
+    drag = null;
+  }
+  preview.addEventListener('pointerup', endDrag);
+  preview.addEventListener('pointercancel', endDrag);
+  preview.addEventListener('lostpointercapture', endDrag);
+
+  preview.addEventListener('keydown', function (e) {
+    if (!state.bitmap || busy) return;
+    var step = e.shiftKey ? 12 : 4;
+    var dx = 0;
+    var dy = 0;
+    if (e.key === 'ArrowLeft') dx = -step;
+    else if (e.key === 'ArrowRight') dx = step;
+    else if (e.key === 'ArrowUp') dy = -step;
+    else if (e.key === 'ArrowDown') dy = step;
+    else return;
+    e.preventDefault();
+    state.offX += dx;
+    state.offY += dy;
+    clampOffsets();
+    drawPreview();
+    scheduleSheet();
+  });
+
+  window.addEventListener('pagehide', function () {
+    if (state.bitmap && typeof state.bitmap.close === 'function') state.bitmap.close();
+  });
+
+  applySpec();
+  updateSheetInfo();
+  syncButtons();
+})();
+</script>
+</body>
+</html>

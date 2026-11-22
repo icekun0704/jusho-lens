@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
+  #results thead th { white-space: nowrap; }
   #hash-body th { font-size: 0.8125rem; color: var(--ink); white-space: nowrap; }
   #hash-body th .warn { display: block; margin: 0.1rem 0 0; font-size: 0.7rem; line-height: 1.4; }
   #hash-body .btn { height: 1.9rem; padding: 0 0.7rem; font-size: 0.75rem; }
@@ -81,7 +82,7 @@
         <caption class="sr-only">ハッシュ値の一覧</caption>
         <thead>
           <tr>
-            <th scope="col">アルゴリズム</th>
+            <th scope="col">方式</th>
             <th scope="col">ハッシュ値</th>
             <th scope="col"><span class="sr-only">コピー</span></th>
           </tr>

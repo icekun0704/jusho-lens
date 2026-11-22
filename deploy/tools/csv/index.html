@@ -19,6 +19,7 @@
   fieldset.plain .row { gap: 0.5rem 1.5rem; }
   [hidden] { display: none !important; }
   #headerWrap { align-self: end; min-height: 2.35rem; }
+  #out { margin-top: 0; min-height: 14rem; }
   #out[readonly] { background: #f4efe4; }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
@@ -77,14 +78,15 @@
       <button class="btn secondary" type="button" id="btnDownload">ダウンロード</button>
       <button class="btn ghost" type="button" id="btnClear">クリア</button>
     </div>
-    <p class="hint" style="margin:0.6rem 0 0">入力は2MBまで。UTF-8として読み込みます。行数・列数は変換結果の数です（CSV→JSONではヘッダー行を除く）。</p>
+    <p class="warn" style="margin:0.6rem 0 0">入力は2MBまでです。超える場合は分割して変換してください。</p>
+    <p class="hint" style="margin:0.25rem 0 0">UTF-8として読み込みます。行数・列数は変換結果の数です（CSV→JSONではヘッダー行を除く）。</p>
     <p class="err" id="errMsg" role="alert"></p>
     <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
     <p class="sr-only" id="live" role="status" aria-live="polite"></p>
 
     <label class="field" for="out" style="margin-top:1rem">
       <span id="outLabel">JSON</span>
-      <textarea id="out" rows="12" readonly spellcheck="false"></textarea>
+      <textarea id="out" class="result" rows="12" readonly spellcheck="false"></textarea>
     </label>
 
     <div class="stats">
@@ -93,6 +95,7 @@
       <div class="stat"><b id="stIn">0 B</b><span>入力サイズ</span></div>
       <div class="stat"><b id="stOut">0 B</b><span>出力サイズ</span></div>
     </div>
+    <p class="note">出力形式: <span class="mono">CSV = UTF-8（BOM付き）・改行CRLF</span>、<span class="mono">JSON = UTF-8・改行LF</span>。コピーするテキストにはBOMを付けません。</p>
   </section>
 
   <section class="panel">

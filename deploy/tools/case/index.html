@@ -14,12 +14,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
-  table.results { margin-top: 1.25rem; }
-  table.results th[scope="row"] { font-size: 0.8125rem; color: var(--ink); letter-spacing: 0; }
-  table.results th[scope="row"] .hint { display: block; margin-top: 0.1rem; font-size: 0.7rem; font-weight: 400; }
-  table.results td:nth-child(3) { width: 1%; white-space: nowrap; text-align: right; }
-  table.results output { font-family: var(--mono); }
-  table.results output.empty { color: var(--muted); }
+  ul.conv-list { list-style: none; margin: 1.25rem 0 0; padding: 0; }
+  li.conv-item { padding: 0.7rem 0; border-bottom: 1px solid var(--rule); }
+  li.conv-item:first-child { border-top: 1px solid var(--rule); }
+  .conv-head { display: flex; flex-wrap: wrap; gap: 0.15rem 0.6rem; align-items: baseline; }
+  .conv-name { font-size: 0.8125rem; font-weight: 600; }
+  .conv-head .hint { font-size: 0.7rem; }
+  .conv-body { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.35rem; }
+  .conv-value { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-size: 0.78rem; line-height: 1.7; }
+  .conv-value.empty { color: var(--muted); }
+  .conv-body .btn { flex: 0 0 auto; }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -56,17 +60,7 @@
     </div>
     <p class="ok" id="msg" role="status" aria-live="polite"></p>
 
-    <table class="results">
-      <caption class="sr-only">入力した文字列を11種類の形式に変換した結果</caption>
-      <thead>
-        <tr>
-          <th scope="col">形式</th>
-          <th scope="col">結果</th>
-          <th scope="col"><span class="sr-only">コピー</span></th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
+    <ul class="conv-list" id="rows" aria-label="11種類の変換結果"></ul>
   </section>
 
   <section class="panel">
@@ -74,7 +68,7 @@
     <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>「変換する文字列」欄に、変換したい単語や識別子を入力します。結果は入力のたびに更新されます。</li>
-      <li>表の「結果」列に、camelCase・PascalCase・snake_case・kebab-case・CONSTANT_CASE・大文字・小文字・全角半角・かな変換の11種類が並びます。</li>
+      <li>一覧に、camelCase・PascalCase・snake_case・kebab-case・CONSTANT_CASE・大文字・小文字・全角半角・かな変換の11種類が並びます。</li>
       <li>必要な行の「コピー」を押すと、その形式の文字列だけがクリップボードに入ります。「すべてコピー」は「形式: 結果」の一覧をまとめてコピーします。</li>
       <li>「サンプルを入れる」で動作を確認できます。「クリア」で入力と結果を空にします。</li>
     </ol>
@@ -96,7 +90,7 @@
     <p>この分割はスペルや意味を理解するものではなく、文字の並びだけを見る簡易的な判定です。すべて大文字の略語は先頭だけ大文字に整えられ、日本語や記号だけの語はそのまま残ります。変換結果が意図どおりかは、表を見て確認してください。</p>
 
     <h3>全角・半角の変換</h3>
-    <p>全角英数→半角は、Unicode の全角形（U+FF01〜U+FF5E）を、対応する半角の ASCII 文字（U+0021〜U+007E）へ置き換えます。半角英数→全角はその逆です。英数字だけでなく、全角の記号も半角の記号へ、半角の記号も全角の記号へ変換します。全角スペース（U+3000）と半角スペースは、どちらの変換でも変更しません。半角カタカナ（U+FF61〜U+FF9F）は対象外です。</p>
+    <p>全角英数→半角は、Unicode の全角形（U+FF01〜U+FF5E）を、対応する半角の ASCII 文字（U+0021〜U+007E）へ置き換えます。半角英数→全角はその逆です。英数字だけでなく、全角の記号も半角の記号へ、半角の記号も全角の記号へ変換します。全角スペース（U+3000）と半角スペースは、どちらの変換でも変更しません。半角カタカナ（U+FF61〜U+FF9F）は対象外です。また、全角の英字も Unicode 上で大文字・小文字を持つため、大文字・小文字や各ケースの変換では、全角のまま大文字小文字が切り替わります。</p>
 
     <h3>ひらがな・カタカナの変換</h3>
     <p>ひらがなとカタカナは、Unicode 上で多くが 0x60 の差で対応しています。この道具は、ひらがな U+3041〜U+3096 と繰り返し記号 ゝゞ をカタカナへ、カタカナ U+30A1〜U+30F6 と繰り返し記号 ヽヾ をひらがなへ変換します。長音符「ー」は共通の文字なので変更しません。ヷ・ヸ・ヹ・ヺ は対応するひらがながないため、そのまま残ります。半角カタカナは変換しません。</p>
@@ -243,26 +237,28 @@
 
   function buildRows() {
     KINDS.forEach(function (k) {
-      var tr = document.createElement('tr');
+      var li = document.createElement('li');
+      li.className = 'conv-item';
 
-      var th = document.createElement('th');
-      th.scope = 'row';
-      th.textContent = k.label;
+      var head = document.createElement('div');
+      head.className = 'conv-head';
+      var name = document.createElement('span');
+      name.className = 'conv-name';
+      name.textContent = k.label;
       var note = document.createElement('span');
       note.className = 'hint';
       note.textContent = k.desc;
-      th.appendChild(note);
+      head.appendChild(name);
+      head.appendChild(note);
 
-      var tdVal = document.createElement('td');
-      tdVal.className = 'mono';
-      var out = document.createElement('output');
+      var body = document.createElement('div');
+      body.className = 'conv-body';
+      var out = document.createElement('span');
       out.id = 'out-' + k.id;
+      out.className = 'conv-value mono empty';
       out.textContent = '—';
-      out.className = 'empty';
-      tdVal.appendChild(out);
       outEls[k.id] = out;
 
-      var tdBtn = document.createElement('td');
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'btn ghost';
@@ -282,12 +278,12 @@
           }
         });
       });
-      tdBtn.appendChild(btn);
 
-      tr.appendChild(th);
-      tr.appendChild(tdVal);
-      tr.appendChild(tdBtn);
-      rows.appendChild(tr);
+      body.appendChild(out);
+      body.appendChild(btn);
+      li.appendChild(head);
+      li.appendChild(body);
+      rows.appendChild(li);
     });
   }
 
@@ -307,13 +303,13 @@
       var out = outEls[k.id];
       if (!hasInput) {
         out.textContent = '—';
-        out.className = 'empty';
+        out.className = 'conv-value mono empty';
       } else if (val === '') {
         out.textContent = '（空）';
-        out.className = 'empty';
+        out.className = 'conv-value mono empty';
       } else {
         out.textContent = val;
-        out.className = '';
+        out.className = 'conv-value mono';
       }
     });
     if (msg.className === 'ok') showMsg('', '');

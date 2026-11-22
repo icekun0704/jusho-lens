@@ -15,8 +15,10 @@
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
   .stat b { font-variant-numeric: tabular-nums; }
+  .pair-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .activity-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
   .activity-table td:nth-child(2) { font-variant-numeric: tabular-nums; }
+  @media (max-width: 40rem) { .pair-grid { grid-template-columns: 1fr; } }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -43,7 +45,7 @@
     <h2>体格と消費カロリー</h2>
     <p class="hint">数値を入れると、その場で計算されます。BMIの区分は日本肥満学会の分類に合わせています。</p>
 
-    <div class="grid-2">
+    <div class="grid-2 pair-grid">
       <div class="field">
         <label for="height"><span>身長 (cm)</span></label>
         <input type="number" id="height" min="50" max="250" step="0.1" inputmode="decimal" autocomplete="off" placeholder="170">

@@ -19,6 +19,9 @@
   fieldset.plain .row { gap: 0.5rem 1.5rem; }
   table.limits th[scope="row"] { font-size: 0.8125rem; color: var(--ink); letter-spacing: 0; font-weight: 500; }
   table.limits td:last-child { white-space: nowrap; }
+  @media (min-width: 48rem) {
+    #tool .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -81,7 +84,7 @@
       <table class="limits">
         <caption class="sr-only">SNSごとの文字数上限と、入力した文章の残り文字数</caption>
         <thead>
-          <tr><th scope="col">媒体</th><th scope="col">上限の目安</th><th scope="col">残り</th></tr>
+          <tr><th scope="col">媒体</th><th scope="col">上限</th><th scope="col">残り</th></tr>
         </thead>
         <tbody>
           <tr><th scope="row">X（日本語）</th><td>140字</td><td><span id="limXJa">残り 140字</span></td></tr>

@@ -150,7 +150,6 @@
   var lastResult = '';
 
   var SAMPLE_PLAIN = '検索ワード: 道具箱 & tools?q=日本語 100%';
-  var SAMPLE_ENCODED = '%E6%A4%9C%E7%B4%A2%E3%83%AF%E3%83%BC%E3%83%89%3A+%E9%81%93%E5%85%B7%E7%AE%B1+%26+tools%3Fq%3D%E6%97%A5%E6%9C%AC%E8%AA%9E+100%25';
 
   function currentMode() {
     for (var i = 0; i < modes.length; i++) {
@@ -300,7 +299,11 @@
   });
 
   document.getElementById('btnSample').addEventListener('click', function () {
-    src.value = currentMode() === 'encode' ? SAMPLE_PLAIN : SAMPLE_ENCODED;
+    if (currentMode() === 'encode') {
+      src.value = SAMPLE_PLAIN;
+    } else {
+      src.value = encodeValue(SAMPLE_PLAIN, optForm.checked);
+    }
     run();
     src.focus();
   });

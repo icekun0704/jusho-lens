@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>睡眠時間計算｜道具箱</title>
+<meta name="description" content="就寝時刻と起床時刻から睡眠時間を計算します。日をまたぐ場合にも対応。90分周期で「今から寝るなら何時に起きるか」「何時に寝れば何時に起きるか」の候補を数件表示します。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/sleep/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  input[type="time"] {
+    width: 100%; padding: 0.6rem 0.7rem; min-height: 2.6rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.875rem; line-height: 1.7;
+  }
+  .sleep-table td:nth-child(2), .sleep-table th:nth-child(2),
+  .sleep-table td:nth-child(3), .sleep-table th:nth-child(3) {
+    text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .sleep-table td:nth-child(1) { white-space: nowrap; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>睡眠時間計算</h1>
+    <p class="lead">就寝時刻と起床時刻から睡眠時間を計算します。日をまたぐ場合にも対応し、90分周期で起きる時刻・寝る時刻の候補も表示します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>就寝・起床から計算</h2>
+    <p class="hint">時刻は24時間表記で選びます。起床時刻が就寝時刻より早い場合は、翌日に起きたものとして日をまたいで計算します。</p>
+
+    <div class="grid-2">
+      <label class="field" for="bed"><span>就寝時刻</span>
+        <input type="time" id="bed" value="23:00">
+      </label>
+      <label class="field" for="wake"><span>起床時刻</span>
+        <input type="time" id="wake" value="07:00">
+      </label>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="dur">—</b><span>睡眠時間</span></div>
+      <div class="stat"><b id="mins">—</b><span>合計（分）</span></div>
+      <div class="stat"><b id="cycles">—</b><span>90分周期に換算</span></div>
+    </div>
+
+    <p class="note" id="durNote" aria-live="polite" aria-atomic="true">就寝時刻と起床時刻を入力すると、睡眠時間を表示します。</p>
+
+    <p class="warn">このツールは時刻の差を計算するもので、睡眠の質や健康についての医学的な助言ではありません。睡眠に悩みや不調がある場合は医療機関に相談してください。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="wake-h">
+    <h2 id="wake-h">今から寝るなら何時に起きるか</h2>
+    <p class="hint">就寝予定時刻に90分を4〜7回加えた起床時刻の候補です。入眠までの時間は含みません。</p>
+    <div class="grid-2">
+      <label class="field" for="bedTarget"><span>就寝予定時刻</span>
+        <input type="time" id="bedTarget">
+      </label>
+    </div>
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn secondary" type="button" id="nowBtn">現在時刻を入れる</button>
+    </div>
+
+    <div id="wakeOut" aria-live="polite" aria-atomic="true">
+      <div style="overflow-x:auto;margin-top:1rem">
+        <table class="sleep-table">
+          <caption class="sr-only">就寝予定時刻から90分周期で計算した起床時刻</caption>
+          <thead>
+            <tr><th scope="col">90分周期</th><th scope="col">睡眠時間</th><th scope="col">起床時刻</th></tr>
+          </thead>
+          <tbody id="wakeBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="bed-h">
+    <h2 id="bed-h">何時に寝れば何時に起きられるか</h2>
+    <p class="hint">起床したい時刻から90分を4〜7回さかのぼった就寝時刻の候補です。入眠までの時間は含みません。</p>
+    <div class="grid-2">
+      <label class="field" for="wakeTarget"><span>起床したい時刻</span>
+        <input type="time" id="wakeTarget" value="07:00">
+      </label>
+    </div>
+
+    <div id="bedOut" aria-live="polite" aria-atomic="true">
+      <div style="overflow-x:auto;margin-top:1rem">
+        <table class="sleep-table">
+          <caption class="sr-only">起床したい時刻から90分周期で計算した就寝時刻</caption>
+          <thead>
+            <tr><th scope="col">90分周期</th><th scope="col">睡眠時間</th><th scope="col">就寝時刻</th></tr>
+          </thead>
+          <tbody id="bedBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。時刻は端末の時計に合わせて計算します。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>「就寝時刻」と「起床時刻」を24時間表記で選ぶと、睡眠時間が時間と分、合計の分、90分周期に換算した回数で表示されます。</li>
+      <li>起床時刻が就寝時刻より早いときは、翌日に起きたものとして日をまたいで計算します。同じ時刻どうしの場合は24時間として扱います。</li>
+      <li>「今から寝るなら何時に起きるか」では、就寝予定時刻を入れて「現在時刻を入れる」を押すと、90分の4〜7周期で起きる時刻が並びます。</li>
+      <li>「何時に寝れば何時に起きられるか」では、起床したい時刻を入れると、90分の4〜7周期から逆算した就寝時刻が並びます。「前日」と付いた時刻は、起床日の前日に寝る時刻です。</li>
+      <li>周期の候補は目安です。実際に必要な睡眠時間は年齢や体調で変わるため、生活に合わせて選んでください。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>睡眠時間計算について</h2>
+    <p>このツールは、就寝時刻と起床時刻の差を24時間表記の時刻から求め、何時間何分の睡眠になるかを表示します。時刻は端末の時計と同じ地域時刻として扱い、日付そのものは入力しません。</p>
+
+    <h3>日をまたぐ睡眠時間の求め方</h3>
+    <p>起床時刻が就寝時刻より遅ければ同じ日の睡眠、早ければ翌日へのまたぎとして計算します。たとえば23:00に寝て07:00に起きる場合は8時間、01:00に寝て07:00に起きる場合は6時間です。就寝と起床が同じ時刻の場合は、24時間寝たものとして扱います。この計算は時刻の差だけを見るもので、寝つくまでの時間や途中で目が覚めた時間は差し引きません。</p>
+
+    <h3>90分周期の目安</h3>
+    <p>睡眠中は、浅い睡眠と深い睡眠、レム睡眠がおよそ90分の周期で繰り返されると一般に言われます。一晩では4〜6回ほど繰り返す計算になります。このツールは、就寝時刻または起床時刻から90分の倍数を足し引きして候補を出しています。ただし周期の長さには個人差があり、年齢や体調、前日の睡眠によっても変わります。周期の切れ目で起きると寝起きが良いという考え方は一般的な目安で、医学的に確立した決まりではありません。</p>
+
+    <h3>睡眠時間の目安</h3>
+    <p>厚生労働省の「健康づくりのための睡眠ガイド2023」は、成人についておおむね6時間以上の睡眠を目安としています。必要な睡眠時間は年齢や生活習慣、体調によって異なり、高齢者では床上時間が長くなりすぎないよう注意する考え方も示されています。睡眠時間が足りないと感じる状態が続く場合や、いびき・日中の強い眠気がある場合は、自己判断せず医療機関に相談してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var PERIOD = 90;
+  var CYCLES = [4, 5, 6, 7];
+
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function parseTime(v) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    var h = +m[1];
+    var mi = +m[2];
+    if (h > 23 || mi > 59) return null;
+    return h * 60 + mi;
+  }
+  function fmtHM(total) {
+    var t = ((total % 1440) + 1440) % 1440;
+    return pad2(Math.floor(t / 60)) + ':' + pad2(t % 60);
+  }
+  function fmtDuration(minutes) {
+    var h = Math.floor(minutes / 60);
+    var m = minutes % 60;
+    return h + '時間' + m + '分';
+  }
+  function currentHM() {
+    var d = new Date();
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function comma(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  function makeRow(cycle, duration, time, shift) {
+    var tr = document.createElement('tr');
+
+    var th = document.createElement('th');
+    th.scope = 'row';
+    th.textContent = cycle + '周期';
+    tr.appendChild(th);
+
+    var tdDur = document.createElement('td');
+    tdDur.textContent = duration;
+    tr.appendChild(tdDur);
+
+    var tdTime = document.createElement('td');
+    tdTime.textContent = (shift ? shift + ' ' : '') + time;
+    tr.appendChild(tdTime);
+
+    return tr;
+  }
+
+  function emptyRow(body, message) {
+    body.replaceChildren();
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    td.colSpan = 3;
+    td.className = 'hint';
+    td.textContent = message;
+    tr.appendChild(td);
+    body.appendChild(tr);
+  }
+
+  function updateMain() {
+    var bed = parseTime($('bed').value);
+    var wake = parseTime($('wake').value);
+
+    if (bed === null || wake === null) {
+      $('dur').textContent = '—';
+      $('mins').textContent = '—';
+      $('cycles').textContent = '—';
+      $('durNote').className = 'note';
+      $('durNote').textContent = '就寝時刻と起床時刻を入力すると、睡眠時間を表示します。';
+      return;
+    }
+
+    var same = bed === wake;
+    var raw = wake - bed;
+    var overnight = raw <= 0;
+    var diff = overnight ? raw + 1440 : raw;
+    var cycleCount = Math.floor(diff / PERIOD);
+    var rest = diff % PERIOD;
+
+    $('dur').textContent = fmtDuration(diff);
+    $('mins').textContent = comma(diff) + '分';
+    $('cycles').textContent = (diff / PERIOD).toFixed(1) + '周期';
+
+    var parts = [];
+    if (same) {
+      parts.push('就寝時刻と起床時刻が同じため、24時間として計算しています。');
+    } else if (overnight) {
+      parts.push('起床時刻が就寝時刻より早いため、翌日に起きたものとして計算しています。');
+    } else {
+      parts.push('就寝から起床までの時間です。');
+    }
+    parts.push('90分周期では' + cycleCount + '回' + (rest ? 'と' + rest + '分' : '') +
+      'に相当します（周期は目安で、個人差があります）。');
+    $('durNote').className = 'note';
+    $('durNote').textContent = parts.join('');
+  }
+
+  function updateWakeCandidates() {
+    var bed = parseTime($('bedTarget').value);
+    var body = $('wakeBody');
+
+    if (bed === null) {
+      emptyRow(body, '就寝予定時刻を入力すると、起床時刻の候補を表示します。');
+      return;
+    }
+
+    body.replaceChildren();
+    for (var i = 0; i < CYCLES.length; i++) {
+      var n = CYCLES[i];
+      var total = bed + n * PERIOD;
+      var dayShift = Math.floor(total / 1440);
+      var shift = dayShift === 1 ? '翌日' : (dayShift > 1 ? dayShift + '日後' : '');
+      body.appendChild(makeRow(n, fmtDuration(n * PERIOD), fmtHM(total), shift));
+    }
+  }
+
+  function updateBedCandidates() {
+    var wake = parseTime($('wakeTarget').value);
+    var body = $('bedBody');
+
+    if (wake === null) {
+      emptyRow(body, '起床したい時刻を入力すると、就寝時刻の候補を表示します。');
+      return;
+    }
+
+    body.replaceChildren();
+    for (var i = 0; i < CYCLES.length; i++) {
+      var n = CYCLES[i];
+      var total = wake - n * PERIOD;
+      var dayShift = Math.floor(total / 1440);
+      var shift = dayShift === -1 ? '前日' : (dayShift < -1 ? (-dayShift) + '日前' : '');
+      body.appendChild(makeRow(n, fmtDuration(n * PERIOD), fmtHM(total), shift));
+    }
+  }
+
+  var timeIds = ['bed', 'wake', 'bedTarget', 'wakeTarget'];
+  timeIds.forEach(function (id) {
+    var el = $(id);
+    el.addEventListener('input', function () {
+      updateMain();
+      updateWakeCandidates();
+      updateBedCandidates();
+    });
+    el.addEventListener('change', function () {
+      updateMain();
+      updateWakeCandidates();
+      updateBedCandidates();
+    });
+  });
+
+  $('nowBtn').addEventListener('click', function () {
+    $('bedTarget').value = currentHM();
+    updateWakeCandidates();
+  });
+
+  $('bedTarget').value = currentHM();
+
+  updateMain();
+  updateWakeCandidates();
+  updateBedCandidates();
+})();
+</script>
+</body>
+</html>

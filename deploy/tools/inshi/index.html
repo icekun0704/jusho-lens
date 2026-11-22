@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>印紙税計算｜道具箱</title>
+<meta name="description" content="請負契約書・不動産売買契約書・領収書などの文書種別と記載金額から印紙税額を計算。第1号・第2号の軽減措置（令和9年3月31日まで）に対応し、税額表も表示します。電子契約は原則非課税。入力はブラウザ内で処理されます。">
+<link rel="canonical" href="https://icekun.net/inshi/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+  #live .stat b { font-size: 1.4rem; }
+  .table-wrap { margin-top: 1rem; overflow-x: auto; }
+  #taxTable caption {
+    caption-side: top; text-align: left; padding: 0 0 0.5rem;
+    font-size: 0.8rem; line-height: 1.7; color: var(--muted);
+  }
+  #taxTable th:last-child, #taxTable td:last-child {
+    text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  #taxTable tr.is-current td { background: var(--mark); }
+  #taxTable tr.is-current td:first-child { font-weight: 500; }
+  #docNote { min-height: 1.6em; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>印紙税計算</h1>
+    <p class="lead">文書の種類と記載金額から、印紙税額（収入印紙の額）を計算します。主要な課税文書の税額表を表示し、不動産譲渡と建設工事請負の軽減措置にも対応しています。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>文書と金額から計算</h2>
+    <p class="hint">文書の種類を選び、記載金額を円単位で入力してください。金額はカンマ区切りや「円」付きでも構いません。</p>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="doc"><span>文書の種類</span></label>
+        <select id="doc"></select>
+      </div>
+      <div class="field" id="amountField">
+        <label for="amount"><span id="amountLabel">記載金額（円）</span></label>
+        <input type="text" id="amount" inputmode="numeric" autocomplete="off" placeholder="例: 3,000,000">
+      </div>
+    </div>
+
+    <label class="check" id="noAmountField" for="noAmount" hidden style="margin-top:0.75rem">
+      <input type="checkbox" id="noAmount"> 金額の記載がない文書として計算する
+    </label>
+
+    <div id="live" aria-live="polite" aria-atomic="true">
+      <div class="stats">
+        <div class="stat"><b id="taxOut">—</b><span>印紙税額（1通につき）</span></div>
+        <div class="stat"><b id="bracketOut">—</b><span>金額区分</span></div>
+      </div>
+      <p class="note" id="docNote"></p>
+      <p class="warn" id="reducedWarn" hidden>軽減措置は、平成26年4月1日から令和9年3月31日までに作成する文書が対象です。期限を過ぎると本則税率に戻ります。適用の可否と最新の税額は国税庁のページで確認してください。</p>
+    </div>
+    <p class="err" id="errOut" role="alert" hidden></p>
+
+    <div class="table-wrap">
+      <table id="taxTable">
+        <caption id="tableCaption"></caption>
+        <thead>
+          <tr><th scope="col">記載金額</th><th scope="col">印紙税額</th></tr>
+        </thead>
+        <tbody id="taxBody"></tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin-top:0.5rem">税額は「1通（1冊）につき」です。税額表は国税庁の「印紙税額の一覧表」に基づきます。軽減措置の適用期限と最新の税額は国税庁のページで確認してください。</p>
+
+    <noscript><p class="warn">この道具はJavaScriptを使って計算します。ブラウザでJavaScriptを有効にしてください。</p></noscript>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>文書の種類を選びます。金額で税額が決まる文書と、金額にかかわらず定額の文書があります。</li>
+      <li>「記載金額（円）」に、契約金額や受取金額を入力します。カンマや「円」が付いていても計算できます。</li>
+      <li>印紙税額と金額区分が表示され、下の税額表で該当する区分が強調されます。</li>
+      <li>軽減措置の対象となる文書では、作成日が令和9年3月31日までかどうかを確認してください。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>印紙税計算について</h2>
+    <p>印紙税は、契約書や領収書など印紙税法別表第一に掲げられた「課税文書」を作成したときに、その文書に収入印紙を貼って納める税金です。課税文書は第1号から第20号までの20種類に分かれ、税額は文書の種類と記載金額によって決まります。税額は1通（1冊）ごとに計算します。</p>
+
+    <h3>金額で税額が決まる文書と定額の文書</h3>
+    <p>不動産の譲渡（第1号）、請負（第2号）、手形（第3号）、株券など（第4号）、債権譲渡（第15号）、配当金領収証（第16号）、領収書（第17号）は、記載金額に応じて税額が変わります。一方、合併契約書（第5号）、定款（第6号）、継続的取引の基本となる契約書（第7号）、預金証書（第8号）、保険証券（第10号）、債務の保証に関する契約書（第13号）などは、金額にかかわらず定額です。領収書のうち売上代金以外のもの（第17号の2）は、金額にかかわらず200円です。</p>
+
+    <h3>軽減措置と適用期限</h3>
+    <p>「不動産の譲渡に関する契約書」（第1号の1）と、建設業法第2条第1項の建設工事の請負に関する契約書（第2号）は、平成26年4月1日から令和9年3月31日までに作成するものについて、記載金額に応じて本則より低い税額が適用されます。例えば第1号の1では、契約金額が100万円を超え500万円以下の場合、本則2,000円のところ1,000円です。土地の賃貸借（第1号の2）、消費貸借（第1号の3）、運送（第1号の4）や、建設工事以外の請負は軽減の対象外で、本則税率です。適用期限を過ぎると本則税率に戻るため、作成日と最新の税額は国税庁の「印紙税額の一覧表」で確認してください。</p>
+
+    <h3>電子契約と印紙税がかからない文書</h3>
+    <p>電子データで締結・保存する電子契約は、紙の課税文書を作成しないため、原則として印紙税はかかりません。ただし、契約内容を紙に印刷して署名・押印し、紙の文書として交付した場合は課税文書になり得ます。また、委任状、単発の商品売買契約書、秘密保持契約書（NDA）などは別表第一の課税文書に該当せず、印紙税はかかりません。請負契約などで消費税額を区分して記載している場合は、消費税額を除いた金額で税額を判定できる取扱いがあります。金額の記載がない文書の扱いや軽減措置の適用可否は文書の内容で変わるため、判断に迷う場合は国税庁や税務署に確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var yen = new Intl.NumberFormat('ja-JP');
+
+  var TABLES = {
+    d1kei: {
+      title: '第1号文書（不動産等の譲渡）の軽減税率',
+      sub: '平成26年4月1日から令和9年3月31日までに作成する「不動産の譲渡に関する契約書」に適用されます。',
+      noAmount: 200,
+      reduced: true,
+      rows: [
+        { min: 0, max: 9999, tax: 0, label: '1万円未満' },
+        { min: 10000, max: 500000, tax: 200, label: '50万円以下' },
+        { min: 500001, max: 1000000, tax: 500, label: '50万円超100万円以下' },
+        { min: 1000001, max: 5000000, tax: 1000, label: '100万円超500万円以下' },
+        { min: 5000001, max: 10000000, tax: 5000, label: '500万円超1,000万円以下' },
+        { min: 10000001, max: 50000000, tax: 10000, label: '1,000万円超5,000万円以下' },
+        { min: 50000001, max: 100000000, tax: 30000, label: '5,000万円超1億円以下' },
+        { min: 100000001, max: 500000000, tax: 60000, label: '1億円超5億円以下' },
+        { min: 500000001, max: 1000000000, tax: 160000, label: '5億円超10億円以下' },
+        { min: 1000000001, max: 5000000000, tax: 320000, label: '10億円超50億円以下' },
+        { min: 5000000001, max: Infinity, tax: 480000, label: '50億円超' }
+      ]
+    },
+    d1hon: {
+      title: '第1号文書（不動産等の譲渡）の本則税率',
+      sub: '軽減措置の対象外の文書（土地の賃貸借、消費貸借、運送など）に適用されます。',
+      noAmount: 200,
+      rows: [
+        { min: 0, max: 9999, tax: 0, label: '1万円未満' },
+        { min: 10000, max: 100000, tax: 200, label: '10万円以下' },
+        { min: 100001, max: 500000, tax: 400, label: '10万円超50万円以下' },
+        { min: 500001, max: 1000000, tax: 1000, label: '50万円超100万円以下' },
+        { min: 1000001, max: 5000000, tax: 2000, label: '100万円超500万円以下' },
+        { min: 5000001, max: 10000000, tax: 10000, label: '500万円超1,000万円以下' },
+        { min: 10000001, max: 50000000, tax: 20000, label: '1,000万円超5,000万円以下' },
+        { min: 50000001, max: 100000000, tax: 60000, label: '5,000万円超1億円以下' },
+        { min: 100000001, max: 500000000, tax: 100000, label: '1億円超5億円以下' },
+        { min: 500000001, max: 1000000000, tax: 200000, label: '5億円超10億円以下' },
+        { min: 1000000001, max: 5000000000, tax: 400000, label: '10億円超50億円以下' },
+        { min: 5000000001, max: Infinity, tax: 600000, label: '50億円超' }
+      ]
+    },
+    d2kei: {
+      title: '第2号文書（請負）の軽減税率',
+      sub: '建設業法第2条第1項の建設工事の請負で、平成26年4月1日から令和9年3月31日までに作成するものに適用されます。',
+      noAmount: 200,
+      reduced: true,
+      rows: [
+        { min: 0, max: 9999, tax: 0, label: '1万円未満' },
+        { min: 10000, max: 2000000, tax: 200, label: '200万円以下' },
+        { min: 2000001, max: 3000000, tax: 500, label: '200万円超300万円以下' },
+        { min: 3000001, max: 5000000, tax: 1000, label: '300万円超500万円以下' },
+        { min: 5000001, max: 10000000, tax: 5000, label: '500万円超1,000万円以下' },
+        { min: 10000001, max: 50000000, tax: 10000, label: '1,000万円超5,000万円以下' },
+        { min: 50000001, max: 100000000, tax: 30000, label: '5,000万円超1億円以下' },
+        { min: 100000001, max: 500000000, tax: 60000, label: '1億円超5億円以下' },
+        { min: 500000001, max: 1000000000, tax: 160000, label: '5億円超10億円以下' },
+        { min: 1000000001, max: 5000000000, tax: 320000, label: '10億円超50億円以下' },
+        { min: 5000000001, max: Infinity, tax: 480000, label: '50億円超' }
+      ]
+    },
+    d2hon: {
+      title: '第2号文書（請負）の本則税率',
+      sub: '建設工事以外の請負などに適用されます。',
+      noAmount: 200,
+      rows: [
+        { min: 0, max: 9999, tax: 0, label: '1万円未満' },
+        { min: 10000, max: 1000000, tax: 200, label: '100万円以下' },
+        { min: 1000001, max: 2000000, tax: 400, label: '100万円超200万円以下' },
+        { min: 2000001, max: 3000000, tax: 1000, label: '200万円超300万円以下' },
+        { min: 3000001, max: 5000000, tax: 2000, label: '300万円超500万円以下' },
+        { min: 5000001, max: 10000000, tax: 10000, label: '500万円超1,000万円以下' },
+        { min: 10000001, max: 50000000, tax: 20000, label: '1,000万円超5,000万円以下' },
+        { min: 50000001, max: 100000000, tax: 60000, label: '5,000万円超1億円以下' },
+        { min: 100000001, max: 500000000, tax: 100000, label: '1億円超5億円以下' },
+        { min: 500000001, max: 1000000000, tax: 200000, label: '5億円超10億円以下' },
+        { min: 1000000001, max: 5000000000, tax: 400000, label: '10億円超50億円以下' },
+        { min: 5000000001, max: Infinity, tax: 600000, label: '50億円超' }
+      ]
+    },
+    d3: {
+      title: '第3号文書（約束手形・為替手形）の税率',
+      sub: '手形金額の記載がない手形は非課税です。',
+      noAmount: 0,
+      rows: [
+        { min: 0, max: 99999, tax: 0, label: '10万円未満' },
+        { min: 100000, max: 1000000, tax: 200, label: '10万円以上100万円以下' },
+        { min: 1000001, max: 2000000, tax: 400, label: '100万円超200万円以下' },
+        { min: 2000001, max: 3000000, tax: 600, label: '200万円超300万円以下' },
+        { min: 3000001, max: 5000000, tax: 1000, label: '300万円超500万円以下' },
+        { min: 5000001, max: 10000000, tax: 2000, label: '500万円超1,000万円以下' },
+        { min: 10000001, max: 20000000, tax: 4000, label: '1,000万円超2,000万円以下' },
+        { min: 20000001, max: 30000000, tax: 6000, label: '2,000万円超3,000万円以下' },
+        { min: 30000001, max: 50000000, tax: 10000, label: '3,000万円超5,000万円以下' },
+        { min: 50000001, max: 100000000, tax: 20000, label: '5,000万円超1億円以下' },
+        { min: 100000001, max: 200000000, tax: 40000, label: '1億円超2億円以下' },
+        { min: 200000001, max: 300000000, tax: 60000, label: '2億円超3億円以下' },
+        { min: 300000001, max: 500000000, tax: 100000, label: '3億円超5億円以下' },
+        { min: 500000001, max: 1000000000, tax: 150000, label: '5億円超10億円以下' },
+        { min: 1000000001, max: Infinity, tax: 200000, label: '10億円超' }
+      ]
+    },
+    d4: {
+      title: '第4号文書（株券・社債券など）の税率',
+      sub: '',
+      rows: [
+        { min: 0, max: 5000000, tax: 200, label: '500万円以下' },
+        { min: 5000001, max: 10000000, tax: 1000, label: '500万円超1,000万円以下' },
+        { min: 10000001, max: 50000000, tax: 2000, label: '1,000万円超5,000万円以下' },
+        { min: 50000001, max: 100000000, tax: 10000, label: '5,000万円超1億円以下' },
+        { min: 100000001, max: Infinity, tax: 20000, label: '1億円超' }
+      ]
+    },
+    d17a: {
+      title: '第17号の1文書（売上代金の受取書）の税率',
+      sub: '記載金額が5万円未満の場合は非課税です。',
+      noAmount: 200,
+      rows: [
+        { min: 0, max: 49999, tax: 0, label: '5万円未満' },
+        { min: 50000, max: 1000000, tax: 200, label: '5万円以上100万円以下' },
+        { min: 1000001, max: 2000000, tax: 400, label: '100万円超200万円以下' },
+        { min: 2000001, max: 3000000, tax: 600, label: '200万円超300万円以下' },
+        { min: 3000001, max: 5000000, tax: 1000, label: '300万円超500万円以下' },
+        { min: 5000001, max: 10000000, tax: 2000, label: '500万円超1,000万円以下' },
+        { min: 10000001, max: 20000000, tax: 4000, label: '1,000万円超2,000万円以下' },
+        { min: 20000001, max: 30000000, tax: 6000, label: '2,000万円超3,000万円以下' },
+        { min: 30000001, max: 50000000, tax: 10000, label: '3,000万円超5,000万円以下' },
+        { min: 50000001, max: 100000000, tax: 20000, label: '5,000万円超1億円以下' },
+        { min: 100000001, max: 200000000, tax: 40000, label: '1億円超2億円以下' },
+        { min: 200000001, max: 300000000, tax: 60000, label: '2億円超3億円以下' },
+        { min: 300000001, max: 500000000, tax: 100000, label: '3億円超5億円以下' },
+        { min: 500000001, max: 1000000000, tax: 150000, label: '5億円超10億円以下' },
+        { min: 1000000001, max: Infinity, tax: 200000, label: '10億円超' }
+      ]
+    },
+    d15: {
+      title: '第15号文書（債権譲渡・債務引受け）の税率',
+      sub: '記載金額が1万円未満の場合は非課税です。',
+      noAmount: 200,
+      rows: [
+        { min: 0, max: 9999, tax: 0, label: '1万円未満' },
+        { min: 10000, max: Infinity, tax: 200, label: '1万円以上' }
+      ]
+    },
+    d16: {
+      title: '第16号文書（配当金領収証）の税率',
+      sub: '配当金額が3千円未満の場合は非課税です。',
+      noAmount: 200,
+      rows: [
+        { min: 0, max: 2999, tax: 0, label: '3千円未満' },
+        { min: 3000, max: Infinity, tax: 200, label: '3千円以上' }
+      ]
+    }
+  };
+
+  var DOCS = [
+    { id: 'd1-1', group: '金額で税額が決まる文書', label: '不動産の売買契約書（第1号の1・軽減）', table: 'd1kei', amountLabel: '契約金額（円）', reduced: true, note: '不動産の譲渡に関する契約書が対象です。軽減措置の適用期限は令和9年3月31日です。' },
+    { id: 'd1-2', group: '金額で税額が決まる文書', label: '土地の賃貸借契約書（第1号の2）', table: 'd1hon', amountLabel: '契約金額（円）', note: '地上権・土地の賃借権の設定や譲渡に関する契約書です。軽減措置の対象外で、本則税率です。' },
+    { id: 'd1-3', group: '金額で税額が決まる文書', label: '金銭消費貸借契約書（第1号の3）', table: 'd1hon', amountLabel: '契約金額（円）', note: '金銭の借入れに関する契約書です。軽減措置の対象外で、本則税率です。' },
+    { id: 'd1-4', group: '金額で税額が決まる文書', label: '運送契約書（第1号の4）', table: 'd1hon', amountLabel: '契約金額（円）', note: '運送に関する契約書です。軽減措置の対象外で、本則税率です。' },
+    { id: 'd2-1', group: '金額で税額が決まる文書', label: '建設工事の請負契約書（第2号・軽減）', table: 'd2kei', amountLabel: '請負金額（円）', reduced: true, note: '建設業法第2条第1項に規定する建設工事の請負が対象です。軽減措置の適用期限は令和9年3月31日です。' },
+    { id: 'd2-2', group: '金額で税額が決まる文書', label: '請負契約書（第2号・建設工事以外）', table: 'd2hon', amountLabel: '請負金額（円）', note: '広告契約や業務委託など、建設工事以外の請負は本則税率です。' },
+    { id: 'd3', group: '金額で税額が決まる文書', label: '約束手形・為替手形（第3号）', table: 'd3', amountLabel: '手形金額（円）', note: '手形金額の記載がない手形は非課税です。' },
+    { id: 'd4', group: '金額で税額が決まる文書', label: '株券・社債券など（第4号）', table: 'd4', amountLabel: '券面金額（円）', note: '株券は1株当たりの払込金額に株数を掛けた金額で判定します。' },
+    { id: 'd17-1', group: '金額で税額が決まる文書', label: '売上代金の領収書（第17号の1）', table: 'd17a', amountLabel: '受取金額（円）', note: '売上代金に係る受取書です。記載金額が5万円未満の場合は非課税です。' },
+    { id: 'd15', group: '金額で税額が決まる文書', label: '債権譲渡契約書（第15号）', table: 'd15', amountLabel: '契約金額（円）', note: '契約金額が1万円未満の場合は非課税です。金額の記載がない場合は200円です。' },
+    { id: 'd16', group: '金額で税額が決まる文書', label: '配当金領収証（第16号）', table: 'd16', amountLabel: '配当金額（円）', note: '配当金額が3千円未満の場合は非課税です。金額の記載がない場合は200円です。' },
+
+    { id: 'd7', group: '金額にかかわらず定額の文書', label: '継続的取引の基本となる契約書（第7号）', fixed: 4000, note: '売買取引基本契約書、代理店契約書、業務委託契約書などです。契約期間が3か月以内で更新の定めがないものを除きます。' },
+    { id: 'd8', group: '金額にかかわらず定額の文書', label: '預金証書・貯金証書（第8号）', fixed: 200, note: '預金証書・貯金証書は1通200円です。信用金庫など特定の金融機関が作成し、預入額が1万円未満のものは非課税です。' },
+    { id: 'd9', group: '金額にかかわらず定額の文書', label: '倉荷証券・船荷証券（第9号）', fixed: 200, note: '倉荷証券、船荷証券、複合運送証券は1通200円です。' },
+    { id: 'd10', group: '金額にかかわらず定額の文書', label: '保険証券（第10号）', fixed: 200, note: '保険証券は1通200円です。' },
+    { id: 'd11', group: '金額にかかわらず定額の文書', label: '信用状（第11号）', fixed: 200, note: '信用状は1通200円です。' },
+    { id: 'd12', group: '金額にかかわらず定額の文書', label: '信託行為に関する契約書（第12号）', fixed: 200, note: '信託証書を含み、1通200円です。' },
+    { id: 'd13', group: '金額にかかわらず定額の文書', label: '債務の保証に関する契約書（第13号）', fixed: 200, note: '主たる債務の契約書に併記するものを除き、1通200円です。' },
+    { id: 'd14', group: '金額にかかわらず定額の文書', label: '金銭・有価証券の寄託契約書（第14号）', fixed: 200, note: '金銭または有価証券の寄託に関する契約書は1通200円です。' },
+    { id: 'd5', group: '金額にかかわらず定額の文書', label: '合併契約書・会社分割契約書（第5号）', fixed: 40000, note: '会社法または保険業法に規定する合併契約書、吸収分割契約書、新設分割計画書は1通4万円です。' },
+    { id: 'd6', group: '金額にかかわらず定額の文書', label: '定款（第6号）', fixed: 40000, note: '会社設立時に作成する定款の原本は4万円です。公証人が保存する定款は非課税です。' },
+    { id: 'd17-2', group: '金額にかかわらず定額の文書', label: '売上代金以外の領収書（第17号の2）', fixed: 200, note: '借入金・保険金・損害賠償金などの受取書は、金額にかかわらず1通200円です。' },
+
+    { id: 'inin', group: '印紙税がかからない文書', label: '委任状', fixed: 0, exempt: true, note: '現在の印紙税法別表第一に委任状は掲げられておらず、課税文書に該当しません。印紙税はかかりません。' },
+    { id: 'denshi', group: '印紙税がかからない文書', label: '電子契約（電子データで締結）', fixed: 0, exempt: true, note: '電子データで締結・保存する契約は、紙の課税文書を作成しないため、原則として印紙税はかかりません。印刷して署名・押印し、紙で交付した場合は課税文書になり得ます。' },
+    { id: 'tanpatsu', group: '印紙税がかからない文書', label: '商品の売買契約書（単発）', fixed: 0, exempt: true, note: '継続的取引の基本となる契約書（第7号）に該当しない単発の商品売買契約書は、課税文書に該当しません。' }
+  ];
+
+  var docSel = document.getElementById('doc');
+  var amountField = document.getElementById('amountField');
+  var amountLabel = document.getElementById('amountLabel');
+  var amountInput = document.getElementById('amount');
+  var noAmountField = document.getElementById('noAmountField');
+  var noAmount = document.getElementById('noAmount');
+  var taxOut = document.getElementById('taxOut');
+  var bracketOut = document.getElementById('bracketOut');
+  var docNote = document.getElementById('docNote');
+  var reducedWarn = document.getElementById('reducedWarn');
+  var errOut = document.getElementById('errOut');
+  var tableCaption = document.getElementById('tableCaption');
+  var taxBody = document.getElementById('taxBody');
+
+  function yenText(t) {
+    return t === 0 ? '非課税' : yen.format(t) + '円';
+  }
+
+  function docById(id) {
+    for (var i = 0; i < DOCS.length; i++) {
+      if (DOCS[i].id === id) return DOCS[i];
+    }
+    return DOCS[0];
+  }
+
+  function buildSelect() {
+    var groups = {};
+    for (var i = 0; i < DOCS.length; i++) {
+      var d = DOCS[i];
+      if (!groups[d.group]) {
+        var og = document.createElement('optgroup');
+        og.label = d.group;
+        groups[d.group] = og;
+        docSel.appendChild(og);
+      }
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.label;
+      groups[d.group].appendChild(opt);
+    }
+  }
+
+  function buildTable(doc) {
+    taxBody.innerHTML = '';
+    var rows;
+    var title;
+    if (doc.fixed !== undefined) {
+      title = doc.label + (doc.exempt ? 'の取扱い' : 'の税額');
+      rows = [{ label: doc.exempt ? '印紙税' : '定額（1通につき）', tax: doc.fixed, fixedRow: true }];
+    } else {
+      var t = TABLES[doc.table];
+      title = t.title;
+      if (t.sub) title += ' — ' + t.sub;
+      rows = t.rows.slice();
+      if (t.noAmount !== undefined) {
+        rows.push({ label: '金額の記載がないもの', tax: t.noAmount, noAmountRow: true });
+      }
+    }
+    tableCaption.textContent = title;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var tr = document.createElement('tr');
+      if (r.noAmountRow) tr.setAttribute('data-no-amount', '1');
+      var td1 = document.createElement('td');
+      td1.textContent = r.label;
+      var td2 = document.createElement('td');
+      td2.textContent = yenText(r.tax);
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      taxBody.appendChild(tr);
+    }
+  }
+
+  function clearHighlight() {
+    for (var i = 0; i < taxBody.rows.length; i++) {
+      taxBody.rows[i].classList.remove('is-current');
+      taxBody.rows[i].removeAttribute('aria-current');
+    }
+  }
+
+  function highlight(index) {
+    clearHighlight();
+    if (index >= 0 && index < taxBody.rows.length) {
+      taxBody.rows[index].classList.add('is-current');
+      taxBody.rows[index].setAttribute('aria-current', 'true');
+    }
+  }
+
+  function parseAmount(raw) {
+    var s = raw.normalize('NFKC').replace(/[\s,，、¥￥円]/g, '');
+    if (s === '') return { empty: true };
+    if (!/^[0-9]+$/.test(s)) return { invalid: true };
+    var n = Number(s);
+    if (!isFinite(n)) return { invalid: true };
+    return { value: n };
+  }
+
+  function update() {
+    var doc = docById(docSel.value);
+    var isFixed = doc.fixed !== undefined;
+    var table = isFixed ? null : TABLES[doc.table];
+    var hasNoAmount = !isFixed && table && table.noAmount !== undefined;
+
+    amountField.hidden = isFixed;
+    noAmountField.hidden = !hasNoAmount;
+    if (!hasNoAmount) noAmount.checked = false;
+    amountInput.disabled = !!(hasNoAmount && noAmount.checked);
+    if (!isFixed && doc.amountLabel) amountLabel.textContent = doc.amountLabel;
+
+    reducedWarn.hidden = !doc.reduced;
+    errOut.hidden = true;
+
+    if (isFixed) {
+      taxOut.textContent = yenText(doc.fixed);
+      bracketOut.textContent = doc.exempt ? '対象外' : '定額';
+      docNote.textContent = doc.note;
+      highlight(0);
+      return;
+    }
+
+    if (noAmount.checked) {
+      taxOut.textContent = yenText(table.noAmount);
+      bracketOut.textContent = '金額の記載なし';
+      docNote.textContent = doc.note + ' 金額の記載がない文書として計算しています。';
+      var noRow = -1;
+      for (var i = 0; i < taxBody.rows.length; i++) {
+        if (taxBody.rows[i].hasAttribute('data-no-amount')) noRow = i;
+      }
+      highlight(noRow);
+      return;
+    }
+
+    var parsed = parseAmount(amountInput.value);
+    if (parsed.empty) {
+      taxOut.textContent = '—';
+      bracketOut.textContent = '—';
+      docNote.textContent = doc.note + ' 記載金額を入力してください。';
+      clearHighlight();
+      return;
+    }
+    if (parsed.invalid) {
+      taxOut.textContent = '—';
+      bracketOut.textContent = '—';
+      docNote.textContent = doc.note;
+      errOut.textContent = '記載金額は0以上の整数（円）で入力してください。小数や負数は扱えません。';
+      errOut.hidden = false;
+      clearHighlight();
+      return;
+    }
+
+    var amount = parsed.value;
+    var rowIndex = -1;
+    var row = null;
+    for (var j = 0; j < table.rows.length; j++) {
+      if (amount >= table.rows[j].min && amount <= table.rows[j].max) {
+        row = table.rows[j];
+        rowIndex = j;
+        break;
+      }
+    }
+    if (!row) {
+      taxOut.textContent = '—';
+      bracketOut.textContent = '—';
+      docNote.textContent = doc.note;
+      clearHighlight();
+      return;
+    }
+
+    taxOut.textContent = yenText(row.tax);
+    bracketOut.textContent = row.label;
+    docNote.textContent = doc.note;
+    highlight(rowIndex);
+  }
+
+  buildSelect();
+  var initial = docById(docSel.value);
+  buildTable(initial);
+  update();
+
+  docSel.addEventListener('change', function () {
+    var doc = docById(docSel.value);
+    buildTable(doc);
+    update();
+  });
+  amountInput.addEventListener('input', update);
+  noAmount.addEventListener('change', update);
+})();
+</script>
+</body>
+</html>

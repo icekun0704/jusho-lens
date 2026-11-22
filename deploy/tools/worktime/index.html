@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>勤務時間・残業代｜道具箱</title>
+<meta name="description" content="開始時刻・終了時刻・休憩から1日の実労働時間を計算し、時給と所定労働時間から残業代・深夜割増の目安を求めます。日跨ぎ勤務、25%・35%・50%の割増、22時〜5時の深夜加算に対応。入力はブラウザ内で処理され、サーバーに送信されません。">
+<link rel="canonical" href="https://icekun.net/worktime/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  input[type="time"] {
+    width: 100%; padding: 0.6rem 0.7rem; min-height: 2.6rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.875rem; line-height: 1.7;
+  }
+  #out .result.large { margin-top: 0.75rem; }
+  @media (max-width: 30rem) {
+    .stat b { font-size: 1.25rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>勤務時間・残業代</h1>
+    <p class="lead">開始・終了・休憩から実労働時間を計算し、時給と所定労働時間から残業代と深夜割増の目安を出します。日をまたぐ勤務にも対応しています。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>勤務時間と時給</h2>
+    <p class="hint">時刻は24時間制です。終了時刻が開始時刻より早い場合は、翌日への日跨ぎとして計算します。</p>
+
+    <div class="grid-2">
+      <label class="field" for="start"><span>開始時刻</span><input type="time" id="start" value="09:00"></label>
+      <label class="field" for="end"><span>終了時刻</span><input type="time" id="end" value="18:00"></label>
+      <label class="field" for="breakMin"><span>休憩（分）</span><input type="number" id="breakMin" min="0" max="1440" step="1" inputmode="numeric" value="60"></label>
+      <label class="field" for="wage"><span>時給（円）</span><input type="number" id="wage" min="0" max="100000" step="1" inputmode="numeric" value="1200"></label>
+      <label class="field" for="scheduled"><span>所定労働時間（1日・時間）</span><input type="number" id="scheduled" min="0" max="24" step="0.25" inputmode="decimal" value="8"></label>
+      <label class="field" for="premium"><span>時間外労働の割増率</span>
+        <select id="premium">
+          <option value="25" selected>25%（法定時間外）</option>
+          <option value="35">35%（法定休日）</option>
+          <option value="50">50%（月60時間超）</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row" style="margin-top:0.75rem">
+      <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
+    </div>
+
+    <div id="out" aria-live="polite" aria-atomic="true"></div>
+
+    <p class="warn">割増率は労働基準法の一般的な目安です（時間外25%、法定休日35%、月60時間超50%、深夜22時〜5時は25%加算）。週40時間・月60時間の集計、法定休日の判定、変形労働時間制、固定残業代、休憩の位置は考慮していません。実際の支給額は就業規則・労使協定・最新の法令で確認してください。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>開始時刻と終了時刻を入力します。22:00から翌6:00のような日跨ぎ勤務は、終了時刻を06:00にすると翌日として計算します。</li>
+      <li>休憩を分単位で入れます。拘束時間から休憩を差し引いたものが実労働時間です。</li>
+      <li>時給と、1日の所定労働時間を入力します。所定労働時間を超えた部分が時間外労働になります。</li>
+      <li>時間外労働の割増率を25%・35%・50%から選びます。22時〜5時の深夜労働には、選択した割増とは別に25%が加算されます。</li>
+      <li>実労働時間・時間外・深夜の分数、割増合計、合計支給額と計算根拠が表示されます。入力は自動で再計算されます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>勤務時間・残業代について</h2>
+    <p>このツールは、1日の勤務について、拘束時間から休憩を引いた実労働時間と、時給をもとにした賃金の目安を計算します。金額は労働基準法の割増率を当てはめた概算で、実際の支給額を保証するものではありません。</p>
+
+    <h3>実労働時間の求め方</h3>
+    <p>拘束時間は開始時刻から終了時刻までの長さです。終了時刻が開始時刻より早い場合は、日付をまたいだ勤務として24時間を足します。たとえば22:00から翌6:00までは8時間です。そこから休憩を分単位で差し引き、残った時間を実労働時間とします。端数は分単位で扱い、時間を小数に直さずに計算します。</p>
+    <p>休憩の時刻までは区別していません。休憩をまとめて差し引くため、深夜帯に長い休憩がある勤務では、深夜割増の対象時間が実際より長く出ることがあります。</p>
+
+    <h3>残業代と割増率の目安</h3>
+    <p>1日の実労働時間が所定労働時間を超えた部分を時間外労働とし、<span class="mono">時給 × 時間外時間 × 割増率</span>で割増分を計算します。基本賃金は実労働時間の全体に対して<span class="mono">時給 × 実労働時間</span>で求め、割増分を加えたものを合計支給額として表示します。</p>
+    <p>割増率は、法定時間外労働が25%、法定休日労働が35%、月60時間を超える時間外労働が50%です。22時から5時までの深夜労働には、これらの割増とは別に25%が加算されます。時間外かつ深夜の時間は、両方の割増が重なります。</p>
+
+    <h3>この計算に含まれないもの</h3>
+    <p>このツールは1日単位の計算です。1週40時間を超えた分の時間外労働、月60時間を超えた分の割増、法定休日の判定、変形労働時間制、みなし残業代（固定残業代）、休日出勤の振替などは考慮していません。また、金額は1円未満を四捨五入しており、実際の端数処理は就業規則によって異なります。</p>
+    <p>割増率や休憩の扱いは法改正や労使協定で変わる可能性があります。実際の勤務時間の認定や支給額については、就業規則、労使協定、最新の法令を確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var DEFAULTS = {
+    start: '09:00',
+    end: '18:00',
+    breakMin: '60',
+    wage: '1200',
+    scheduled: '8',
+    premium: '25'
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function comma(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function yen(n) { return Math.round(n); }
+
+  function parseTime(v) {
+    var m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(v || '');
+    if (!m) return null;
+    return (+m[1]) * 60 + (+m[2]);
+  }
+
+  function fmtTime(min) {
+    var h = Math.floor(min / 60) % 24;
+    return pad2(h) + ':' + pad2(min % 60);
+  }
+
+  function dur(min) {
+    var h = Math.floor(min / 60);
+    var m = min % 60;
+    if (h === 0) return m + '分';
+    if (m === 0) return h + '時間';
+    return h + '時間' + m + '分';
+  }
+
+  function durDetail(min) {
+    var h = Math.floor(min / 60);
+    var m = min % 60;
+    if (h === 0) return m + '分';
+    return h + '時間' + (m === 0 ? '' : m + '分') + '（' + comma(min) + '分）';
+  }
+
+  function overlap(a, b, c, d) {
+    return Math.max(0, Math.min(b, d) - Math.max(a, c));
+  }
+
+  /* 開始時刻からの経過分で、22:00〜翌5:00と重なる長さを返す。 */
+  function nightMinutes(start, span) {
+    var end = start + span;
+    return overlap(start, end, 0, 300) +
+      overlap(start, end, 1320, 1740) +
+      overlap(start, end, 2760, 2880);
+  }
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function addStats(box, items) {
+    var wrap = el('div', 'stats');
+    items.forEach(function (item) {
+      var stat = el('div', 'stat');
+      stat.appendChild(el('b', null, item[0]));
+      stat.appendChild(el('span', null, item[1]));
+      wrap.appendChild(stat);
+    });
+    box.appendChild(wrap);
+  }
+
+  function showHint(box, text, cls) {
+    var p = el('p', cls || 'hint', text);
+    p.style.margin = '0.75rem 0 0';
+    box.appendChild(p);
+  }
+
+  function update() {
+    var out = $('out');
+    out.textContent = '';
+
+    var start = parseTime($('start').value);
+    var end = parseTime($('end').value);
+    var breakMin = parseFloat($('breakMin').value);
+    var wage = parseFloat($('wage').value);
+    var scheduledH = parseFloat($('scheduled').value);
+    var rate = parseFloat($('premium').value);
+
+    if (start === null || end === null) {
+      showHint(out, '開始時刻と終了時刻を入力してください。', 'err');
+      return;
+    }
+    if (!isFinite(breakMin) || breakMin < 0) {
+      showHint(out, '休憩は0以上の分単位で入力してください。', 'err');
+      return;
+    }
+    breakMin = Math.round(breakMin);
+    if (!isFinite(wage) || wage < 0) {
+      showHint(out, '時給は0以上の数字で入力してください。', 'err');
+      return;
+    }
+    if (!isFinite(scheduledH) || scheduledH < 0 || scheduledH > 24) {
+      showHint(out, '所定労働時間は0〜24時間の範囲で入力してください。', 'err');
+      return;
+    }
+    if (!isFinite(rate)) {
+      showHint(out, '割増率を選んでください。', 'err');
+      return;
+    }
+    if (start === end) {
+      showHint(out, '開始時刻と終了時刻が同じです。日をまたぐ勤務は、終了時刻を開始時刻より前にすると翌日として計算します（例: 22:00 → 06:00）。', 'err');
+      return;
+    }
+
+    var overnight = end < start;
+    var span = end - start + (overnight ? 1440 : 0);
+
+    if (breakMin > span) {
+      showHint(out, '休憩が拘束時間（' + dur(span) + '）を超えています。休憩を見直してください。', 'err');
+      return;
+    }
+
+    var actual = span - breakMin;
+    if (actual <= 0) {
+      showHint(out, '実労働時間が0分です。休憩時間を見直してください。', 'err');
+      return;
+    }
+
+    var scheduledMin = Math.round(scheduledH * 60);
+    var overtime = Math.max(0, actual - scheduledMin);
+    var night = Math.min(actual, nightMinutes(start, span));
+
+    var basePay = yen(wage * actual / 60);
+    var overtimePay = yen(wage * overtime * (rate / 100) / 60);
+    var nightPay = yen(wage * night * 0.25 / 60);
+    var premiumPay = overtimePay + nightPay;
+    var total = basePay + premiumPay;
+
+    addStats(out, [
+      [dur(actual), '実労働時間'],
+      [dur(overtime), '時間外労働'],
+      [dur(night), '深夜（22時〜5時）'],
+      [comma(premiumPay) + '円', '割増合計']
+    ]);
+
+    var totalEl = el('p', 'result large', '合計 ' + comma(total) + '円');
+    totalEl.style.marginTop = '0.75rem';
+    out.appendChild(totalEl);
+
+    var lines = [
+      '・拘束時間: ' + fmtTime(start) + ' → ' + fmtTime(end) + (overnight ? '（翌日）' : '') + ' = ' + durDetail(span),
+      '・休憩: ' + comma(breakMin) + '分',
+      '・実労働: ' + durDetail(span) + ' − ' + comma(breakMin) + '分 = ' + durDetail(actual),
+      '・所定労働: ' + durDetail(scheduledMin),
+      '・時間外: ' + durDetail(actual) + ' − ' + durDetail(scheduledMin) + ' = ' + durDetail(overtime) + '（下限0）',
+      '・深夜: ' + durDetail(night) + '（22:00〜翌5:00との重なり）',
+      '・基本賃金: ' + comma(wage) + '円 × ' + comma(actual) + '分 ÷ 60 = ' + comma(basePay) + '円',
+      '・時間外割増: ' + comma(wage) + '円 × ' + comma(overtime) + '分 × ' + rate + '% ÷ 60 = ' + comma(overtimePay) + '円',
+      '・深夜割増: ' + comma(wage) + '円 × ' + comma(night) + '分 × 25% ÷ 60 = ' + comma(nightPay) + '円',
+      '・合計: ' + comma(basePay) + '円 + ' + comma(overtimePay) + '円 + ' + comma(nightPay) + '円 = ' + comma(total) + '円'
+    ];
+    out.appendChild(el('div', 'result', lines.join('\n')));
+
+    if (overnight) {
+      showHint(out, '終了時刻が開始時刻より早いため、翌日への日跨ぎとして計算しました。', 'note');
+    }
+    if (breakMin > 0) {
+      showHint(out, '休憩の時刻は区別せず、実労働時間から一括で差し引いています。深夜帯に休憩がある場合は実際の割増と異なることがあります。', 'note');
+    }
+    if (overtime === 0 && night === 0) {
+      showHint(out, '時間外・深夜の割増は発生していません。', 'ok');
+    }
+    showHint(out, '金額は1円未満を四捨五入しています。実際の端数処理は就業規則によります。', 'hint');
+  }
+
+  function reset() {
+    $('start').value = DEFAULTS.start;
+    $('end').value = DEFAULTS.end;
+    $('breakMin').value = DEFAULTS.breakMin;
+    $('wage').value = DEFAULTS.wage;
+    $('scheduled').value = DEFAULTS.scheduled;
+    $('premium').value = DEFAULTS.premium;
+    update();
+  }
+
+  ['start', 'end', 'breakMin', 'wage', 'scheduled', 'premium'].forEach(function (id) {
+    var node = $(id);
+    if (!node) return;
+    node.addEventListener('input', update);
+    node.addEventListener('change', update);
+  });
+
+  $('resetBtn').addEventListener('click', reset);
+
+  update();
+})();
+</script>
+</body>
+</html>
