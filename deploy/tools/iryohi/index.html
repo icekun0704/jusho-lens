@@ -38,6 +38,27 @@
     table.med input, input[type="date"] { min-height: 44px; }
     table.med .rm { min-height: 44px; }
   }
+  @media (max-width: 40rem) {
+    .med-wrap { overflow: visible; }
+    table.med { min-width: 0; display: block; }
+    table.med thead {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+    table.med tbody, table.med tr, table.med td { display: block; width: 100%; }
+    table.med tr {
+      border: 1px solid var(--rule); border-radius: 8px;
+      padding: 0.7rem; margin-bottom: 0.75rem; background: var(--bg);
+    }
+    table.med tr:last-child { margin-bottom: 0; }
+    table.med td { border: 0; padding: 0.3rem 0; }
+    table.med td::before {
+      content: attr(data-label); display: block;
+      font-size: 0.7rem; color: var(--muted); margin-bottom: 0.2rem;
+    }
+    table.med td.act::before { content: none; }
+    table.med .rm { width: 100%; }
+  }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -136,7 +157,7 @@
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>医療費の日付・金額・補填額を1行ずつ入力</li>
       <li>所得金額を入れると足切り額が出ます</li>
-      <li>結果をコピーするかCSVで保存します</li>
+      <li>結果をコピーするか表計算用ファイルで保存</li>
     </ol>
   </section>
 
@@ -234,6 +255,7 @@
       var tr = document.createElement('tr');
 
       var tdDate = document.createElement('td');
+      tdDate.setAttribute('data-label', '日付');
       var date = document.createElement('input');
       date.type = 'date';
       date.value = row.date || '';
@@ -243,6 +265,7 @@
       tr.appendChild(tdDate);
 
       var tdName = document.createElement('td');
+      tdName.setAttribute('data-label', '病院・薬局');
       var name = document.createElement('input');
       name.type = 'text';
       name.value = row.name || '';
@@ -254,6 +277,7 @@
 
       var tdAmt = document.createElement('td');
       tdAmt.className = 'amt';
+      tdAmt.setAttribute('data-label', '支払額（円）');
       var amt = document.createElement('input');
       amt.type = 'number';
       amt.min = '0';
@@ -268,6 +292,7 @@
 
       var tdCov = document.createElement('td');
       tdCov.className = 'amt';
+      tdCov.setAttribute('data-label', '補填額（円）');
       var cov = document.createElement('input');
       cov.type = 'number';
       cov.min = '0';
@@ -281,6 +306,7 @@
       tr.appendChild(tdCov);
 
       var tdDel = document.createElement('td');
+      tdDel.className = 'act';
       var rm = document.createElement('button');
       rm.type = 'button';
       rm.className = 'btn ghost rm';
@@ -433,7 +459,7 @@
       if (!row.date && !row.name && a === '' && c === '') return;
       out.push([escCsv(row.date || ''), escCsv(row.name || ''), escCsv(a), escCsv(c)].join(','));
     });
-    var blob = new Blob(['﻿' + out.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+    var blob = new Blob(['\uFEFF' + out.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var link = document.createElement('a');
     var d = new Date();
