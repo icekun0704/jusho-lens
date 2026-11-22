@@ -2,28 +2,27 @@
 
 ## いまの状態
 
-- 公開 URL: https://icekun0704.github.io/jusho-lens/
+- 本番: https://icekun.net/jusho/（Xserver）
+- 予備: https://icekun0704.github.io/jusho-lens/（GitHub Pages）
 - リポジトリ: https://github.com/icekun0704/jusho-lens
 - 料金: すべて無料。有料プランはなし。
 - 収益: ページ広告（Google AdSense）
 
-## 広告を有効にする
+## 広告（設定済み）
 
-1. AdSense にサイトを登録して審査を通す（`https://icekun0704.github.io/jusho-lens/`）
-2. 発行された `ca-pub-...` と広告ユニット ID を `src/config.ts` に入れる
-3. commit → push（GitHub Actions が自動デプロイ）
+- パブリッシャーID `ca-pub-1870128904709930` を `src/config.ts` と `index.html` に設定済み
+- `https://icekun.net/ads.txt` を設置済み（AdSense のサイト登録は `icekun.net`）
+- サイト所有権の確認は ads.txt とメタタグの両方で満たしています
 
-```ts
-export const config = {
-  adsenseClient: 'ca-pub-XXXXXXXXXXXXXXXX',
-  adsenseSlot: '1234567890',
-  contactEmail: 'you@example.com',
-}
-```
+### 次にやること
 
-`adsenseClient` が空のあいだは広告枠は描画されません。審査前でもサイトは普通に動きます。
+1. AdSense 管理画面で「審査をリクエスト」
+2. 承認後、どちらかを選ぶ
+   - **自動広告**を ON（スクリプトは入っているので追加作業なし）
+   - **ディスプレイ広告ユニット**を作成し、`data-ad-slot` の数字を `src/config.ts` の `adsenseSlot` に入れる（トップと記事下の枠が有効になる）
+3. `bash tools/deploy-xserver.sh` で反映
 
-> AdSense は「有用なコンテンツがあるサイト」を求めます。ガイド記事（Amazon / Wise / DS-160）はそのために置いています。記事を増やしてから申請すると通りやすいです。
+> 審査には数日〜数週間かかります。「有用性の低いコンテンツ」で落ちることがあるので、ガイド記事を増やしてから再申請すると安全です。
 
 ## 収益の目安
 

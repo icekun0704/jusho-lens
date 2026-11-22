@@ -45,8 +45,8 @@ node tools/test-romaji.ts     # ローマ字規則のテスト
 
 ```ts
 export const config = {
-  adsenseClient: 'ca-pub-XXXXXXXXXXXXXXXX',
-  adsenseSlot: '1234567890',
+  adsenseClient: 'ca-pub-1870128904709930',
+  adsenseSlot: '', // 広告ユニットを作ったら data-ad-slot の数字
 }
 ```
 

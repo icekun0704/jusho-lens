@@ -3,7 +3,9 @@
 ## いまの状態
 
 - 公開先: https://icekun.net/jusho/
-- `icekun.net` のルートは WordPress。**既存サイトには触れず**、`public_html/jusho/` だけを使う
+- `public_html/jusho/` に配置。ルートの `index.html` は `/jusho/` へリダイレクト
+- `https://icekun.net/ads.txt` に AdSense の ads.txt を設置済み
+- WordPress は削除済み（ルートは空。`index.html` と `ads.txt` のみ）
 - SSH: `ssh xserver`（`iceserver@iceserver.xsrv.jp:10022`、`~/.ssh/id_xserver_rsa`）。root は使わない
 - ビルドは相対パス（`base: './'`）なので、ルートでもサブディレクトリでも動く
 
@@ -21,19 +23,19 @@ bash tools/deploy-xserver.sh
 
 `XSERVER_HOST` / `XSERVER_DIR` で上書きできます。
 
-## ads.txt（AdSense 承認後）
+## ads.txt（設置済み）
 
 AdSense の `ads.txt` は **ドメイン直下** に置く必要があります。
 
-- 置き場所: `~/icekun.net/public_html/ads.txt`（WordPress と同じ階層。`/jusho/` の中ではない）
-- 公開 URL: `https://icekun.net/ads.txt`
-- 中身: AdSense 管理画面 →「サイト」→ ads.txt スニペットをそのままコピー
+- 置き場所: `~/icekun.net/public_html/ads.txt`（`/jusho/` の中ではない）
+- 公開 URL: https://icekun.net/ads.txt
+- 中身:
 
 ```
-google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+google.com, pub-1870128904709930, DIRECT, f08c47fec0942fa0
 ```
 
-GitHub Pages ではドメイン直下に置けないため、AdSense を使うなら icekun.net 側が本番になります。
+AdSense のサイト登録は `icekun.net`（サブディレクトリやサブドメインを含めない）。
 
 ## サブドメインに移す場合
 

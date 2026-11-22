@@ -5,21 +5,7 @@
 set -euo pipefail
 
 HOST="${XSERVER_HOST:-xserver}"
-
-# Find the subdomain document root created by the Xserver panel.
-if [ -z "${XSERVER_DIR:-}" ]; then
-  if ssh "$HOST" "test -d ~/tools.icekun.net/public_html"; then
-    DIR="tools.icekun.net/public_html/jusho"
-  elif ssh "$HOST" "test -d ~/icekun.net/public_html/tools.icekun.net"; then
-    DIR="icekun.net/public_html/tools.icekun.net/jusho"
-  else
-    echo "error: tools.icekun.net のドキュメントルートが見つかりません。" >&2
-    echo "Xserver のサーバーパネルでサブドメイン tools.icekun.net を追加してください。" >&2
-    exit 1
-  fi
-else
-  DIR="$XSERVER_DIR"
-fi
+DIR="${XSERVER_DIR:-icekun.net/public_html/jusho}"
 PARENT="$(dirname "$DIR")"
 NAME="$(basename "$DIR")"
 
@@ -40,4 +26,5 @@ ssh "$HOST" "set -e
   mv ~/$DIR.tmp ~/$DIR
   rm -rf ~/$DIR.old"
 
-echo "deployed: https://tools.icekun.net/$NAME/"
+PUBLIC_URL="${XSERVER_PUBLIC_URL:-https://icekun.net/jusho/}"
+echo "deployed: $PUBLIC_URL"

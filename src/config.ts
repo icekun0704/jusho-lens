@@ -3,7 +3,7 @@
  */
 export const config = {
   /** Google AdSense publisher id, e.g. 'ca-pub-1234567890123456'. Empty = no ads. */
-  adsenseClient: '',
+  adsenseClient: 'ca-pub-1870128904709930',
   /** AdSense ad unit id for the in-page slot. */
   adsenseSlot: '',
   /** Shown on the legal page for privacy questions. */
