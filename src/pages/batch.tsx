@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,7 +8,6 @@ import { loadDictionary, loadTowns, type Dictionary, type TownEntry } from '@/li
 import { parseJapanese, toPieces } from '@/lib/address'
 import { buildFields, validateFields, validateParsed } from '@/lib/presets'
 import { downloadText, parseCsv, toCsv } from '@/lib/csv'
-import { useLicense } from '@/lib/use-license'
 
 interface RowResult {
   source: string
@@ -34,13 +32,12 @@ const SAMPLE = `住所,建物名（ローマ字）
 北海道札幌市中央区北一条西2丁目,`
 
 export function BatchPage() {
-  const { pro } = useLicense()
   const [csvText, setCsvText] = useState(SAMPLE)
   const [rows, setRows] = useState<RowResult[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
-  const limit = pro ? 1000 : 20
+  const limit = 1000
 
   async function onFile(file: File) {
     const text = await file.text()
@@ -98,7 +95,7 @@ export function BatchPage() {
       }
       setRows(out)
       if (dataRows.length > limit) {
-        setError(`無料版は ${limit} 件までです（${dataRows.length} 件中 ${limit} 件を変換）。Pro では1,000件まで処理できます。`)
+        setError(`一度に処理できるのは ${limit} 件までです（${dataRows.length} 件中 ${limit} 件を変換）。ファイルを分けてください。`)
       }
     } catch (e) {
       setError((e as Error).message)
@@ -136,13 +133,8 @@ export function BatchPage() {
               onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }}
             />
             <span className="text-xs text-muted-foreground">
-              {pro ? 'Pro：1,000件まで' : '無料版：20件まで'}
+              1回 1,000 件まで
             </span>
-            {!pro && (
-              <Link to="/pricing" className="text-xs underline underline-offset-4 text-(--primary-text)">
-                Proにする
-              </Link>
-            )}
           </div>
 
           <Textarea

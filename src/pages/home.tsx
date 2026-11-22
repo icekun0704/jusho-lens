@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { AddressTool } from '@/components/address-tool'
 import { ArrowRightLinearIcon, ShieldCheckLinearIcon } from '@/components/icons'
 import { Separator } from '@/components/ui/separator'
+import { AdSlot } from '@/components/ad-slot'
 
 const REASONS = [
   {
@@ -51,7 +52,7 @@ const FAQ = [
   },
   {
     q: '無料で使えますか',
-    a: '1件ずつの変換は無料です。CSVの一括変換と一括検証は Pro（買い切り）に含まれます。',
+    a: 'すべて無料です。サーバー代はページの広告で賄っています。CSVの一括変換も自由に使えます。',
   },
   {
     q: '建物名が漢字だと変換できないのはなぜですか',
@@ -92,7 +93,7 @@ export function HomePage() {
             </li>
             <li className="flex items-start gap-2">
               <ShieldCheckLinearIcon className="mt-0.5 size-4 shrink-0 text-(--primary-text)" aria-hidden="true" />
-              登録不要・1件ずつは無料
+              登録不要・すべて無料
             </li>
           </ul>
         </div>
@@ -140,6 +141,8 @@ export function HomePage() {
           ))}
         </div>
       </section>
+
+      <AdSlot />
 
       <section className="py-12">
         <h2 className="font-serif text-2xl tracking-tight">よくある質問</h2>

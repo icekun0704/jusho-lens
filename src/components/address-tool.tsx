@@ -39,6 +39,12 @@ import {
   type Issue,
   type PresetId,
 } from '@/lib/presets'
+import {
+  formatPostalInput,
+  lookupPostal,
+  normalizePostal,
+  type PostalHit,
+} from '@/lib/postal'
 import { kanaToRomaji, titleCaseRomaji } from '@/lib/romaji'
 import { cn } from '@/lib/utils'
 
@@ -135,10 +141,19 @@ export function AddressTool() {
     <div className="rounded-xl border border-border bg-card shadow-(--shadow-card)">
       <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
         <div className="border-b border-border px-3 py-2.5">
-          <TabsList className="h-9">
-            <TabsTrigger value="reverse">英語 → 日本語</TabsTrigger>
-            <TabsTrigger value="forward">日本語 → 英語</TabsTrigger>
-            <TabsTrigger value="name">氏名 → ローマ字</TabsTrigger>
+          <TabsList className="h-auto flex-wrap gap-0.5 p-1">
+            <TabsTrigger value="reverse" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+              英語 → 日本語
+            </TabsTrigger>
+            <TabsTrigger value="forward" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+              日本語 → 英語
+            </TabsTrigger>
+            <TabsTrigger value="postal" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+              郵便番号
+            </TabsTrigger>
+            <TabsTrigger value="name" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+              氏名
+            </TabsTrigger>
           </TabsList>
         </div>
         <div className="p-4 sm:p-5">
@@ -147,6 +162,9 @@ export function AddressTool() {
           </TabsContent>
           <TabsContent value="forward" className="mt-0">
             <ForwardPanel dict={dict} dictError={dictError} />
+          </TabsContent>
+          <TabsContent value="postal" className="mt-0">
+            <PostalPanel dict={dict} dictError={dictError} />
           </TabsContent>
           <TabsContent value="name" className="mt-0">
             <NamePanel />
@@ -288,8 +306,48 @@ function ForwardPanel({ dict, dictError }: { dict: Dictionary | null; dictError:
   const [towns, setTowns] = useState<TownEntry[] | null>(null)
   const [buildingOverride, setBuildingOverride] = useState('')
   const [error, setError] = useState('')
+  const [postalInput, setPostalInput] = useState('')
+  const [postalHits, setPostalHits] = useState<PostalHit[]>([])
 
   useEffect(() => { setBuildingOverride('') }, [input])
+
+  function applyPostalHits(hits: PostalHit[]) {
+    if (hits.length === 1) {
+      setInput(`${hits[0].pref}${hits[0].city}${hits[0].town}`)
+      setPostalHits([])
+    } else if (hits.length > 1) {
+      setPostalHits(hits)
+    }
+  }
+
+  async function onPostalChange(value: string) {
+    const formatted = formatPostalInput(value)
+    setPostalInput(formatted)
+    const digits = normalizePostal(formatted)
+    if (digits.length === 7 && dict) {
+      try {
+        applyPostalHits(await lookupPostal(digits, dict))
+      } catch {
+        setPostalHits([])
+      }
+    } else {
+      setPostalHits([])
+    }
+  }
+
+  // A bare postcode typed into the textarea expands to its address.
+  useDebouncedEffect(() => {
+    if (!dict) return
+    const digits = normalizePostal(input)
+    const rest = input.replace(/[〒0-9\-\s]/g, '')
+    if (digits.length === 7 && rest === '') {
+      let alive = true
+      lookupPostal(digits, dict)
+        .then((hits) => { if (alive) applyPostalHits(hits) })
+        .catch(() => {})
+      return () => { alive = false }
+    }
+  }, [input, dict])
 
   useDebouncedEffect(() => {
     if (!dict) return
@@ -329,6 +387,37 @@ function ForwardPanel({ dict, dictError }: { dict: Dictionary | null; dictError:
 
   return (
     <div>
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <div>
+          <Label htmlFor="forward-postal" className="text-xs font-medium text-muted-foreground">
+            郵便番号から住所を入れる
+          </Label>
+          <Input
+            id="forward-postal"
+            value={postalInput}
+            onChange={(e) => onPostalChange(e.target.value)}
+            inputMode="numeric"
+            autoComplete="postal-code"
+            placeholder="150-0041"
+            className="mt-1 h-8 w-32 font-mono text-[13px]"
+          />
+        </div>
+        <p className="pb-1.5 text-xs text-muted-foreground">7桁で住所を自動入力</p>
+      </div>
+      {postalHits.length > 1 && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {postalHits.map((h) => (
+            <button
+              key={`${h.city}${h.town}`}
+              type="button"
+              onClick={() => { setInput(`${h.pref}${h.city}${h.town}`); setPostalHits([]) }}
+              className="rounded-md bg-(--field) px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {h.pref}{h.city}{h.town}
+            </button>
+          ))}
+        </div>
+      )}
       <Label htmlFor="forward-input" className="text-sm font-medium">
         日本語の住所を入力
       </Label>
@@ -445,6 +534,107 @@ function ForwardPanel({ dict, dictError }: { dict: Dictionary | null; dictError:
         )}
         {error && <p className="mt-3 text-sm text-(--destructive-text)">{error}</p>}
       </div>
+    </div>
+  )
+}
+
+function PostalPanel({ dict, dictError }: { dict: Dictionary | null; dictError: string }) {
+  const [code, setCode] = useState('150-0041')
+  const [hits, setHits] = useState<PostalHit[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  useDebouncedEffect(() => {
+    if (!dict) return
+    const digits = normalizePostal(code)
+    if (digits.length !== 7) { setHits([]); setBusy(false); return }
+    let alive = true
+    setBusy(true)
+    setError('')
+    lookupPostal(digits, dict)
+      .then((h) => { if (alive) setHits(h) })
+      .catch((e: Error) => { if (alive) setError(e.message) })
+      .finally(() => { if (alive) setBusy(false) })
+    return () => { alive = false }
+  }, [code, dict])
+
+  const digits = normalizePostal(code)
+
+  return (
+    <div>
+      <Label htmlFor="postal-code" className="text-sm font-medium">
+        郵便番号
+      </Label>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Input
+          id="postal-code"
+          value={code}
+          onChange={(e) => setCode(formatPostalInput(e.target.value))}
+          inputMode="numeric"
+          autoComplete="postal-code"
+          placeholder="150-0041"
+          className="w-36 font-mono"
+        />
+        <span className="text-xs text-muted-foreground">7桁を入れると住所が出ます</span>
+      </div>
+
+      {dictError && <p className="mt-4 text-sm text-(--destructive-text)">{dictError}</p>}
+
+      <div className="mt-4">
+        {!dict ? (
+          <p className="text-sm text-muted-foreground">辞書を読み込んでいます…</p>
+        ) : busy ? (
+          <p className="text-sm text-muted-foreground">検索しています…</p>
+        ) : digits.length === 7 && hits.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            この郵便番号は辞書にありません。番地まで入れて「日本語 → 英語」を使ってください。
+          </p>
+        ) : hits.length > 0 && dict ? (
+          <ul className="space-y-3">
+            {hits.map((h) => {
+              const jp = `〒${digits.slice(0, 3)}-${digits.slice(3)} ${h.pref}${h.city}${h.town}`
+              const cityEntry = dict.cities[h.cityIndex]
+              const en = formatRomaji(
+                {
+                  postalCode: digits,
+                  pref: dict.prefs[h.prefIndex][2],
+                  cityParts: cityEntry[3].split(' ').filter(Boolean),
+                  ward: cityEntry[4] ?? '',
+                  town: '',
+                  block: '',
+                  building: '',
+                },
+                h.townRomaji,
+                'oneline',
+              )[0]
+              return (
+                <li key={`${h.city}${h.town}`}>
+                  <Card variant="plate" className="gap-2 p-4">
+                    <p className="text-xs text-muted-foreground">日本語</p>
+                    <p className="font-serif text-lg leading-relaxed">{jp}</p>
+                    <Separator />
+                    <p className="text-xs text-muted-foreground">英語</p>
+                    <p className="break-words font-mono text-[13px] leading-relaxed">{en}</p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <CopyButton text={jp} label="日本語をコピー" />
+                      <CopyButton text={en} label="英語をコピー" />
+                    </div>
+                  </Card>
+                </li>
+              )
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            郵便番号を入れると、都道府県・市区町村・町名と英語表記を表示します。
+          </p>
+        )}
+        {error && <p className="mt-3 text-sm text-(--destructive-text)">{error}</p>}
+      </div>
+
+      <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+        番地・建物名まで英語にしたいときは、「日本語 → 英語」タブで続きを入力してください。
+      </p>
     </div>
   )
 }

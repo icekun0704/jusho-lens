@@ -4,12 +4,15 @@
 
 https://icekun0704.github.io/jusho-lens/
 
+**すべて無料**です。運営費はページの広告で賄います。
+
 ## できること
 
 - **英語 → 日本語**：英語の住所を都道府県・市区町村・町名・番地・建物名に分解し、一致度を返す
 - **日本語 → 英語**：国際郵便、Amazon US、Wise、DS-160、カード請求先の欄名で出力し、日本語の残りや文字数を検査
+- **郵便番号 → 住所**：7桁から都道府県・市区町村・町名を引き、英語表記まで出す
 - **氏名 → ローマ字**：パスポート式（姓名とも大文字・んのM化）と公用文式
-- **CSV 一括変換**（Pro）：1ファイル 1,000 件まで
+- **CSV 一括変換**：1ファイル 1,000 件まで
 
 ## 仕組み
 
@@ -27,7 +30,6 @@ npm run build
 npx tsx tools/build-data.ts   # 辞書の再生成（data/ に公式 CSV を置く）
 npx tsx tools/test-parse.ts   # 住所変換の回帰テスト
 node tools/test-romaji.ts     # ローマ字規則のテスト
-node tools/issue-license.mjs you@example.com   # Pro ライセンスキーの発行
 ```
 
 辞書を再生成するには、次の2ファイルを `data/` に置きます。
@@ -35,9 +37,16 @@ node tools/issue-license.mjs you@example.com   # Pro ライセンスキーの発
 - `utf_ken_all.csv` — https://www.post.japanpost.jp/service/search/zipcode/download/utf-zip.html
 - `ken_all_rome.csv` — https://www.post.japanpost.jp/service/search/zipcode/download/roman-zip.html
 
-## 収益化の設定
+## 広告の設定
 
-`src/config.ts` に購入 URL・連絡先・AdSense の ID を入れると、料金ページの購入ボタンと広告枠が有効になります。ライセンスキーは Ed25519 署名でオフライン検証します（秘密鍵は `secrets/`、Git 管理外）。
+`src/config.ts` に AdSense の ID を入れると、トップとガイド記事に広告枠が出ます。空のままだと何も表示されません。
+
+```ts
+export const config = {
+  adsenseClient: 'ca-pub-XXXXXXXXXXXXXXXX',
+  adsenseSlot: '1234567890',
+}
+```
 
 ## データ
 
