@@ -40,6 +40,29 @@ if (trim((string)($_POST['website'] ?? '')) !== '') {
     respond(true, '送信しました。', $acceptsJson);
 }
 
+// Cross-site posts are not needed for this form.
+$origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
+if ($origin !== '' && !preg_match('#^https://(?:www\.)?icekun\.net/?$#', $origin)) {
+    respond(false, 'このサイトのフォームから送信してください。', $acceptsJson);
+}
+
+// Global daily cap: still bounded if a spoofed header hides repeated senders.
+$storePath = dirname(__DIR__) . '/contact-submissions.jsonl';
+$today = date('Y-m-d');
+$todayCount = 0;
+if (is_file($storePath) && ($fh = @fopen($storePath, 'r'))) {
+    while (($line = fgets($fh)) !== false) {
+        if (str_contains($line, $today)) {
+            $todayCount++;
+            if ($todayCount >= 100) break;
+        }
+    }
+    fclose($fh);
+}
+if ($todayCount >= 100) {
+    respond(false, '本日の受付上限に達しました。時間をおいてお試しください。', $acceptsJson);
+}
+
 $name = trim((string)($_POST['name'] ?? ''));
 $email = trim((string)($_POST['email'] ?? ''));
 $message = trim((string)($_POST['message'] ?? ''));
