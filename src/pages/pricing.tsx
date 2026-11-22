@@ -55,13 +55,17 @@ export function PricingPage() {
       <section className="mt-8">
         <h2 className="font-serif text-xl tracking-tight">広告について</h2>
         <div className="mt-2 space-y-2 text-sm leading-relaxed text-muted-foreground">
-          <p>
-            Google AdSense を利用しています。広告の配信のために Cookie が使われることがあります。詳しくは
-            <a className="mx-1 underline underline-offset-4" href="#/legal/privacy">
-              プライバシーポリシー
-            </a>
-            をご覧ください。
-          </p>
+          {config.adsenseClient ? (
+            <p>
+              Google AdSense を利用しています。広告の配信のために Cookie が使われることがあります。詳しくは
+              <a className="mx-1 underline underline-offset-4" href="#/legal/privacy">
+                プライバシーポリシー
+              </a>
+              をご覧ください。
+            </p>
+          ) : (
+            <p>現在、広告は表示していません。表示を開始するときに、このページで告知します。</p>
+          )}
           {config.contactEmail && (
             <p>
               広告の掲載に関するお問い合わせ：
