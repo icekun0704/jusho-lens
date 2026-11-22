@@ -14,6 +14,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
+  #tool .stat b { font-size: 1.1rem; }
+  input:disabled { opacity: 0.5; cursor: not-allowed; }
   .result { font-variant-numeric: tabular-nums; }
   .breakdown th[scope="row"] { font-size: 0.8125rem; color: var(--ink); font-weight: 400; letter-spacing: 0; }
   .breakdown td.mono { font-variant-numeric: tabular-nums; }
@@ -466,8 +468,9 @@
     const taxableRaw = companyTaxableRaw * companyRate + idecoTaxableRaw * idecoRate;
     const taxable = floorTo(taxableRaw, 1000);
 
-    const incomeTaxBase = progressiveTax(taxable);
-    const incomeTax = Math.floor(incomeTaxBase * (1 + rates.reconstructionRate / 100));
+    const incomeTaxBase = Math.floor(progressiveTax(taxable));
+    const reconstructionTax = Math.floor(incomeTaxBase * rates.reconstructionRate / 100);
+    const incomeTax = incomeTaxBase + reconstructionTax;
     const residentTax = floorTo(taxable * rates.residentRate / 100, 100);
     const taxTotal = incomeTax + residentTax;
     const net = totalPay - taxTotal;

@@ -2,15 +2,18 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://icekun.net/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/jusho/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://icekun.net/guide/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/age/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/base64/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/birth/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/bmi/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://icekun.net/business-days/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/case/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/color/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/color-blind/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/cron/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/csv/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://icekun.net/csv-dedupe/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/csv-merge/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/date/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/denshi/</loc><lastmod>2026-11-22</lastmod></url>
@@ -28,6 +31,7 @@
   <url><loc>https://icekun.net/json/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/kanji-number/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/loan/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://icekun.net/nenshu-kabe/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/password/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/pdf/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/percent/</loc><lastmod>2026-11-22</lastmod></url>
@@ -37,6 +41,7 @@
   <url><loc>https://icekun.net/rsa/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/sleep/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/split/</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://icekun.net/taishokukin/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/tedori/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/text/</loc><lastmod>2026-11-22</lastmod></url>
   <url><loc>https://icekun.net/timezone/</loc><lastmod>2026-11-22</lastmod></url>

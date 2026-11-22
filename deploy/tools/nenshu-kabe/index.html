@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/tools.css">
 <style>
+  #wallCards { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
   #wallCards .stat b { font-size: 1.15rem; }
   #wallCards .stat .meta { color: var(--muted); font-size: 0.7rem; line-height: 1.6; }
   #wallCards .stat .over { color: var(--err); }
@@ -103,7 +104,7 @@
 
     <h2 style="margin-top:1.5rem">壁ごとの判定</h2>
     <p class="hint">年末の見込み年収と比べています。あと何時間は、今年すでに得た給与から壁までを時給で割った値です。</p>
-    <div class="stats" id="wallCards" aria-live="polite"></div>
+    <div class="stats" id="wallCards"></div>
 
     <p class="warn">金額は令和8年度の概算です。税制改正や自治体で控除額と非課税限度額が変わります。勤務先・自治体・年度で異なるため、最終確認は国税庁・厚生労働省・お住まいの自治体の公式情報で行ってください。</p>
   </section>
@@ -346,15 +347,21 @@
     const over = pace - wall.value;
     let text;
     let cls;
-    if (over > 0) {
+    if (over > 0.5) {
       text = '見込みで ' + yen(over) + ' 超過';
       cls = 'over';
+    } else if (over > -0.5) {
+      text = '見込みでちょうど';
+      cls = 'na';
     } else {
       text = '見込みで ' + yen(-over) + ' 余裕';
       cls = 'under';
     }
     let hoursLeft = null;
-    if (remain > 0 && hourly > 0) hoursLeft = remain / hourly;
+    if (hourly > 0) {
+      if (remain > 0.5) hoursLeft = remain / hourly;
+      else if (remain > -0.5) hoursLeft = 0;
+    }
     let weekly = null;
     if (hoursLeft !== null && weeks > 0) weekly = hoursLeft / weeks;
     return { text, cls, remain, hoursLeft, weekly };
@@ -454,20 +461,24 @@
     const hoursLeft = hourly > 0 && remain > 0 ? remain / hourly : null;
     const weekly = hoursLeft !== null && weeks > 0 ? hoursLeft / weeks : null;
 
-    if (remain <= 0) {
-      OUT.selectedRemain.textContent = yen(-remain) + ' 超過';
-    } else {
+    if (remain > 0.5) {
       OUT.selectedRemain.textContent = yen(remain);
+    } else if (remain > -0.5) {
+      OUT.selectedRemain.textContent = 'ちょうど';
+    } else {
+      OUT.selectedRemain.textContent = yen(-remain) + ' 超過';
     }
     OUT.selectedHours.textContent = hoursLeft === null ? '—' : hours(hoursLeft);
     OUT.selectedWeekly.textContent = weekly === null ? '—' : hours(weekly);
 
     let message = '年末の見込みは ' + yen(pace) + '。';
-    if (remain > 0) {
+    if (remain > 0.5) {
       message += targetMeta.name + '（' + yen(targetWall) + '）まで、今年すでに得た給与からあと ' + yen(remain);
       if (hoursLeft !== null) message += '、時給' + yen(hourly) + 'で約' + hours(hoursLeft);
       if (weekly !== null) message += '（残り' + weeks + '週で1週あたり約' + hours(weekly) + '）';
       message += '。';
+    } else if (remain > -0.5) {
+      message += targetMeta.name + '（' + yen(targetWall) + '）に、今年すでに得た給与がちょうど到達しています。';
     } else {
       message += targetMeta.name + '（' + yen(targetWall) + '）を、今年すでに ' + yen(-remain) + ' 超えています。';
     }

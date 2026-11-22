@@ -33,6 +33,12 @@
   .tbl-scroll td.hol { color: var(--ox); }
   #resultMain { margin-top: 1rem; }
   #resultMain:empty { display: none; }
+  input[type="date"] {
+    width: 100%; padding: 0.6rem 0.7rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.875rem; line-height: 1.7;
+  }
   #tool .stats { grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 48rem) { #tool .stats { grid-template-columns: repeat(5, 1fr); } }
   @media (max-width: 40rem) {
@@ -530,10 +536,9 @@
         pushTrace(cur, info, 0);
       }
     }
-    trace.sort(function (a, b) { return a.key < b.key ? -1 : 1; });
     resultMain.textContent = formatJP(cur);
     resultSub.textContent = formatJP(base) + ' から' + (countBase ? '起算日を含めて' : '') + nf.format(n) + '営業日前です。';
-    renderTrace();
+    renderTrace('起算日から過去へ数えた順です。');
     finish();
   }
 

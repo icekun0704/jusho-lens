@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV名寄せ・重複削除｜道具箱</title>
+<meta name="description" content="顧客リストのCSVを名寄せし、重複した行をまとめます。全角半角・ひらがなカタカナ・空白・電話番号・住所表記のゆれをそろえて判定。貼り付けとファイルの両方に対応し、統合後のCSVを保存できます。2MBまで、処理はブラウザ内だけです。">
+<link rel="canonical" href="https://icekun.net/csv-dedupe/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+
+  .drop {
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    padding: 1.5rem 1rem; text-align: center; cursor: pointer;
+    border: 1.5px dashed var(--rule); border-radius: 10px;
+    background: var(--bg);
+  }
+  .drop:hover { border-color: #c9bfae; background: #f4efe4; }
+  .drop.dragover { border-color: var(--ox); background: var(--mark); }
+  .drop:focus-within { outline: 2px solid var(--ox); outline-offset: 3px; }
+  .drop-title { font-weight: 600; font-size: 0.9375rem; }
+  .drop-sub { font-size: 0.78rem; color: var(--muted); line-height: 1.7; }
+
+  details.opts {
+    margin: 1.25rem 0 0; padding: 0.8rem 1rem;
+    border: 1px solid var(--rule); border-radius: 8px;
+  }
+  details.opts summary {
+    font-size: 0.8125rem; color: var(--muted); cursor: pointer;
+    list-style: none;
+  }
+  details.opts summary::-webkit-details-marker { display: none; }
+  details.opts summary::before {
+    content: "＋"; display: inline-block; width: 1rem; color: var(--ox);
+  }
+  details.opts[open] summary::before { content: "−"; }
+  details.opts[open] summary { margin-bottom: 0.6rem; }
+  details.opts .check + .check { margin-top: 0.55rem; }
+  details.opts .check { color: var(--ink); }
+
+  .tbl-scroll {
+    margin-top: 0.75rem; overflow: auto; max-height: 24rem;
+    border: 1px solid var(--rule); border-radius: 8px; background: var(--bg);
+  }
+  .tbl-scroll table { border-collapse: separate; border-spacing: 0; }
+  .tbl-scroll th, .tbl-scroll td {
+    border-bottom: 1px solid var(--rule); vertical-align: middle;
+  }
+  .tbl-scroll thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--card); box-shadow: inset 0 -1px 0 var(--rule);
+  }
+  .tbl-scroll tbody tr:last-child td { border-bottom: 0; }
+  .tbl-scroll tbody tr:nth-child(even) { background: #f4efe4; }
+  .col-name { font-weight: 500; word-break: break-all; }
+  .col-type { min-width: 8.5rem; }
+  .col-use { white-space: nowrap; }
+  .tbl-scroll td.num, .tbl-scroll th.num {
+    text-align: right; color: var(--muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .tbl-scroll td.rows {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+    white-space: nowrap;
+  }
+  .tbl-scroll td.rep { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #out { min-height: 10rem; }
+  #tool .stats { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 48rem) { #tool .stats { grid-template-columns: repeat(5, 1fr); } }
+  @media (max-width: 40rem) {
+    .btn { height: auto; min-height: 2.75rem; }
+    select, textarea { font-size: 0.875rem; }
+    fieldset.opts .check { min-height: 2.8rem; }
+    .tbl-scroll td.rep { max-width: 12rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>CSV名寄せ・重複削除</h1>
+    <p class="lead">顧客リストの表記ゆれをそろえ、重複した行をまとめます。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <label class="drop" id="drop" for="file">
+      <span class="drop-title">CSVをここにドロップ</span>
+      <span class="drop-sub">押してファイルを選ぶこともできます。</span>
+      <input type="file" class="sr-only" id="file" accept=".csv,text/csv,.txt">
+    </label>
+
+    <label class="field" for="src" style="margin-top:1rem">
+      <span>CSVを貼り付け</span>
+      <textarea id="src" rows="8" spellcheck="false" placeholder="氏名,電話番号,住所&#10;山田 太郎,090-1234-5678,東京都渋谷区1-2-3"></textarea>
+    </label>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn" type="button" id="btnRun">重複をまとめる</button>
+      <button class="btn secondary" type="button" id="btnSample">サンプル</button>
+      <button class="btn ghost" type="button" id="btnClear">クリア</button>
+    </div>
+    <p class="warn" style="margin:0.6rem 0 0">入力は2MBまでです。UTF-8とShift_JISを読み込めます。</p>
+
+    <details class="opts">
+      <summary>オプション（見出し行・表記の統一・保存）</summary>
+      <label class="check"><input type="checkbox" id="hasHeader" checked> 1行目を見出し行として使う</label>
+      <label class="check"><input type="checkbox" id="optNorm" checked> 表記ゆれをそろえる（全角半角・カナ・空白）</label>
+      <label class="check"><input type="checkbox" id="optFill" checked> 統合時に空欄を埋める</label>
+      <label class="check"><input type="checkbox" id="optBom" checked> 保存時にBOMを付ける（Excel向け）</label>
+    </details>
+
+    <p class="hint" id="status" role="status" aria-live="polite" style="min-height:1.5rem;margin:1rem 0 0"></p>
+    <p class="err" id="errMsg" role="alert"></p>
+
+    <div id="colsWrap" hidden style="margin-top:1.25rem">
+      <h2>名寄せに使う列</h2>
+      <p class="hint" style="margin:0.2rem 0 0">チェックした列を組み合わせて重複を判定します。列の種類に合わせて、数字や住所の表記をそろえます。</p>
+      <div class="tbl-scroll">
+        <table id="colsTable">
+          <caption class="sr-only">名寄せに使う列の設定</caption>
+          <thead>
+            <tr><th scope="col">列</th><th scope="col">判定</th><th scope="col">種類</th></tr>
+          </thead>
+          <tbody id="colsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="stats" id="statsOut" hidden>
+      <div class="stat"><b id="stIn">—</b><span>入力行</span></div>
+      <div class="stat"><b id="stOut">—</b><span>出力行</span></div>
+      <div class="stat"><b id="stGroups">—</b><span>重複した組</span></div>
+      <div class="stat"><b id="stRemoved">—</b><span>まとめた行</span></div>
+      <div class="stat"><b id="stNoKey">—</b><span>判定できない行</span></div>
+    </div>
+
+    <div id="groupsWrap" hidden style="margin-top:1.25rem">
+      <h2>重複した組</h2>
+      <div class="tbl-scroll">
+        <table id="groupsTable">
+          <caption class="sr-only">重複した行の組</caption>
+          <thead>
+            <tr><th scope="col">代表の値</th><th scope="col" class="num">件数</th><th scope="col">元の行</th></tr>
+          </thead>
+          <tbody id="groupsBody"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="groupsNote"></p>
+    </div>
+
+    <div id="outWrap" hidden>
+      <label class="field" for="out" style="margin-top:1.25rem">
+        <span>統合後のCSV</span>
+        <textarea id="out" class="result" rows="10" readonly spellcheck="false"></textarea>
+      </label>
+      <div class="row" style="margin-top:0.9rem">
+        <button class="btn" type="button" id="btnDownload" disabled>CSVを保存</button>
+        <button class="btn secondary" type="button" id="btnCopy" disabled>コピー</button>
+      </div>
+      <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
+    </div>
+    <p class="sr-only" id="live" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">読み込みも名寄せも、ブラウザ内だけで処理します。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>CSVを貼り付けるか、ファイルを選びます。</li>
+      <li>名寄せに使う列と種類を決めます。</li>
+      <li>重複を確認してCSVを保存します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>名寄せのしくみ</h2>
+    <p>顧客リストを1つにまとめる前に、同じ相手が別の表記で入っていないかを確かめます。この道具は、選んだ列の値を正規化してから突き合わせ、同じ値の組を1行にまとめます。</p>
+
+    <h3>表記のゆれをそろえる</h3>
+    <p>全角と半角は、数字・英字・カタカナ・記号をまとめて直します。「ＡＢＣ」と「ABC」、「ﾔﾏﾀﾞ」と「ヤマダ」が同じ文字になります。ひらがなとカタカナは、カタカナをひらがなに寄せます。「タナカ」と「たなか」、「ヤマダ」と「やまだ」が一致します。空白は、半角・全角を問わず除きます。</p>
+    <p>電話番号は、数字以外を除いて比べます。「090-1234-5678」「09012345678」「+81 90 1234 5678」が同じ番号になります。住所は、全角の数字と記号を直したうえで、「1丁目2番3号」と「1-2-3」のような書き方をそろえ、先頭の郵便番号も除きます。</p>
+
+    <h3>統合のルール</h3>
+    <p>同じ組の最初の行を残し、2行目以降の値で空欄を埋めます。空欄を埋めない設定にもできます。判定に使う列がすべて空の行は、ほかの行とまとめずにそのまま残します。出力は元の列をすべて保ち、見出し行がない場合は「列1」のような見出しを付けて保存します。</p>
+
+    <h3>使う場面</h3>
+    <p>ECの購入者名簿、展示会の名刺リスト、複数の担当者が作った顧客台帳を、DM発送の前に1つにまとめる場面に向いています。まずは氏名と電話番号の2列で判定し、重複の組を確認してから保存してください。</p>
+
+    <h3>制限</h3>
+    <p>漢字の名前とカナの名前は、別の名前として扱います。読み仮名の推定はしません。住所は、都道府県の省略、建物名や部屋番号の違い、旧字体と新字体の違いまではそろえません。法人格は「株式会社」「(株)」「有限会社」などを除いて比べます。入力は2MBまでで、文字コードはUTF-8とShift_JISを読み込めます。保存はUTF-8です。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/csv/">CSV⇔JSON変換</a>
+    <a href="/csv-merge/">CSV結合</a>
+    <a href="/business-days/">営業日計算</a>
+    <a href="/holiday/">祝日カレンダー</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/excel-column/">Excel列番号変換</a>
+    <a href="/invoice-check/">適格請求書の登録番号チェック</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var MAX_BYTES = 2 * 1024 * 1024;
+  var PREVIEW_GROUPS = 100;
+
+  var nf = new Intl.NumberFormat('ja-JP');
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  var src = $('src');
+  var out = $('out');
+  var fileInput = $('file');
+  var drop = $('drop');
+  var hasHeaderEl = $('hasHeader');
+  var optNorm = $('optNorm');
+  var optFill = $('optFill');
+  var optBom = $('optBom');
+  var statusEl = $('status');
+  var errEl = $('errMsg');
+  var copyMsg = $('copyMsg');
+  var live = $('live');
+  var statsOut = $('statsOut');
+  var outWrap = $('outWrap');
+  var colsWrap = $('colsWrap');
+  var colsBody = $('colsBody');
+  var groupsWrap = $('groupsWrap');
+  var groupsBody = $('groupsBody');
+  var groupsNote = $('groupsNote');
+  var btnDownload = $('btnDownload');
+  var btnCopy = $('btnCopy');
+  var stats = {
+    inRows: $('stIn'), outRows: $('stOut'), groups: $('stGroups'),
+    removed: $('stRemoved'), noKey: $('stNoKey')
+  };
+
+  var currentHeader = null;
+  var currentData = null;
+  var cols = [];
+  var colSig = '';
+  var outCsv = '';
+  var timer = 0;
+
+  var SAMPLE = [
+    '氏名,電話番号,住所,メモ',
+    '山田 太郎,090-1234-5678,東京都渋谷区1-2-3,初回',
+    '山田　太郎,09012345678,東京都渋谷区１丁目２番３号,再登録',
+    '山田太郎,090-1234-5678,東京都渋谷区1丁目2番3号,電話一致',
+    '佐藤 花子,+81 80 9876 5432,東京都新宿区4-5-6,名簿A',
+    '佐藤花子,080-9876-5432,東京都新宿区4-5-6,名簿B',
+    '鈴木 一郎,03-1234-5678,東京都杉並区7-8-9,'
+  ].join('\n');
+
+  /* ---------- CSV ---------- */
+
+  function parseCSV(text) {
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+    var rows = [];
+    var row = [];
+    var field = '';
+    var inQuotes = false;
+    var quoteStartLine = 1;
+    var line = 1;
+    var i = 0;
+
+    while (i < text.length) {
+      var c = text.charAt(i);
+
+      if (inQuotes) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') {
+            field += '"';
+            i += 2;
+            continue;
+          }
+          inQuotes = false;
+          i++;
+          var n = text.charAt(i);
+          if (n !== '' && n !== ',' && n !== '\r' && n !== '\n') {
+            throw new Error(line + '行目: 引用符を閉じた直後に、区切り文字でも改行でもない文字があります。セル全体を1組の引用符で囲んでください。');
+          }
+          continue;
+        }
+        if (c === '\n') line++;
+        field += c;
+        i++;
+        continue;
+      }
+
+      if (c === '"' && field === '') {
+        inQuotes = true;
+        quoteStartLine = line;
+        i++;
+        continue;
+      }
+      if (c === ',') {
+        row.push(field);
+        field = '';
+        i++;
+        continue;
+      }
+      if (c === '\r') {
+        if (text.charAt(i + 1) === '\n') i++;
+        row.push(field);
+        field = '';
+        rows.push(row);
+        row = [];
+        line++;
+        i++;
+        continue;
+      }
+      if (c === '\n') {
+        row.push(field);
+        field = '';
+        rows.push(row);
+        row = [];
+        line++;
+        i++;
+        continue;
+      }
+      field += c;
+      i++;
+    }
+
+    if (inQuotes) {
+      throw new Error(quoteStartLine + '行目: 引用符（"）が閉じられていません。');
+    }
+
+    row.push(field);
+    rows.push(row);
+    if (rows.length && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === '') rows.pop();
+
+    return rows.filter(function (r) {
+      for (var k = 0; k < r.length; k++) {
+        if (String(r[k]).trim() !== '') return true;
+      }
+      return false;
+    });
+  }
+
+  function csvCell(v) {
+    var s = v === null || v === undefined ? '' : String(v);
+    if (s.indexOf('"') >= 0 || s.indexOf(',') >= 0 || s.indexOf('\n') >= 0 || s.indexOf('\r') >= 0 || /^\s|\s$/.test(s)) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  function rowsToCSV(header, rows) {
+    var lines = [header.map(csvCell).join(',')];
+    rows.forEach(function (r) {
+      var cells = [];
+      for (var i = 0; i < header.length; i++) cells.push(csvCell(r[i] === undefined ? '' : r[i]));
+      lines.push(cells.join(','));
+    });
+    return lines.join('\r\n');
+  }
+
+  function byteSize(s) {
+    try { return new Blob([s]).size; } catch (e) { return s.length; }
+  }
+
+  function fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+    return (b / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function decodeBytes(bytes) {
+    var enc = 'utf-8';
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+      enc = 'utf-8';
+    } else if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+      enc = 'utf-16le';
+    } else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+      enc = 'utf-16be';
+    } else {
+      try {
+        new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        enc = 'utf-8';
+      } catch (e) {
+        enc = 'shift_jis';
+      }
+    }
+    var text;
+    try {
+      text = new TextDecoder(enc, { fatal: false }).decode(bytes);
+    } catch (e) {
+      enc = 'utf-8';
+      text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    }
+    return { text: text, enc: enc, bad: (text.match(/�/g) || []).length };
+  }
+
+  /* ---------- normalization ---------- */
+
+  function baseNorm(value, o) {
+    var s = value === null || value === undefined ? '' : String(value);
+    if (o.nfkc) {
+      try { s = s.normalize('NFKC'); } catch (e) { /* older engines: keep as is */ }
+    }
+    if (o.kana) {
+      s = s.replace(/[ァ-ヶ]/g, function (ch) {
+        return String.fromCharCode(ch.charCodeAt(0) - 0x60);
+      });
+    }
+    if (o.space) s = s.replace(/[\s　]+/g, '');
+    return s.toLowerCase();
+  }
+
+  function normName(value, o) {
+    var s = baseNorm(value, o);
+    s = s.replace(/[（(]\s*(株|有|合|社)\s*[)）]/g, '');
+    s = s.replace(/(株式会社|有限会社|合同会社|合名会社|合資会社|一般社団法人|一般財団法人|公益社団法人|公益財団法人|医療法人|社会福祉法人|学校法人|宗教法人|協同組合)/g, '');
+    return s;
+  }
+
+  function normPhone(value, o) {
+    var s = baseNorm(value, o).replace(/[^0-9]/g, '');
+    if (/^0081/.test(s)) s = '0' + s.slice(4);
+    if (/^81\d{9,10}$/.test(s)) s = '0' + s.slice(2);
+    return s;
+  }
+
+  function normAddress(value, o) {
+    var s = baseNorm(value, o);
+    s = s.replace(/^〒\d{3}-?\d{4}/, '');
+    s = s.replace(/[－−—–―‐ー]/g, '-');
+    s = s.replace(/丁目|番地|番/g, '-');
+    s = s.replace(/号/g, '');
+    s = s.replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+    return s;
+  }
+
+  function normValue(value, type, o) {
+    if (type === 'phone') return normPhone(value, o);
+    if (type === 'address') return normAddress(value, o);
+    if (type === 'name') return normName(value, o);
+    return baseNorm(value, o);
+  }
+
+  function detectType(name) {
+    var n = String(name).toLowerCase();
+    if (/fax|ファックス/.test(n)) return 'text';
+    if (/電話|携帯|tel|phone/.test(n)) return 'phone';
+    if (/氏名|名前|name|担当|宛名|お名前|顧客名|会社|法人|店舗/.test(n)) return 'name';
+    if (/住所|所在地|address|addr|届け先|配送先/.test(n)) return 'address';
+    if (/メール|e-mail|email|mail/.test(n)) return 'email';
+    return 'text';
+  }
+
+  function readOpts() {
+    var on = optNorm.checked;
+    return { nfkc: on, kana: on, space: on };
+  }
+
+  /* ---------- columns ---------- */
+
+  function uniqueLabels(header) {
+    var seen = Object.create(null);
+    return header.map(function (h) {
+      var base = String(h).trim() || '列';
+      var label = base;
+      var n = 1;
+      while (seen[label]) {
+        n++;
+        label = base + ' (' + n + ')';
+      }
+      seen[label] = true;
+      return label;
+    });
+  }
+
+  function renderColumns() {
+    var sig = currentHeader.join('\u0001') + '|' + hasHeaderEl.checked;
+    if (sig === colSig && cols.length === currentHeader.length) {
+      colsWrap.hidden = false;
+      return;
+    }
+    colSig = sig;
+
+    var labels = uniqueLabels(currentHeader);
+    cols = currentHeader.map(function (name, i) {
+      return { i: i, name: name, label: labels[i], type: detectType(name), checked: false };
+    });
+
+    var pickedName = false;
+    var pickedPhone = false;
+    var pickedOther = false;
+    cols.forEach(function (c) {
+      if (c.type === 'name' && !pickedName) { c.checked = true; pickedName = true; }
+      else if (c.type === 'phone' && !pickedPhone) { c.checked = true; pickedPhone = true; }
+    });
+    if (!pickedName && !pickedPhone) {
+      cols.forEach(function (c) {
+        if (pickedOther) return;
+        if (c.type === 'address' || c.type === 'email') { c.checked = true; pickedOther = true; }
+      });
+    }
+    var any = cols.some(function (c) { return c.checked; });
+    if (!any && cols.length) cols[0].checked = true;
+
+    colsBody.textContent = '';
+    cols.forEach(function (c) {
+      var tr = document.createElement('tr');
+
+      var tdName = document.createElement('td');
+      tdName.className = 'col-name';
+      tdName.textContent = c.label;
+      if (c.name !== c.label) tdName.title = c.name;
+
+      var tdUse = document.createElement('td');
+      tdUse.className = 'col-use';
+      var useLabel = document.createElement('label');
+      useLabel.className = 'check';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'col-use-box';
+      cb.checked = c.checked;
+      cb.setAttribute('aria-label', c.label + ' を判定に使う');
+      cb.addEventListener('change', function () {
+        c.checked = cb.checked;
+        renderResult();
+        live.textContent = cb.checked ? c.label + ' を判定に加えました。' : c.label + ' を判定から外しました。';
+      });
+      useLabel.appendChild(cb);
+      useLabel.appendChild(document.createTextNode(' 使う'));
+      tdUse.appendChild(useLabel);
+
+      var tdType = document.createElement('td');
+      tdType.className = 'col-type';
+      var sel = document.createElement('select');
+      sel.className = 'col-type-sel';
+      sel.setAttribute('aria-label', c.label + ' の種類');
+      [
+        ['name', '氏名・会社名'],
+        ['phone', '電話番号'],
+        ['address', '住所'],
+        ['email', 'メール'],
+        ['text', 'そのまま']
+      ].forEach(function (opt) {
+        var o = document.createElement('option');
+        o.value = opt[0];
+        o.textContent = opt[1];
+        if (opt[0] === c.type) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change', function () {
+        c.type = sel.value;
+        renderResult();
+      });
+      tdType.appendChild(sel);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdUse);
+      tr.appendChild(tdType);
+      colsBody.appendChild(tr);
+    });
+
+    colsWrap.hidden = false;
+  }
+
+  /* ---------- analysis ---------- */
+
+  function setStats(values) {
+    Object.keys(stats).forEach(function (k) {
+      stats[k].textContent = values && values[k] !== undefined ? nf.format(values[k]) : '—';
+    });
+    statsOut.hidden = !values;
+  }
+
+  function clearOutput() {
+    out.value = '';
+    outCsv = '';
+    btnDownload.disabled = true;
+    btnCopy.disabled = true;
+    outWrap.hidden = true;
+    groupsWrap.hidden = true;
+    groupsBody.textContent = '';
+    groupsNote.textContent = '';
+    setStats(null);
+  }
+
+  function fail(msg) {
+    clearOutput();
+    errEl.textContent = msg;
+    statusEl.textContent = '';
+    statusEl.className = 'hint';
+    colsWrap.hidden = true;
+    currentHeader = null;
+    currentData = null;
+    colSig = '';
+    cols = [];
+    live.textContent = '名寄せできませんでした。';
+  }
+
+  function padRow(r, n) {
+    var a = r.slice();
+    while (a.length < n) a.push('');
+    return a;
+  }
+
+  function analyze() {
+    clearTimeout(timer);
+    errEl.textContent = '';
+    copyMsg.textContent = '';
+    copyMsg.className = '';
+
+    var text = src.value;
+    if (!text.trim()) {
+      clearOutput();
+      colsWrap.hidden = true;
+      currentHeader = null;
+      currentData = null;
+      colSig = '';
+      cols = [];
+      statusEl.textContent = 'CSVを貼り付けるか、ファイルを選んでください。';
+      statusEl.className = 'hint';
+      return;
+    }
+    var size = byteSize(text);
+    if (size > MAX_BYTES) {
+      fail('入力が2MBを超えています（' + fmtBytes(size) + '）。分けて処理してください。');
+      return;
+    }
+
+    var rows;
+    try {
+      rows = parseCSV(text);
+    } catch (e) {
+      fail(e && e.message ? e.message : 'CSVを読み取れませんでした。');
+      return;
+    }
+    if (!rows.length) {
+      fail('CSVにデータがありません。');
+      return;
+    }
+
+    var ncols = 0;
+    rows.forEach(function (r) { if (r.length > ncols) ncols = r.length; });
+
+    var header;
+    var data;
+    if (hasHeaderEl.checked) {
+      if (rows.length < 2) {
+        fail('見出し行の下にデータがありません。');
+        return;
+      }
+      header = [];
+      for (var i = 0; i < ncols; i++) {
+        var name = String(rows[0][i] === undefined ? '' : rows[0][i]).trim();
+        header.push(name === '' ? '列' + (i + 1) : name);
+      }
+      data = rows.slice(1).map(function (r) { return padRow(r, ncols); });
+    } else {
+      header = [];
+      for (var j = 0; j < ncols; j++) header.push('列' + (j + 1));
+      data = rows.map(function (r) { return padRow(r, ncols); });
+    }
+
+    if (!data.length) {
+      fail('名寄せするデータ行がありません。');
+      return;
+    }
+
+    currentHeader = header;
+    currentData = data;
+    renderColumns();
+    renderResult();
+  }
+
+  function renderResult() {
+    if (!currentHeader || !currentData) return;
+
+    var selected = cols.filter(function (c) { return c.checked; });
+    if (!selected.length) {
+      clearOutput();
+      errEl.textContent = '判定に使う列を1つ以上選んでください。';
+      statusEl.textContent = '';
+      statusEl.className = 'hint';
+      return;
+    }
+    errEl.textContent = '';
+
+    var o = readOpts();
+    var fill = optFill.checked;
+    var groups = new Map();
+    var order = [];
+    var outputs = [];
+    var noKey = 0;
+
+    currentData.forEach(function (row, idx) {
+      var parts = [];
+      var any = false;
+      selected.forEach(function (c) {
+        var v = normValue(row[c.i], c.type, o);
+        if (v !== '') any = true;
+        parts.push(v);
+      });
+
+      if (!any) {
+        noKey++;
+        outputs.push({ pos: idx, row: row.slice() });
+        return;
+      }
+
+      var key = parts.join('\u0001');
+      var g = groups.get(key);
+      if (!g) {
+        g = { key: key, idxs: [idx + 1], row: row.slice(), pos: idx };
+        groups.set(key, g);
+        order.push(g);
+        outputs.push({ pos: idx, row: g.row });
+        return;
+      }
+
+      g.idxs.push(idx + 1);
+      if (fill) {
+        for (var i = 0; i < currentHeader.length; i++) {
+          var cur = g.row[i];
+          var next = row[i];
+          if ((cur === undefined || String(cur).trim() === '') && next !== undefined && String(next).trim() !== '') {
+            g.row[i] = next;
+          }
+        }
+      }
+    });
+
+    outputs.sort(function (a, b) { return a.pos - b.pos; });
+    var outRows = outputs.map(function (x) { return x.row; });
+
+    var dupGroups = order.filter(function (g) { return g.idxs.length > 1; });
+    var removed = currentData.length - outRows.length;
+
+    outCsv = rowsToCSV(currentHeader, outRows);
+    out.value = outCsv;
+    outWrap.hidden = false;
+    btnDownload.disabled = false;
+    btnCopy.disabled = false;
+
+    setStats({
+      inRows: currentData.length,
+      outRows: outRows.length,
+      groups: dupGroups.length,
+      removed: removed,
+      noKey: noKey
+    });
+
+    renderGroups(dupGroups);
+
+    var msg;
+    if (dupGroups.length === 0) {
+      msg = '重複は見つかりませんでした。' + nf.format(currentData.length) + '行をそのまま出力します。';
+      statusEl.className = 'ok';
+    } else {
+      msg = nf.format(currentData.length) + '行を' + nf.format(outRows.length) + '行にまとめました。重複は' +
+        nf.format(dupGroups.length) + '組、' + nf.format(removed) + '行を省きました。';
+      statusEl.className = 'ok';
+    }
+    if (noKey > 0) {
+      msg += ' 判定に使う値が空の' + nf.format(noKey) + '行は、そのまま残しました。';
+      statusEl.className = 'warn';
+    }
+    statusEl.textContent = msg;
+    live.textContent = msg;
+  }
+
+  function renderGroups(dupGroups) {
+    groupsBody.textContent = '';
+    groupsWrap.hidden = dupGroups.length === 0;
+    groupsNote.textContent = '';
+    if (!dupGroups.length) return;
+
+    var selected = cols.filter(function (c) { return c.checked; });
+    dupGroups.slice(0, PREVIEW_GROUPS).forEach(function (g) {
+      var tr = document.createElement('tr');
+
+      var tdRep = document.createElement('td');
+      tdRep.className = 'rep';
+      var vals = selected.map(function (c) {
+        var v = g.row[c.i] === undefined ? '' : String(g.row[c.i]).trim();
+        return v === '' ? '（空）' : v;
+      });
+      var rep = vals.join(' / ');
+      tdRep.textContent = rep;
+      tdRep.title = rep;
+
+      var tdCount = document.createElement('td');
+      tdCount.className = 'num';
+      tdCount.textContent = nf.format(g.idxs.length);
+
+      var tdRows = document.createElement('td');
+      tdRows.className = 'rows';
+      var shownRows = g.idxs.slice(0, 8).join(', ');
+      tdRows.textContent = g.idxs.length > 8 ? shownRows + ' ほか' : shownRows;
+      if (g.idxs.length > 8) tdRows.title = g.idxs.join(', ');
+
+      tr.appendChild(tdRep);
+      tr.appendChild(tdCount);
+      tr.appendChild(tdRows);
+      groupsBody.appendChild(tr);
+    });
+
+    if (dupGroups.length > PREVIEW_GROUPS) {
+      groupsNote.textContent = '一覧は先頭' + PREVIEW_GROUPS + '組です。残りはCSVの出力に反映されています。';
+    } else {
+      groupsNote.textContent = '「元の行」は見出し行を除いたデータ行の番号です。';
+    }
+  }
+
+  /* ---------- events ---------- */
+
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(analyze, 300);
+  }
+
+  src.addEventListener('input', schedule);
+  src.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      analyze();
+    }
+  });
+
+  $('btnRun').addEventListener('click', function () {
+    analyze();
+    src.focus();
+  });
+
+  $('btnSample').addEventListener('click', function () {
+    src.value = SAMPLE;
+    analyze();
+    src.focus();
+  });
+
+  $('btnClear').addEventListener('click', function () {
+    clearTimeout(timer);
+    src.value = '';
+    src.value = '';
+    fileInput.value = '';
+    clearOutput();
+    colsWrap.hidden = true;
+    currentHeader = null;
+    currentData = null;
+    colSig = '';
+    cols = [];
+    statusEl.textContent = '';
+    statusEl.className = 'hint';
+    errEl.textContent = '';
+    copyMsg.textContent = '';
+    src.focus();
+  });
+
+  hasHeaderEl.addEventListener('change', analyze);
+  [optNorm, optFill].forEach(function (el) {
+    el.addEventListener('change', renderResult);
+  });
+
+  fileInput.addEventListener('change', function () {
+    var f = fileInput.files && fileInput.files[0];
+    fileInput.value = '';
+    if (!f) return;
+    if (f.size > MAX_BYTES) {
+      fail(f.name + ' は2MBを超えています（' + fmtBytes(f.size) + '）。分けて処理してください。');
+      return;
+    }
+    f.arrayBuffer().then(function (buf) {
+      var dec = decodeBytes(new Uint8Array(buf));
+      src.value = dec.text;
+      analyze();
+      var encName = dec.enc === 'shift_jis' ? 'Shift_JIS' : dec.enc.toUpperCase();
+      if (dec.bad > 0) {
+        statusEl.textContent += ' 読み取れない文字があります。文字コードを確かめてください。';
+        statusEl.className = 'warn';
+      } else {
+        statusEl.textContent += ' ' + f.name + ' を' + encName + 'で読み込みました。';
+      }
+    }).catch(function () {
+      fail(f.name + ' を読み込めませんでした。');
+    });
+  });
+
+  ['dragenter', 'dragover'].forEach(function (type) {
+    drop.addEventListener(type, function (e) {
+      e.preventDefault();
+      drop.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'dragend'].forEach(function (type) {
+    drop.addEventListener(type, function () { drop.classList.remove('dragover'); });
+  });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault();
+    drop.classList.remove('dragover');
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (!files || !files.length) return;
+    fileInput.files = files;
+    var ev;
+    try {
+      ev = new Event('change');
+    } catch (err) {
+      ev = document.createEvent('Event');
+      ev.initEvent('change', true, true);
+    }
+    fileInput.dispatchEvent(ev);
+  });
+
+  btnDownload.addEventListener('click', function () {
+    if (!outCsv) return;
+    var body = optBom.checked ? '﻿' + outCsv : outCsv;
+    var blob = new Blob([body], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var d = new Date();
+    a.href = url;
+    a.download = 'dedupe-' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    copyMsg.textContent = 'CSVファイルのダウンロードを開始しました。';
+    copyMsg.className = 'ok';
+  });
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return legacyCopy(text); });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  btnCopy.addEventListener('click', function () {
+    if (!outCsv) return;
+    copyText(outCsv).then(function (ok) {
+      if (ok) {
+        copyMsg.textContent = '統合後のCSVをコピーしました。';
+        copyMsg.className = 'ok';
+      } else {
+        copyMsg.textContent = 'コピーできませんでした。下の欄を選んでコピーしてください。';
+        copyMsg.className = 'err';
+      }
+    });
+  });
+
+  out.addEventListener('click', function () { out.select(); });
+
+  analyze();
+})();
+</script>
+</body>
+</html>

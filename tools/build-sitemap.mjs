@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root = path.resolve(import.meta.dirname, '..', 'deploy')
-const urls = ['https://icekun.net/', 'https://icekun.net/jusho/']
+const urls = ['https://icekun.net/', 'https://icekun.net/jusho/', 'https://icekun.net/guide/']
 for (const base of ['tools', 'guide']) {
   const dir = path.join(root, base)
   if (!fs.existsSync(dir)) continue
