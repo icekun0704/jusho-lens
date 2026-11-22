@@ -84,6 +84,10 @@
   .mblock td:nth-child(3), .mblock th:nth-child(3) { white-space: nowrap; }
   .mblock .none { margin: 0.2rem 0 0; font-size: 0.75rem; color: var(--muted); }
   .approx { font-size: 0.62rem; color: var(--warn); border: 1px solid #e3d2b3; border-radius: 999px; padding: 0 0.35rem; margin-left: 0.3rem; white-space: nowrap; }
+
+  @media (max-width: 40rem) {
+    .mblock th, .mblock td { padding: 0.45rem 0.4rem; }
+  }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
 </head>
@@ -131,6 +135,7 @@
 
     <p class="hint" id="summary" role="status" aria-live="polite" style="min-height:1.5rem;margin:1rem 0 0"></p>
 
+    <h2 class="sr-only" id="viewHeading">2026年のカレンダー</h2>
     <div class="cal-wrap" id="calView" aria-label="年間カレンダー"></div>
     <div class="list-grid" id="listView" aria-label="月別の祝日一覧" hidden></div>
 
@@ -454,9 +459,11 @@
     if (view === 'cal') {
       $('calView').hidden = false;
       $('listView').hidden = true;
+      $('viewHeading').textContent = y + '年のカレンダー';
     } else {
       $('calView').hidden = true;
       $('listView').hidden = false;
+      $('viewHeading').textContent = y + '年の月別一覧';
     }
 
     renderCalendar(y);
