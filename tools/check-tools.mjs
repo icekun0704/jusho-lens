@@ -38,6 +38,8 @@ for (const slug of dirs) {
 
   const external = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1])
   for (const src of external) {
+    // Root-relative and relative files are served by the site itself.
+    if (/^(\/|\.\/|\.\.\/|data:)/.test(src)) continue
     if (!src.includes('pagead2.googlesyndication.com')) issues.push(`外部スクリプト: ${src}`)
   }
 

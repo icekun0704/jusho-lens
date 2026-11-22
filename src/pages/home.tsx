@@ -3,6 +3,8 @@ import { AddressTool } from '@/components/address-tool'
 import { ArrowRightLinearIcon } from '@/components/icons'
 import { Separator } from '@/components/ui/separator'
 import { AdSlot } from '@/components/ad-slot'
+import { focusRing } from '@/components/ui/_shared'
+import { cn } from '@/lib/utils'
 
 const REASONS = [
   {
@@ -86,7 +88,7 @@ export function HomePage() {
           <dl className="mt-8 grid grid-cols-1 gap-x-6 gap-y-4 border-t border-border pt-5 sm:grid-cols-3">
             <div>
               <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">送信</dt>
-              <dd className="mt-1 text-sm leading-relaxed text-foreground/85">入力はブラウザの外に出ません</dd>
+              <dd className="mt-1 text-sm leading-relaxed text-foreground/85">ブラウザ内で完結</dd>
             </div>
             <div>
               <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">辞書</dt>
@@ -128,7 +130,10 @@ export function HomePage() {
             <Link
               key={s.to}
               to={s.to}
-              className="group flex items-start justify-between gap-4 border-t border-border py-4"
+              className={cn(
+                'group flex items-start justify-between gap-4 rounded-sm border-t border-border py-4',
+                focusRing,
+              )}
             >
               <span>
                 <span className="block text-[0.95rem] font-medium text-foreground">{s.title}</span>
@@ -165,8 +170,16 @@ export function HomePage() {
           </div>
           <button
             type="button"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
+            onClick={() =>
+              window.scrollTo({
+                top: 0,
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+              })
+            }
+            className={cn(
+              'inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground',
+              focusRing,
+            )}
           >
             ツールへ戻る
           </button>

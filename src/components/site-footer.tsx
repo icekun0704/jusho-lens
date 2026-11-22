@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { focusRing } from '@/components/ui/_shared'
+import { cn } from '@/lib/utils'
 
 const LINKS = [
   { to: '/guide/amazon', label: 'Amazonの英語住所' },
@@ -26,14 +28,22 @@ export function SiteFooter() {
               日本の住所を英語に、英語の住所を日本語に。変換はすべてブラウザ内で完結し、入力した住所は送信されません。
             </p>
           </div>
-          <nav className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm" aria-label="フッター">
+          <nav className="grid grid-cols-2 gap-x-10 gap-y-1 text-sm" aria-label="フッター">
             {LINKS.map((l) =>
               'href' in l && l.href ? (
-                <a key={l.href} href={l.href} className="text-muted-foreground hover:text-foreground">
+                <a
+                  key={l.href}
+                  href={l.href}
+                  className={cn('inline-flex min-h-11 items-center rounded-sm text-muted-foreground hover:text-foreground', focusRing)}
+                >
                   {l.label}
                 </a>
               ) : (
-                <Link key={l.to} to={l.to as string} className="text-muted-foreground hover:text-foreground">
+                <Link
+                  key={l.to}
+                  to={l.to as string}
+                  className={cn('inline-flex min-h-11 items-center rounded-sm text-muted-foreground hover:text-foreground', focusRing)}
+                >
                   {l.label}
                 </Link>
               ),

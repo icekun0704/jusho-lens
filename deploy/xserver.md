@@ -9,6 +9,27 @@
 - SSH: `ssh xserver`（`iceserver@iceserver.xsrv.jp:10022`、`~/.ssh/id_xserver_rsa`）。root は使わない
 - ビルドは相対パス（`base: './'`）なので、ルートでもサブディレクトリでも動く
 
+## .htaccess（手動管理）
+
+配信最適化の `.htaccess` は **手動で管理** する。`deploy-hub.sh` などのスクリプトに含めない（誤上書き防止）。
+
+- 原本: `deploy/htaccess.example`
+- 配置先: `~/icekun.net/public_html/.htaccess`
+- 圧縮はオリジン nginx(gzip)＋Cloudflare(brotli) 任せ。Apache `mod_deflate` は二重圧縮の恐れがあるため無効。
+- キャッシュは `.htaccess` で明示（Xserver は `.htaccess` の Cache-Control をパネル設定より優先）:
+  - `/jusho/assets/`（ハッシュ付き js/css）: 1年 immutable
+  - `/jusho/data/`（辞書 JSON）: 1日
+  - `/assets/`（tools.css 等・ハッシュ無し）: 1日
+  - `*.php`（contact.php / ip.php）: no-store
+- 適用・変更時は必ず `cp .htaccess .htaccess.bak` でバックアップを取り、`curl -I` で確認する。
+
+```bash
+# 例: バックアップ→配置→確認
+ssh xserver 'cp ~/icekun.net/public_html/.htaccess ~/icekun.net/public_html/.htaccess.bak'
+scp deploy/htaccess.example xserver:icekun.net/public_html/.htaccess
+curl -I https://icekun.net/jusho/data/prefs.json
+```
+
 ## 更新する
 
 ```bash

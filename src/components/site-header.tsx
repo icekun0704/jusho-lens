@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { config } from '@/config'
 import { cn } from '@/lib/utils'
+import { focusRing } from '@/components/ui/_shared'
 
 const NAV = [
   { to: '/', label: 'ツール', end: true },
@@ -13,7 +14,11 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-6 sm:px-5">
-        <a href={config.hubUrl} className="flex shrink-0 items-baseline gap-2 whitespace-nowrap" aria-label="道具箱トップへ">
+        <a
+          href={config.hubUrl}
+          className={cn('flex shrink-0 items-baseline gap-2 whitespace-nowrap py-3.5', focusRing)}
+          aria-label="住所レンズ（道具箱トップへ）"
+        >
           <span className="font-serif text-[1.02rem] leading-none tracking-tight text-foreground sm:text-[1.15rem]">
             住所レンズ
           </span>
@@ -30,7 +35,8 @@ export function SiteHeader() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] transition-colors duration-fast sm:px-2.5 sm:text-sm',
+                  'inline-flex min-h-11 min-w-11 items-center justify-center whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] transition-colors duration-fast sm:px-2.5 sm:text-sm',
+                  focusRing,
                   item.mobileHidden && 'hidden sm:inline-flex',
                   isActive
                     ? 'bg-card font-medium text-foreground shadow-(--pill-edge)'

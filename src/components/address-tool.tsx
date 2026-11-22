@@ -46,6 +46,7 @@ import {
 } from '@/lib/postal'
 import { kanaToRomaji, titleCaseRomaji } from '@/lib/romaji'
 import { cn } from '@/lib/utils'
+import { focusRing } from '@/components/ui/_shared'
 
 const REVERSE_EXAMPLES = [
   '4F Shibuya Building, 1-2-3 Jinnan, Shibuya-ku, Tokyo 150-0041, Japan',
@@ -139,18 +140,18 @@ export function AddressTool() {
   return (
     <div className="rounded-xl border border-border bg-card shadow-(--shadow-card)">
       <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
-        <div className="border-b border-border px-3 py-2.5">
+        <div className="border-b border-border px-2 py-2.5 sm:px-3">
           <TabsList className="h-auto flex-wrap gap-0.5 p-1">
-            <TabsTrigger value="reverse" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+            <TabsTrigger value="reverse" className="min-h-11 min-w-11 px-2 text-[13px] sm:px-3 sm:text-sm">
               英語 → 日本語
             </TabsTrigger>
-            <TabsTrigger value="forward" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+            <TabsTrigger value="forward" className="min-h-11 min-w-11 px-2 text-[13px] sm:px-3 sm:text-sm">
               日本語 → 英語
             </TabsTrigger>
-            <TabsTrigger value="postal" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+            <TabsTrigger value="postal" className="min-h-11 min-w-11 px-2 text-[13px] sm:px-3 sm:text-sm">
               郵便番号
             </TabsTrigger>
-            <TabsTrigger value="name" className="px-2 text-[13px] sm:px-3 sm:text-sm">
+            <TabsTrigger value="name" className="min-h-11 min-w-11 px-2 text-[13px] sm:px-3 sm:text-sm">
               氏名
             </TabsTrigger>
           </TabsList>
@@ -226,7 +227,10 @@ function ReversePanel({ dict, dictError }: { dict: Dictionary | null; dictError:
             key={ex}
             type="button"
             onClick={() => setInput(ex)}
-            className="max-w-full truncate rounded-sm bg-(--field) px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            className={cn(
+              'max-w-full truncate rounded-sm bg-(--field) px-2 py-3.5 text-xs text-muted-foreground transition-colors hover:text-foreground',
+              focusRing,
+            )}
           >
             {ex.length > 46 ? `${ex.slice(0, 46)}…` : ex}
           </button>
@@ -412,7 +416,10 @@ function ForwardPanel({ dict, dictError }: { dict: Dictionary | null; dictError:
               key={`${h.city}${h.town}`}
               type="button"
               onClick={() => { setInput(`${h.pref}${h.city}${h.town}`); setPostalHits([]) }}
-              className="rounded-md bg-(--field) px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className={cn(
+                'rounded-md bg-(--field) px-2 py-3.5 text-xs text-muted-foreground transition-colors hover:text-foreground',
+                focusRing,
+              )}
             >
               {h.pref}{h.city}{h.town}
             </button>
@@ -438,7 +445,10 @@ function ForwardPanel({ dict, dictError }: { dict: Dictionary | null; dictError:
             key={ex}
             type="button"
             onClick={() => setInput(ex)}
-            className="max-w-full truncate rounded-sm bg-(--field) px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            className={cn(
+              'max-w-full truncate rounded-sm bg-(--field) px-2 py-3.5 text-xs text-muted-foreground transition-colors hover:text-foreground',
+              focusRing,
+            )}
           >
             {ex}
           </button>

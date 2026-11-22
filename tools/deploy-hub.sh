@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Publish the root hub page and the contact form endpoint.
+# NOTE: .htaccess はここで配信しない（手動管理）。誤上書き防止のため追加しないこと。
 set -euo pipefail
 
 HOST="${XSERVER_HOST:-xserver}"

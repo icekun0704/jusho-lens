@@ -42,7 +42,7 @@
 <main class="wrap">
   <div class="page-head">
     <h1>User-Agentの判定</h1>
-    <p class="lead">いま使っているブラウザのUser-Agentから、OSと端末の種類を推測します。</p>
+    <p class="lead">いま使っているブラウザのUser-Agentから、端末とOSを推測します。</p>
   </div>
 
   <section class="panel" id="tool">
@@ -50,11 +50,11 @@
       <span>User-Agent</span>
       <textarea id="ua" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="uaHelp"></textarea>
     </label>
-    <p class="hint" id="uaHelp" style="margin:0.5rem 0 0">現在の値が入っています。ほかの端末やログのUAに書き換えると、その文字列を判定します。</p>
+    <p class="hint" id="uaHelp" style="margin:0.5rem 0 0">値を書き換えると、その文字列を判定します。</p>
 
     <div class="row" style="margin-top:0.9rem">
-      <button class="btn" type="button" id="btnCopy">UAをコピー</button>
-      <button class="btn secondary" type="button" id="btnReset">現在のUAに戻す</button>
+      <button class="btn" type="button" id="btnCopy">User-Agentをコピー</button>
+      <button class="btn secondary" type="button" id="btnReset">現在の値に戻す</button>
     </div>
     <p class="ok" id="copyStatus" role="status" aria-live="polite"></p>
 
@@ -66,7 +66,7 @@
       </thead>
       <tbody id="detect"></tbody>
     </table>
-    <p class="hint" style="margin-top:0.75rem">判定はUser-Agentの文字列からの推測です。実際の端末やソフトウェアと異なる場合があります。</p>
+    <p class="hint" style="margin-top:0.75rem">User-Agentからの推測です。実際と異なる場合があります。</p>
     <ul id="notes"></ul>
   </section>
 
@@ -76,7 +76,7 @@
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
       <li>この端末のUser-Agentが最初から入っています。</li>
       <li>端末・OS・ブラウザの判定を確認します。</li>
-      <li>ログのUAを貼り付ければ、同じように判定します。</li>
+      <li>ログの文字列を貼り付けても判定できます。</li>
     </ol>
   </section>
 
@@ -89,7 +89,7 @@
 
   <section class="prose">
     <h2>判定のしくみ</h2>
-    <p>User-Agentは、ブラウザがサーバーへ送る名乗りの文字列です。OS、ブラウザ、端末の種類が短い記号の組み合わせで書かれています。この道具は文字列を端末内の正規表現で照合するだけで、外部には送りません。</p>
+    <p>User-Agentは、ブラウザがサーバーへ送る名乗りの文字列です。OSはWindowsやiOSなど端末を動かす基本ソフトで、その種類、ブラウザ、端末が短い記号の組み合わせで書かれています。この道具は文字列を端末内の正規表現で照合するだけで、外部には送りません。</p>
 
     <h3>当てにならない場合</h3>
     <p>User-Agentは書き換えられます。同じブラウザでも端末やアプリによって文字列が変わり、Chromeなどは情報を減らす方向に進んでいます。Windows 11でも「Windows NT 10.0」と名乗り、iPadのSafariはmacOSとして名乗ります。判定は目安として扱ってください。</p>
@@ -102,7 +102,7 @@
         <tr><th scope="col">文字列</th><th scope="col">意味</th></tr>
       </thead>
       <tbody>
-        <tr><td class="mono">Mozilla/5.0</td><td>ほとんどのUAの先頭。互換性のための固定文字列。</td></tr>
+        <tr><td class="mono">Mozilla/5.0</td><td>ほとんどのUser-Agentの先頭。互換性のための固定文字列。</td></tr>
         <tr><td class="mono">Windows NT 10.0</td><td>Windows 10 と 11。どちらかは区別できない。</td></tr>
         <tr><td class="mono">Macintosh</td><td>Mac、またはiPadOSのSafari。</td></tr>
         <tr><td class="mono">iPhone / iPad</td><td>Appleの端末。</td></tr>
@@ -249,7 +249,7 @@
       result.osHint = 'Windows Phone';
     } else if ((m = /Windows NT ([\d.]+)/i.exec(ua))) {
       var win = {
-        '10.0': 'Windows 10 または 11',
+        '10.0': 'Windows 10/11',
         '6.3': 'Windows 8.1',
         '6.2': 'Windows 8',
         '6.1': 'Windows 7',
@@ -350,7 +350,7 @@
   function notesFor(ua, result, isCurrent, bot) {
     var notes = [];
     if (/Windows NT 10\.0/.test(ua)) {
-      notes.push('Windows NT 10.0 は Windows 10 と 11 の共通の表記です。');
+      notes.push('Windows NT 10.0 は 10 と 11 の共通表記です。');
     }
     if (/Mac OS X 10[._]15/.test(ua) && result.browser.indexOf('Safari') === 0) {
       notes.push('Safari の UA は macOS 10.15 のまま固定されるため、実際のバージョンと異なる場合があります。');

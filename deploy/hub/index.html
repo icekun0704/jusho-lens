@@ -68,7 +68,8 @@
     display: flex; align-items: center; gap: 1.5rem;
     height: 3.5rem;
   }
-  .brand { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.45rem 0; text-decoration: none; white-space: nowrap; }
+  .brand { display: flex; align-items: baseline; gap: 0.6rem; text-decoration: none; white-space: nowrap; }
+  header.site .brand { padding: 0.45rem 0; }
   .brand .jp { font-family: var(--serif); font-size: 1.15rem; letter-spacing: -0.01em; }
   .brand .en { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
   nav.site { margin-left: auto; display: flex; gap: 0.25rem; }
@@ -118,7 +119,7 @@
     font: inherit; font-size: 1rem;
     outline: none;
   }
-  .search input::placeholder { color: #77757d; opacity: 1; }
+  .search input::placeholder { color: var(--muted); opacity: 1; }
   .search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
   .search-clear {
     flex: none; display: grid; place-items: center;
@@ -245,8 +246,12 @@
 
   .soon { margin: 1.25rem 0 0; font-size: 0.8125rem; color: var(--muted); }
 
+  .section-lead {
+    margin: 0.9rem 0 0; max-width: 42rem;
+    font-size: 0.875rem; line-height: 1.8; color: var(--muted);
+  }
   .guide-list {
-    list-style: none; margin: 1.25rem 0 0; padding: 0;
+    list-style: none; margin: 0.9rem 0 0; padding: 0;
     display: grid; gap: 1px; background: var(--rule);
     border-block: 1px solid var(--rule);
   }
@@ -440,7 +445,7 @@
       </ul>
     </section>
 
-    <p class="result-count" role="status" aria-live="polite" data-count>32の道具</p>
+    <p class="result-count" role="status" aria-live="polite" data-count>44の道具</p>
 
     <ul class="grid" data-grid>
       <!-- TOOLS_START -->
@@ -458,6 +463,14 @@
           <strong class="card-name">印紙税計算</strong>
           <span class="card-desc">文書の種類と金額から印紙税を調べる。</span>
           <span class="card-tags"><i>印紙</i><i>契約書</i><i>税</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="jusho" data-key="電子帳簿のファイル名 取引日・取引先・金額から保存用のファイル名を作る。 住所・書類 電子帳簿保存法 ファイル名 保存">
+        <a class="card" href="/denshi/">
+          <span class="card-cat">住所・書類</span>
+          <strong class="card-name">電子帳簿のファイル名</strong>
+          <span class="card-desc">取引日・取引先・金額から保存用のファイル名を作る。</span>
+          <span class="card-tags"><i>電子帳簿保存法</i><i>ファイル名</i><i>保存</i></span>
         </a>
       </li>
       <li class="cell" data-cat="text" data-key="文字数カウント 文字数と原稿用紙換算、SNSの上限を数える。 テキスト 文章 原稿 SNS">
@@ -500,6 +513,14 @@
           <span class="card-tags"><i>正規表現</i><i>開発</i></span>
         </a>
       </li>
+      <li class="cell" data-cat="text" data-key="cron式の読み方 cron式を日本語に読み解き、次回の実行時刻を出す。 テキスト cron 定期実行 開発">
+        <a class="card" href="/cron/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">cron式の読み方</strong>
+          <span class="card-desc">cron式を日本語に読み解き、次回の実行時刻を出す。</span>
+          <span class="card-tags"><i>cron</i><i>定期実行</i><i>開発</i></span>
+        </a>
+      </li>
       <li class="cell" data-cat="text" data-key="テキスト差分 2つのテキストを行単位で比較する。 テキスト 差分 校正">
         <a class="card" href="/diff/">
           <span class="card-cat">テキスト</span>
@@ -514,6 +535,22 @@
           <strong class="card-name">CSV⇔JSON</strong>
           <span class="card-desc">CSVとJSONを相互に変換する。</span>
           <span class="card-tags"><i>CSV</i><i>JSON</i><i>表</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="CSV結合 複数のCSVを見出しを確かめて1つにまとめる。 テキスト CSV 結合 表">
+        <a class="card" href="/csv-merge/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">CSV結合</strong>
+          <span class="card-desc">複数のCSVを見出しを確かめて1つにまとめる。</span>
+          <span class="card-tags"><i>CSV</i><i>結合</i><i>表</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="text" data-key="Excel列番号変換 列番号と列字母を変換。範囲の列数も出す。 テキスト Excel 列 表計算">
+        <a class="card" href="/excel-column/">
+          <span class="card-cat">テキスト</span>
+          <strong class="card-name">Excel列番号変換</strong>
+          <span class="card-desc">列番号と列字母を変換。範囲の列数も出す。</span>
+          <span class="card-tags"><i>Excel</i><i>列</i><i>表計算</i></span>
         </a>
       </li>
       <li class="cell" data-cat="text" data-key="JSON整形 JSONを整形・圧縮して検証する。 テキスト JSON 開発">
@@ -546,6 +583,22 @@
           <strong class="card-name">証明写真作成</strong>
           <span class="card-desc">写真を規格の枠に合わせて証明写真にする。</span>
           <span class="card-tags"><i>証明写真</i><i>履歴書</i><i>L判</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="file" data-key="PDF結合・分割 PDFの結合・分割・回転・ページ番号をブラウザで。 画像・ファイル PDF 結合 分割">
+        <a class="card" href="/pdf/">
+          <span class="card-cat">画像・ファイル</span>
+          <strong class="card-name">PDF結合・分割</strong>
+          <span class="card-desc">PDFの結合・分割・回転・ページ番号をブラウザで。</span>
+          <span class="card-tags"><i>PDF</i><i>結合</i><i>分割</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="file" data-key="QRコード作成 URLやテキストからQRコードを作って保存する。 画像・ファイル QR 画像 URL">
+        <a class="card" href="/qr/">
+          <span class="card-cat">画像・ファイル</span>
+          <strong class="card-name">QRコード作成</strong>
+          <span class="card-desc">URLやテキストからQRコードを作って保存する。</span>
+          <span class="card-tags"><i>QR</i><i>画像</i><i>URL</i></span>
         </a>
       </li>
       <li class="cell" data-cat="file" data-key="gzip圧縮・解凍 テキストやファイルをgzipで圧縮・解凍する。 画像・ファイル gzip 圧縮">
@@ -612,6 +665,22 @@
           <span class="card-tags"><i>割り勘</i><i>消費税</i></span>
         </a>
       </li>
+      <li class="cell" data-cat="money" data-key="割引価格の計算 定価と割引率からセール価格と値引き額を出す。 仕事・お金 割引 セール 税込">
+        <a class="card" href="/percent/">
+          <span class="card-cat">仕事・お金</span>
+          <strong class="card-name">割引価格の計算</strong>
+          <span class="card-desc">定価と割引率からセール価格と値引き額を出す。</span>
+          <span class="card-tags"><i>割引</i><i>セール</i><i>税込</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="money" data-key="適格請求書番号チェック 登録番号の形式と検査用数字をまとめて確認する。 仕事・お金 インボイス 登録番号 税">
+        <a class="card" href="/invoice-check/">
+          <span class="card-cat">仕事・お金</span>
+          <strong class="card-name">適格請求書番号チェック</strong>
+          <span class="card-desc">登録番号の形式と検査用数字をまとめて確認する。</span>
+          <span class="card-tags"><i>インボイス</i><i>登録番号</i><i>税</i></span>
+        </a>
+      </li>
       <li class="cell" data-cat="life" data-key="単位変換 長さ・重さ・温度・面積・体積を換算する。 暮らし・健康 単位 換算">
         <a class="card" href="/unit/">
           <span class="card-cat">暮らし・健康</span>
@@ -642,6 +711,14 @@
           <strong class="card-name">年齢・学年・干支</strong>
           <span class="card-desc">生年月日から満年齢・学年・干支を出す。</span>
           <span class="card-tags"><i>年齢</i><i>学年</i><i>干支</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="祝日カレンダー 2024年から2030年までの祝日を年間で見る。 暮らし・健康 祝日 カレンダー 休み">
+        <a class="card" href="/holiday/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">祝日カレンダー</strong>
+          <span class="card-desc">2024年から2030年までの祝日を年間で見る。</span>
+          <span class="card-tags"><i>祝日</i><i>カレンダー</i><i>休み</i></span>
         </a>
       </li>
       <li class="cell" data-cat="life" data-key="睡眠時間計算 就寝・起床から睡眠時間と90分周期を出す。 暮らし・健康 睡眠 就寝 時間">
@@ -676,12 +753,28 @@
           <span class="card-tags"><i>時差</i><i>海外</i></span>
         </a>
       </li>
+      <li class="cell" data-cat="life" data-key="燃費・ガソリン代 走行距離と給油量から実燃費とガソリン代を出す。 暮らし・健康 燃費 ガソリン 車">
+        <a class="card" href="/fuel/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">燃費・ガソリン代</strong>
+          <span class="card-desc">走行距離と給油量から実燃費とガソリン代を出す。</span>
+          <span class="card-tags"><i>燃費</i><i>ガソリン</i><i>車</i></span>
+        </a>
+      </li>
       <li class="cell" data-cat="life" data-key="カラー・コントラスト HEX/RGB/HSL変換とコントラスト判定。 暮らし・健康 色 デザイン WCAG">
         <a class="card" href="/color/">
           <span class="card-cat">暮らし・健康</span>
           <strong class="card-name">カラー・コントラスト</strong>
           <span class="card-desc">HEX/RGB/HSL変換とコントラスト判定。</span>
           <span class="card-tags"><i>色</i><i>デザイン</i><i>WCAG</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="色覚シミュレーション 2色がP型・D型・T型の色覚でどう見えるかを比べる。 暮らし・健康 色覚 配色 アクセシビリティ">
+        <a class="card" href="/color-blind/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">色覚シミュレーション</strong>
+          <span class="card-desc">2色がP型・D型・T型の色覚でどう見えるかを比べる。</span>
+          <span class="card-tags"><i>色覚</i><i>配色</i><i>アクセシビリティ</i></span>
         </a>
       </li>
       <li class="cell" data-cat="life" data-key="パスワード生成 端末内で強いパスワードを作る。 暮らし・健康 パスワード 安全">
@@ -698,6 +791,14 @@
           <strong class="card-name">IPチェック</strong>
           <span class="card-desc">接続元のIP・地域・ブラウザを確認する。</span>
           <span class="card-tags"><i>IP</i><i>接続</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="life" data-key="User-Agent判定 UA文字列から端末・OS・ブラウザを判定する。 暮らし・健康 ブラウザ 端末 開発">
+        <a class="card" href="/useragent/">
+          <span class="card-cat">暮らし・健康</span>
+          <strong class="card-name">User-Agent判定</strong>
+          <span class="card-desc">UA文字列から端末・OS・ブラウザを判定する。</span>
+          <span class="card-tags"><i>ブラウザ</i><i>端末</i><i>開発</i></span>
         </a>
       </li>
       <!-- TOOLS_END -->
@@ -717,6 +818,7 @@
       <h2 id="guides-title">使い方</h2>
       <span class="note">guides</span>
     </div>
+    <p class="section-lead">書類の手続きで迷うところを、1ページずつまとめています。</p>
     <ul class="guide-list">
       <li><a href="/guide/amazon/">Amazonの英語住所<span class="go" aria-hidden="true">→</span></a></li>
       <li><a href="/guide/denshi/">電子帳簿保存法のファイル名<span class="go" aria-hidden="true">→</span></a></li>
