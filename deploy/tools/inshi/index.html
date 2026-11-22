@@ -522,6 +522,7 @@
   update();
 
   docSel.addEventListener('change', function () {
+    noAmount.checked = false;
     var doc = docById(docSel.value);
     buildTable(doc);
     update();

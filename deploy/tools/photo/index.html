@@ -456,7 +456,7 @@
     var L = state.layout || computeSheetLayout();
     var dpi = effectiveDpi();
     stats.textContent = '';
-    stats.appendChild(statEl('横 ' + outW + ' × 縦 ' + outH, '単体JPEG（px）'));
+    stats.appendChild(statEl(outW + ' × ' + outH, '単体JPEG（横×縦 px）'));
     stats.appendChild(statEl('約 ' + Math.round(dpi), '実効解像度（dpi）'));
     stats.appendChild(statEl((L.cols * L.rows) + ' 枚', 'L判シート'));
     stats.hidden = false;

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IP・接続チェック｜道具箱</title>
-<meta name="description" content="IPアドレス、国・地域、都市、ISP・ASN、タイムゾーン、緯度経度と、ブラウザの言語・画面サイズなどをまとめて確認。IPの問い合わせ先は ipwho.is のみで、入力内容は送信しません。">
+<meta name="description" content="IPアドレスと接続元の国、タイムゾーン、ブラウザ情報をまとめて確認。外部の位置情報APIは使わず、このサイトのサーバーだけで判定します。">
 <link rel="canonical" href="https://icekun.net/ip/">
 <meta name="theme-color" content="#f7f3ea">
 <meta name="google-adsense-account" content="ca-pub-1870128904709930">
@@ -43,7 +43,7 @@
 
   <section class="panel" id="tool" aria-labelledby="tool-h">
     <h2 id="tool-h">IPアドレスを調べる</h2>
-    <p class="hint">このツールはIP確認のために <strong>ipwho.is</strong> へ問い合わせます。それ以外の入力は送信しません。通信が起きるのは「調べる」を押したときだけです。</p>
+    <p class="hint">このツールは同じサイトのサーバーに問い合わせます。外部の位置情報サービスへは送信しません。通信が起きるのは「調べる」を押したときだけです。</p>
 
     <div class="row">
       <button class="btn" type="button" id="check">調べる</button>
@@ -70,10 +70,10 @@
 
   <section class="panel">
     <h2>使い方</h2>
-    <p class="hint">外部へ問い合わせるのはIP情報の取得だけです。ブラウザ情報の表示は端末内で完結します。</p>
+    <p class="hint">IP情報はこのサイトのサーバーが返します。ブラウザ情報の表示は端末内で完結します。</p>
     <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
-      <li>「調べる」を押すと、ipwho.is に問い合わせて現在のIPアドレスを取得します。8秒で応答がない場合は中止します。</li>
-      <li>IPアドレス、国・地域、都市、ISP、ASN、タイムゾーン、緯度・経度が表示されます。</li>
+      <li>「調べる」を押すと、このサイトのサーバー (ip.php) が接続元IPと Cloudflare の国コードを返します。8秒で応答がない場合は中止します。</li>
+      <li>IPアドレス、国（分かる場合のみ）、タイムゾーンが表示されます。都市・ISP・ASN・緯度経度は外部APIを使わないため取得しません。</li>
       <li>「結果をコピー」で表の内容をプレーンテキストとして取り出せます。下のブラウザ情報は常に表示され、通信は発生しません。</li>
     </ol>
   </section>
@@ -96,8 +96,8 @@
     <p>ユーザーエージェント、言語、タイムゾーン、画面サイズなどは、ブラウザがページに渡している値で、JavaScriptから読み取れます。端末の種類や設定の確認に役立ちますが、ユーザーエージェントは書き換えられるため、端末を確実に判定するものではありません。オンライン状態とCookieの有効・無効も同じく端末内の情報です。</p>
 
     <h3>外部への通信</h3>
-    <p>IP情報の取得のため、このページは ipwho.is に HTTPS で問い合わせます。送信されるのは通常のHTTPリクエスト（接続元IPアドレスやユーザーエージェントなどを含みます）だけです。このツールに入力する項目はありませんし、取得した内容を保存したり別のサービスへ送ったりする処理もありません。</p>
-    <p>ipwho.is の無料枠は1日あたり1,000リクエストで、ブラウザからの利用はサイトのドメイン単位で数えられます。上限に達すると、24時間ほど取得できないことがあります。その場合もブラウザ情報の表示は変わりません。</p>
+    <p>IP情報の取得は、このサイトのサーバーに置いた <code>ip.php</code> だけで行います。外部のジオロケーションAPIには問い合わせません。サーバーが見られるのは接続元のIPアドレスと、Cloudflare がリクエストに付ける国コードだけです。</p>
+    <p>そのため、都市名・ISP・ASN・緯度経度は表示されません（「不明」となります）。より詳しい位置情報が必要な場合は、通信事業者や公式の確認サービスをご利用ください。このツールに入力する項目はなく、取得した内容を保存したり別のサービスへ送ったりする処理もありません。</p>
   </section>
 
   <nav class="tool-nav" aria-label="ほかの道具">
@@ -132,7 +132,7 @@
 
 <script>
 (() => {
-  const API = 'https://ipwho.is/';
+  const API = '/ip.php';
   const TIMEOUT_MS = 8000;
 
   const checkBtn = document.getElementById('check');
@@ -258,10 +258,10 @@
         data = null;
       }
       if (res.status === 429) {
-        throw new Error('APIの利用上限（1日1,000回）に達した可能性があります。時間をおいて再試行してください');
+        throw new Error('サーバーの応答が混雑しています。時間をおいて再試行してください');
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      if (!data || data.success === false) {
+      if (!data || data.ok === false) {
         throw new Error(data && data.message ? data.message : '応答を読み取れませんでした');
       }
       if (!data.ip) throw new Error('IPアドレスが応答に含まれていません');

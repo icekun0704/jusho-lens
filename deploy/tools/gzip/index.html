@@ -276,6 +276,9 @@
   async function compress() {
     if (!supported || busy) return;
 
+    gzipStats.hidden = true;
+    gzipMsg.textContent = '';
+
     var text = src.value;
     if (text === '') {
       setMsg(gzipMsg, '圧縮するテキストを入力してください。', 'err');
@@ -292,8 +295,6 @@
     btnGzip.disabled = true;
     var label = btnGzip.textContent;
     btnGzip.textContent = '圧縮中…';
-    gzipMsg.textContent = '';
-    gzipStats.hidden = true;
 
     try {
       var stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
@@ -310,7 +311,9 @@
       if (!/\.gz$/i.test(name)) name += '.gz';
 
       download(new Blob([gz], { type: 'application/gzip' }), name);
-      setMsg(gzipMsg, '圧縮しました（' + name + '、' + formatBytes(gz.byteLength) + '）。ダウンロードが始まらない場合は、ブラウザのダウンロード設定を確認してください。', 'ok');
+      setMsg(gzipMsg, '圧縮しました（' + name + '、' + formatBytes(gz.byteLength) + '）。' +
+        (ratio < 0 ? '短いテキストのため、圧縮でサイズが増えています。' : '') +
+        'ダウンロードが始まらない場合は、ブラウザのダウンロード設定を確認してください。', 'ok');
     } catch (e) {
       setMsg(gzipMsg, (e && e.userFacing) ? e.message : '圧縮できませんでした。テキストを減らして再度お試しください。', 'err');
     } finally {
@@ -325,6 +328,7 @@
 
     gzOut.value = '';
     btnSaveOut.disabled = true;
+    btnSaveOut.textContent = 'テキストをダウンロード';
     outName.textContent = '';
     lastBlob = null;
     gunzipStats.hidden = true;
@@ -378,6 +382,7 @@
 
       var base = file.name.replace(/\.gz$/i, '');
       if (base === file.name || base === '') base = 'decompressed';
+      base = base.replace(/[\\/:*?"<>|]/g, '_');
 
       if (text !== null) {
         gzOut.value = text.length > DISPLAY_MAX ? text.slice(0, DISPLAY_MAX) : text;
@@ -387,6 +392,7 @@
         if (!/\.[A-Za-z0-9]{1,8}$/.test(base)) saveName = base + '.txt';
 
         lastBlob = { blob: new Blob([out], { type: 'text/plain;charset=utf-8' }), name: saveName };
+        btnSaveOut.textContent = 'テキストをダウンロード';
         btnSaveOut.disabled = false;
         outName.textContent = '保存名: ' + saveName +
           (text.length > DISPLAY_MAX ? '（表示は先頭 ' + nf.format(DISPLAY_MAX) + ' 文字まで、保存は全文です）' : '');
@@ -396,6 +402,7 @@
         if (!/\.[A-Za-z0-9]{1,8}$/.test(base)) binName = base + '.bin';
 
         lastBlob = { blob: new Blob([out], { type: 'application/octet-stream' }), name: binName };
+        btnSaveOut.textContent = 'ファイルをダウンロード';
         btnSaveOut.disabled = false;
         outName.textContent = '保存名: ' + binName;
         setMsg(gunzipMsg, '解凍できましたが、UTF-8 のテキストとして読めないバイト列です（tar やバイナリの可能性があります）。ファイルとして保存できます。', 'warn');
@@ -429,6 +436,7 @@
   gzFile.addEventListener('change', function () {
     gzOut.value = '';
     btnSaveOut.disabled = true;
+    btnSaveOut.textContent = 'テキストをダウンロード';
     outName.textContent = '';
     lastBlob = null;
     gunzipStats.hidden = true;

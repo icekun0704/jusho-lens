@@ -441,7 +441,9 @@
 
     var note = 'A ' + nf.format(aLines.length) + ' 行 / B ' + nf.format(bLines.length) + ' 行を比較しました。';
     if (optWs.checked) note += ' 空白の違いのみの行は ' + nf.format(ws) + ' 行です。';
-    if (add === 0 && del === 0) note += ' 2つのテキストは同じ内容です。';
+    if (add === 0 && del === 0) {
+      note += (optWs.checked && ws > 0) ? ' 空白の違いを除くと、2つのテキストは同じ内容です。' : ' 2つのテキストは同じ内容です。';
+    }
     setMsg(note, add === 0 && del === 0 ? 'ok' : 'hint');
     hasRun = true;
   }

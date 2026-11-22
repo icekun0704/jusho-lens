@@ -7,5 +7,6 @@ DIR="${XSERVER_DIR:-icekun.net/public_html}"
 
 scp -q deploy/hub/index.html "$HOST:$DIR/index.html"
 scp -q deploy/contact.php "$HOST:$DIR/contact.php"
+scp -q deploy/ip.php "$HOST:$DIR/ip.php"
 
 echo "hub deployed: https://icekun.net/"
