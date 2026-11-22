@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>医療費控除の集計｜道具箱</title>
+<meta name="description" content="1年分の医療費を入力し、10万円と所得の5%の低い方との比較、高額療養費・保険金などの補填を差し引いた控除額の目安を計算します。入力はブラウザ内だけで処理します。">
+<link rel="canonical" href="https://icekun.net/iryohi/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .med-wrap { margin-top: 0.75rem; overflow-x: auto; }
+  table.med { min-width: 34rem; }
+  table.med th { white-space: nowrap; }
+  table.med td { padding: 0.4rem 0.4rem; border-bottom: 1px solid var(--rule); }
+  table.med input {
+    width: 100%; padding: 0.4rem 0.5rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.8125rem; line-height: 1.6;
+  }
+  input[type="date"] {
+    width: 100%; padding: 0.4rem 0.5rem;
+    border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 0.8125rem; line-height: 1.6;
+  }
+  table.med .amt input { text-align: right; font-variant-numeric: tabular-nums; }
+  table.med .rm { height: 2.25rem; padding: 0 0.75rem; font-size: 0.75rem; white-space: nowrap; }
+  .result { font-variant-numeric: tabular-nums; }
+  #statThresh, #statDeduct { font-variant-numeric: tabular-nums; }
+  @media (pointer: coarse) {
+    table.med input, input[type="date"] { min-height: 44px; }
+    table.med .rm { min-height: 44px; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>医療費控除の集計</h1>
+    <p class="lead">1年分の医療費をまとめ、控除の目安を計算します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>所得金額と医療費</h2>
+    <p class="hint">所得金額は、給与所得控除などを引いた後の「総所得金額等」です。空欄のままでは控除額を計算しません。</p>
+
+    <div class="field" style="max-width:22rem">
+      <label for="income"><span>所得金額（総所得金額等・円）</span></label>
+      <input type="number" id="income" min="0" max="1000000000" step="10000" inputmode="numeric" autocomplete="off" placeholder="例：3000000">
+    </div>
+
+    <div class="med-wrap">
+      <table class="med">
+        <caption class="sr-only">医療費の明細</caption>
+        <thead>
+          <tr>
+            <th scope="col">日付</th>
+            <th scope="col">病院・薬局</th>
+            <th scope="col">支払額（円）</th>
+            <th scope="col">補填額（円）</th>
+            <th scope="col"><span class="sr-only">行の操作</span></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn secondary" type="button" id="addRow">行を追加</button>
+    </div>
+
+    <p class="note" id="overNote" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="statPay">0</b><span>支払った医療費の合計（円）</span></div>
+      <div class="stat"><b id="statCover">0</b><span>補填で差し引いた額（円）</span></div>
+      <div class="stat"><b id="statNet">0</b><span>差し引いた後の医療費（円）</span></div>
+      <div class="stat"><b id="statThresh">—</b><span>足切り額（円）</span></div>
+      <div class="stat"><b id="statDeduct">—</b><span>控除額の概算（円）</span></div>
+    </div>
+
+    <p class="result" id="summary" role="status" aria-live="polite">—</p>
+
+    <div class="row" style="margin-top:0.9rem">
+      <button class="btn" type="button" id="copyBtn">結果をコピー</button>
+      <button class="btn secondary" type="button" id="csvBtn">表計算用ファイルで保存</button>
+    </div>
+    <p class="ok" id="copyMsg" role="status" aria-live="polite"></p>
+
+    <p class="warn">この結果は令和8年分の制度を前提にした概算です。医療費の内容・所得・補填の有無で控除の可否と金額は変わります。医師の証明、領収書、税務署や税理士に確認してください。入力した医療情報はブラウザの外に出ず、保存や送信は行いません。</p>
+  </section>
+
+  <section class="panel">
+    <h2>控除の前提（概算・編集できます）</h2>
+    <p class="hint">令和8年分の制度を前提にした初期値です。改正や所得の捉え方に合わせて書き換えてください。</p>
+    <div class="grid-3">
+      <div class="field">
+        <label for="baseAmount"><span>基準額（円）</span></label>
+        <input type="number" id="baseAmount" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="100000">
+      </div>
+      <div class="field">
+        <label for="incomeRate"><span>所得金額に対する割合（%）</span></label>
+        <input type="number" id="incomeRate" min="0" max="100" step="0.1" inputmode="decimal" autocomplete="off" value="5">
+      </div>
+      <div class="field">
+        <label for="capAmount"><span>控除額の上限（円）</span></label>
+        <input type="number" id="capAmount" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="2000000">
+      </div>
+    </div>
+    <p class="hint" style="margin-top:0.75rem">足切り額は「基準額」と「所得金額×割合」の低い方です。控除額は上限を超えません。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>医療費の日付・金額・補填額を1行ずつ入力</li>
+      <li>所得金額を入れると足切り額が出ます</li>
+      <li>結果をコピーするかCSVで保存します</li>
+    </ol>
+  </section>
+
+  <section class="prose">
+    <h2>医療費控除とは</h2>
+    <p>1年間に支払った医療費が一定額を超えると、所得税と住民税の計算で所得から差し引けます。生計を一にする家族の分を合わせて計算できます。</p>
+    <p>控除額は、次の式で求めます。</p>
+    <p><code>控除額 = 支払った医療費 − 補填された額 − 足切り額</code></p>
+    <p>足切り額は、10万円と所得金額の5%のうち低い方です。控除額には上限があり、総所得金額等が200万円未満のときは、その金額が上限となります。</p>
+
+    <h3>補填額の扱い</h3>
+    <p>高額療養費、入院給付金、出産育児一時金などは、医療費から差し引きます。差し引くのは、その給付の対象となった医療費の額までです。補填が医療費を上回っても、超えた分をほかの医療費から引くことはできません。</p>
+
+    <h3>対象にならないもの</h3>
+    <p>予防接種、健康診断、美容目的の手術、差額ベッド代の一部、通常の範囲を超える食事代などは対象外です。</p>
+
+    <h3>セルフメディケーション税制との関係</h3>
+    <p>市販薬の購入費を対象とするセルフメディケーション税制とは、どちらか一方しか選べません。</p>
+
+    <h3>出典と注意</h3>
+    <p>計算式と補填の扱いは、国税庁「No.1120 医療費控除」によります。控除の可否と金額は、医療費の内容や所得、補填の有無で変わります。医師の証明、領収書の内容、税務署や税理士に確認してください。領収書は5年間の保存が必要です。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var tbody = $('rows');
+  var incomeEl = $('income');
+  var baseEl = $('baseAmount');
+  var rateEl = $('incomeRate');
+  var capEl = $('capAmount');
+  var addBtn = $('addRow');
+  var copyBtn = $('copyBtn');
+  var csvBtn = $('csvBtn');
+  var copyMsg = $('copyMsg');
+  var overNote = $('overNote');
+
+  var summaryEl = $('summary');
+  var statPay = $('statPay');
+  var statCover = $('statCover');
+  var statNet = $('statNet');
+  var statThresh = $('statThresh');
+  var statDeduct = $('statDeduct');
+
+  var MAX_ROWS = 200;
+  var data = [{}, {}, {}];
+  var lastText = '';
+  var timer = null;
+
+  function num(v) {
+    var n = parseFloat(v);
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+
+  function fmt(n) {
+    return Math.round(n).toLocaleString('ja-JP');
+  }
+
+  function render() {
+    tbody.textContent = '';
+    data.forEach(function (row, i) {
+      var tr = document.createElement('tr');
+
+      var tdDate = document.createElement('td');
+      var date = document.createElement('input');
+      date.type = 'date';
+      date.value = row.date || '';
+      date.setAttribute('aria-label', (i + 1) + '行目の日付');
+      date.addEventListener('input', function () { row.date = date.value; schedule(); });
+      tdDate.appendChild(date);
+      tr.appendChild(tdDate);
+
+      var tdName = document.createElement('td');
+      var name = document.createElement('input');
+      name.type = 'text';
+      name.value = row.name || '';
+      name.setAttribute('aria-label', (i + 1) + '行目の病院や薬局');
+      name.setAttribute('placeholder', '例：○○病院');
+      name.addEventListener('input', function () { row.name = name.value; });
+      tdName.appendChild(name);
+      tr.appendChild(tdName);
+
+      var tdAmt = document.createElement('td');
+      tdAmt.className = 'amt';
+      var amt = document.createElement('input');
+      amt.type = 'number';
+      amt.min = '0';
+      amt.step = '1';
+      amt.inputMode = 'numeric';
+      amt.value = row.amount || '';
+      amt.setAttribute('aria-label', (i + 1) + '行目の支払額（円）');
+      amt.setAttribute('placeholder', '0');
+      amt.addEventListener('input', function () { row.amount = amt.value; schedule(); });
+      tdAmt.appendChild(amt);
+      tr.appendChild(tdAmt);
+
+      var tdCov = document.createElement('td');
+      tdCov.className = 'amt';
+      var cov = document.createElement('input');
+      cov.type = 'number';
+      cov.min = '0';
+      cov.step = '1';
+      cov.inputMode = 'numeric';
+      cov.value = row.cover || '';
+      cov.setAttribute('aria-label', (i + 1) + '行目の補填額（円）');
+      cov.setAttribute('placeholder', '0');
+      cov.addEventListener('input', function () { row.cover = cov.value; schedule(); });
+      tdCov.appendChild(cov);
+      tr.appendChild(tdCov);
+
+      var tdDel = document.createElement('td');
+      var rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'btn ghost rm';
+      rm.textContent = '削除';
+      rm.setAttribute('aria-label', (i + 1) + '行目を削除');
+      rm.addEventListener('click', function () {
+        data.splice(i, 1);
+        if (data.length === 0) data.push({});
+        render();
+        compute();
+      });
+      tdDel.appendChild(rm);
+      tr.appendChild(tdDel);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function buildText(state) {
+    var lines = [];
+    lines.push('医療費控除の概算（令和8年分）');
+    lines.push('支払った医療費の合計：' + fmt(state.pay) + '円');
+    lines.push('補填で差し引いた額：' + fmt(state.eff) + '円');
+    lines.push('差し引いた後の医療費：' + fmt(state.net) + '円');
+    if (!state.incomeEntered) {
+      lines.push('足切り額：所得金額の入力待ち');
+      lines.push('控除額の概算：—');
+      lines.push('判定：所得金額を入力してください。');
+    } else {
+      lines.push('足切り額（' + fmt(state.base) + '円と所得の' + state.rate + '%の低い方）：' + fmt(state.threshold) + '円');
+      lines.push('控除額の概算：' + fmt(state.deduction) + '円');
+      if (state.deduction > 0) {
+        lines.push('判定：控除を受けられる見込みです（概算）。');
+      } else if (state.net <= state.threshold) {
+        lines.push('判定：足切り額に届かないため、控除は0円です。');
+      } else {
+        lines.push('判定：控除額の上限が0円のため、控除は0円です。');
+      }
+    }
+    lines.push('');
+    lines.push('※ 令和8年分の制度を前提にした概算です。');
+    lines.push('※ 医療費の内容・所得・補填の有無で結果は変わります。税務署や税理士に確認してください。');
+    return lines.join('\n');
+  }
+
+  function compute() {
+    var pay = 0;
+    var cover = 0;
+    var eff = 0;
+    var overRows = 0;
+
+    data.forEach(function (row) {
+      var a = Math.max(0, Math.round(num(row.amount)));
+      var c = Math.max(0, Math.round(num(row.cover)));
+      pay += a;
+      cover += c;
+      eff += Math.min(c, a);
+      if (c > a) overRows++;
+    });
+
+    var net = pay - eff;
+    var incomeEntered = incomeEl.value.trim() !== '';
+    var income = Math.round(num(incomeEl.value));
+    var base = Math.max(0, Math.round(num(baseEl.value)));
+    var rate = num(rateEl.value);
+    var capLimit = Math.max(0, Math.round(num(capEl.value)));
+
+    var threshold = 0;
+    var cap = 0;
+    var deduction = 0;
+
+    if (incomeEntered) {
+      threshold = Math.min(base, Math.floor(income * rate / 100));
+      cap = Math.min(capLimit, income);
+      var raw = net - threshold;
+      deduction = raw > 0 ? Math.min(raw, cap) : 0;
+      deduction = Math.floor(deduction);
+    }
+
+    statPay.textContent = fmt(pay);
+    statCover.textContent = fmt(eff);
+    statNet.textContent = fmt(net);
+    statThresh.textContent = incomeEntered ? fmt(threshold) : '—';
+    statDeduct.textContent = incomeEntered ? fmt(deduction) : '—';
+
+    if (overRows > 0) {
+      overNote.hidden = false;
+      overNote.textContent = '補填額が支払額を上回る行が' + overRows + '行あります。上回る分は、その行の医療費までしか差し引きません。ほかの医療費からは引きません。';
+    } else {
+      overNote.hidden = true;
+      overNote.textContent = '';
+    }
+
+    lastText = buildText({
+      pay: pay,
+      eff: eff,
+      net: net,
+      base: base,
+      rate: rate,
+      threshold: threshold,
+      deduction: deduction,
+      incomeEntered: incomeEntered
+    });
+    summaryEl.textContent = lastText;
+  }
+
+  function schedule() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { timer = null; compute(); }, 250);
+  }
+
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return legacyCopy(text); });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function escCsv(v) {
+    var s = String(v == null ? '' : v);
+    if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  function downloadCsv() {
+    var out = ['日付,病院・薬局,支払額,補填額'];
+    data.forEach(function (row) {
+      var a = String(row.amount == null ? '' : row.amount).trim();
+      var c = String(row.cover == null ? '' : row.cover).trim();
+      if (!row.date && !row.name && a === '' && c === '') return;
+      out.push([escCsv(row.date || ''), escCsv(row.name || ''), escCsv(a), escCsv(c)].join(','));
+    });
+    var blob = new Blob(['﻿' + out.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    var d = new Date();
+    link.href = url;
+    link.download = 'iryohi-' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    copyMsg.className = 'ok';
+    copyMsg.textContent = '表計算用ファイルの保存を開始しました。';
+  }
+
+  addBtn.addEventListener('click', function () {
+    if (data.length >= MAX_ROWS) {
+      copyMsg.className = 'warn';
+      copyMsg.textContent = '一度に入力できるのは' + MAX_ROWS + '行までです。';
+      return;
+    }
+    data.push({});
+    render();
+    compute();
+    var first = tbody.querySelector('tr:last-child input');
+    if (first) first.focus();
+  });
+
+  copyBtn.addEventListener('click', function () {
+    copyText(lastText).then(function (ok) {
+      copyMsg.className = ok ? 'ok' : 'err';
+      copyMsg.textContent = ok ? '結果をコピーしました。' : 'コピーできませんでした。結果欄を選んでコピーしてください。';
+    });
+  });
+
+  csvBtn.addEventListener('click', downloadCsv);
+
+  incomeEl.addEventListener('input', schedule);
+  baseEl.addEventListener('input', schedule);
+  rateEl.addEventListener('input', schedule);
+  capEl.addEventListener('input', schedule);
+
+  render();
+  compute();
+})();
+</script>
+</body>
+</html>

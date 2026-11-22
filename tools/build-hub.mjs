@@ -90,6 +90,221 @@ const GUIDES = [
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 
+// --- Kana and romaji search aliases (logic mirrors src/lib/romaji.ts) ---
+const KATAKANA_TO_HIRAGANA = (() => {
+  const map = {}
+  for (let c = 0x30a1; c <= 0x30f6; c++) map[String.fromCharCode(c)] = String.fromCharCode(c - 0x60)
+  return map
+})()
+
+const FULLWIDTH_ALNUM = (() => {
+  const map = {}
+  for (let c = 0xff10; c <= 0xff19; c++) map[String.fromCharCode(c)] = String.fromCharCode(c - 0xfee0)
+  for (let c = 0xff21; c <= 0xff3a; c++) map[String.fromCharCode(c)] = String.fromCharCode(c - 0xfee0)
+  for (let c = 0xff41; c <= 0xff5a; c++) map[String.fromCharCode(c)] = String.fromCharCode(c - 0xfee0)
+  return map
+})()
+
+const toHiragana = (input) => {
+  let out = ''
+  for (const ch of input) out += KATAKANA_TO_HIRAGANA[ch] ?? FULLWIDTH_ALNUM[ch] ?? ch
+  return out
+}
+
+const SYLLABLES = {
+  あ: 'a', い: 'i', う: 'u', え: 'e', お: 'o',
+  か: 'ka', き: 'ki', く: 'ku', け: 'ke', こ: 'ko',
+  さ: 'sa', し: 'shi', す: 'su', せ: 'se', そ: 'so',
+  た: 'ta', ち: 'chi', つ: 'tsu', て: 'te', と: 'to',
+  な: 'na', に: 'ni', ぬ: 'nu', ね: 'ne', の: 'no',
+  は: 'ha', ひ: 'hi', ふ: 'fu', へ: 'he', ほ: 'ho',
+  ま: 'ma', み: 'mi', む: 'mu', め: 'me', も: 'mo',
+  や: 'ya', ゆ: 'yu', よ: 'yo',
+  ら: 'ra', り: 'ri', る: 'ru', れ: 're', ろ: 'ro',
+  わ: 'wa', ゐ: 'i', ゑ: 'e', を: 'o', ん: 'n',
+  が: 'ga', ぎ: 'gi', ぐ: 'gu', げ: 'ge', ご: 'go',
+  ざ: 'za', じ: 'ji', ず: 'zu', ぜ: 'ze', ぞ: 'zo',
+  だ: 'da', ぢ: 'ji', づ: 'zu', で: 'de', ど: 'do',
+  ば: 'ba', び: 'bi', ぶ: 'bu', べ: 'be', ぼ: 'bo',
+  ぱ: 'pa', ぴ: 'pi', ぷ: 'pu', ぺ: 'pe', ぽ: 'po',
+  ゔ: 'vu',
+  ぁ: 'a', ぃ: 'i', ぅ: 'u', ぇ: 'e', ぉ: 'o',
+  ゕ: 'ka', ゖ: 'ke',
+  きゃ: 'kya', きゅ: 'kyu', きょ: 'kyo', きぇ: 'kye',
+  しゃ: 'sha', しゅ: 'shu', しょ: 'sho', しぇ: 'she',
+  ちゃ: 'cha', ちゅ: 'chu', ちょ: 'cho', ちぇ: 'che',
+  にゃ: 'nya', にゅ: 'nyu', にょ: 'nyo',
+  ひゃ: 'hya', ひゅ: 'hyu', ひょ: 'hyo',
+  みゃ: 'mya', みゅ: 'myu', みょ: 'myo',
+  りゃ: 'rya', りゅ: 'ryu', りょ: 'ryo',
+  ぎゃ: 'gya', ぎゅ: 'gyu', ぎょ: 'gyo',
+  じゃ: 'ja', じゅ: 'ju', じょ: 'jo', じぇ: 'je',
+  ぢゃ: 'ja', ぢゅ: 'ju', ぢょ: 'jo',
+  びゃ: 'bya', びゅ: 'byu', びょ: 'byo',
+  ぴゃ: 'pya', ぴゅ: 'pyu', ぴょ: 'pyo',
+  ふぁ: 'fa', ふぃ: 'fi', ふぇ: 'fe', ふぉ: 'fo', ふゅ: 'fyu',
+  てぃ: 'ti', てゅ: 'tyu', でぃ: 'di', でゅ: 'dyu',
+  とぅ: 'tu', どぅ: 'du',
+  うぃ: 'wi', うぇ: 'we', うぉ: 'wo',
+  ゔぁ: 'va', ゔぃ: 'vi', ゔぇ: 've', ゔぉ: 'vo', ゔゅ: 'vyu',
+  くぁ: 'kwa', くぃ: 'kwi', くぇ: 'kwe', くぉ: 'kwo',
+  ぐぁ: 'gwa', ぐぃ: 'gwi', ぐぇ: 'gwe', ぐぉ: 'gwo',
+  つぁ: 'tsa', つぃ: 'tsi', つぇ: 'tse', つぉ: 'tso',
+  ずぃ: 'zi', すぃ: 'si',
+}
+
+const VOWELS = new Set(['a', 'i', 'u', 'e', 'o'])
+
+const collapseVowels = (romaji) =>
+  romaji.replace(/oo/g, 'o').replace(/uu/g, 'u').replace(/ou(?![aiueo])/g, 'o')
+
+const readSyllable = (s, index) => {
+  const two = s.slice(index, index + 2)
+  if (SYLLABLES[two] !== undefined) return { romaji: SYLLABLES[two], end: index + 2 }
+  const one = s[index]
+  if (SYLLABLES[one] !== undefined) return { romaji: SYLLABLES[one], end: index + 1 }
+  return null
+}
+
+const kanaToRomaji = (input, { collapse = true, longVowelMark = 'drop' } = {}) => {
+  const hira = toHiragana(input)
+  let out = ''
+  let i = 0
+  while (i < hira.length) {
+    const ch = hira[i]
+    if (ch === 'っ') {
+      const next = readSyllable(hira, i + 1)
+      if (next) {
+        const r = next.romaji
+        out += r.startsWith('ch') ? 't' + r : r[0] + r
+        i = next.end
+        continue
+      }
+      i += 1
+      continue
+    }
+    if (ch === 'ー' || ch === '−' || ch === '—') {
+      if (longVowelMark === 'repeat') {
+        const last = out.match(/[aiueo](?!.*[aiueo])/)
+        out += last ? last[0] : ''
+      }
+      i += 1
+      continue
+    }
+    const syl = readSyllable(hira, i)
+    if (syl) {
+      if (syl.romaji === 'n') {
+        const after = readSyllable(hira, syl.end)
+        out += after && (VOWELS.has(after.romaji[0]) || after.romaji[0] === 'y') ? "n'" : 'n'
+      } else {
+        out += syl.romaji
+      }
+      i = syl.end
+      continue
+    }
+    if (ch === ' ' || ch === '　') out += ' '
+    else if (/[A-Za-z0-9]/.test(ch)) out += ch
+    else if (ch === '・' || ch === '･' || ch === '=' || ch === '＝') out += ' '
+    i += 1
+  }
+  const cleaned = out.replace(/\s+/g, ' ').trim()
+  return collapse ? collapseVowels(cleaned) : cleaned
+}
+
+const searchAliases = (reading, href) => {
+  const aliases = new Set()
+  if (reading) {
+    aliases.add(reading)
+    for (const options of [
+      { collapse: false, longVowelMark: 'drop' },
+      { collapse: false, longVowelMark: 'repeat' },
+      { collapse: true, longVowelMark: 'repeat' },
+    ]) {
+      const romaji = kanaToRomaji(reading, options)
+      if (!romaji) continue
+      aliases.add(romaji)
+      aliases.add(romaji.replace(/'/g, ''))
+      aliases.add(romaji.replace(/[^a-z0-9]/g, ''))
+    }
+  }
+  const slug = href.replace(/^\/|\/$/g, '')
+  aliases.add(slug)
+  aliases.add(slug.replace(/-/g, ''))
+  return [...aliases].filter(Boolean)
+}
+
+// Hiragana readings of the category names, so じゅうしょ / くらし also find a group.
+const CATEGORY_READINGS = {
+  jusho: 'じゅうしょしょるい',
+  text: 'てきすと',
+  file: 'がぞうふぁいる',
+  money: 'しごとおかね',
+  life: 'くらしかんこう',
+  dev: 'かいはつでーた',
+}
+
+// Hiragana reading of each tool name.
+const READINGS = {
+  '/jusho/': 'じゅうしょれんず',
+  '/inshi/': 'いんしぜいけいさん',
+  '/denshi/': 'でんしちょうぼのふぁいるめい',
+  '/envelope/': 'あてないんさつ',
+  '/text/': 'もじすうかうんと',
+  '/case/': 'もじしゅへんかん',
+  '/kanji-number/': 'かんすうじだいじへんかん',
+  '/urlcode/': 'ゆーあーるえるえんこーど',
+  '/diff/': 'てきすとさぶん',
+  '/image/': 'がぞうへんかんあっしゅく',
+  '/photo/': 'しょうめいしゃしんさくせい',
+  '/pdf/': 'ぴーでぃーえふけつごうぶんかつ',
+  '/qr/': 'きゅーあーるこーどさくせい',
+  '/worktime/': 'きんむじかんざんぎょうだい',
+  '/wage/': 'じきゅうねんしゅうかんさん',
+  '/tedori/': 'てどりきゅうよのがいさん',
+  '/loan/': 'じゅうたくろーんへんさい',
+  '/split/': 'わりかんしょうひぜい',
+  '/business-days/': 'えいぎょうびしめきりび',
+  '/nenshu-kabe/': 'ねんしゅうのかべ',
+  '/taishokukin/': 'たいしょくきんのてどり',
+  '/percent/': 'わりびきかかくのけいさん',
+  '/invoice-check/': 'てきかくせいきゅうしょばんごうちぇっく',
+  '/unit/': 'たんいへんかん',
+  '/tsubo/': 'つぼへいべいじょう',
+  '/date/': 'ひづけけいさんわれき',
+  '/age/': 'ねんれいがくねんえと',
+  '/holiday/': 'しゅくじつかれんだー',
+  '/sleep/': 'すいみんじかんけいさん',
+  '/birth/': 'しゅっさんよていびけいさん',
+  '/bmi/': 'びーえむあいきそたいしゃ',
+  '/fuel/': 'ねんぴがそりんだい',
+  '/regex/': 'せいきひょうげんてすたー',
+  '/cron/': 'くろんしきのよみかた',
+  '/json/': 'じぇいそんせいけい',
+  '/base64/': 'べーすろくじゅうよんへんかん',
+  '/csv/': 'しーえすぶいじぇいそん',
+  '/csv-dedupe/': 'しーえすぶいなよせじゅうふく',
+  '/csv-merge/': 'しーえすぶいけつごう',
+  '/excel-column/': 'えくせるれつばんごうへんかん',
+  '/gzip/': 'じーじっぷあっしゅくかいとう',
+  '/hash/': 'はっしゅせいせい',
+  '/rsa/': 'あーるえすえーあんごうかふくごう',
+  '/color/': 'からーこんとらすと',
+  '/color-blind/': 'しかくしみゅれーしょん',
+  '/password/': 'ぱすわーどせいせい',
+  '/ip/': 'あいぴーちぇっく',
+  '/useragent/': 'ゆーざーえーじぇんとはんてい',
+  '/timezone/': 'たいむぞーんへんかん',
+}
+
+const keyFor = (tool) => [
+  tool.name,
+  tool.desc,
+  tool.label,
+  ...tool.tags,
+  ...searchAliases(READINGS[tool.href] || '', tool.href),
+  ...searchAliases(CATEGORY_READINGS[tool.id] || '', ''),
+].join(' ')
+
 const tools = new Map()
 for (const [id, label, list] of GROUPS) {
   for (const [href, name, desc, tags] of list) tools.set(href, { id, label, href, name, desc, tags })
@@ -111,10 +326,13 @@ for (const [href, label] of GUIDES) {
   guideHtml += `      <li>\n        <a href="${href}">${esc(label)}<span class="go" aria-hidden="true">→</span></a>\n      </li>\n`
 }
 
+const missingReadings = [...tools.values()].filter((tool) => !READINGS[tool.href])
+if (missingReadings.length) console.warn(`no kana reading for: ${missingReadings.map((tool) => tool.href).join(', ')}`)
+
 let gridHtml = ''
 for (const [id, label, list] of GROUPS) {
   for (const [href, name, desc, tags] of list) {
-    const key = [name, desc, label, ...tags].join(' ')
+    const key = keyFor(tools.get(href))
     gridHtml += `      <li class="cell" data-cat="${id}" data-key="${esc(key)}">\n`
     gridHtml += `        <a class="card" href="${href}">\n`
     gridHtml += `          <span class="card-cat">${esc(label)}</span>\n`
