@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>宛名印刷｜道具箱</title>
+<meta name="description" content="郵便番号から住所を補い、年賀状の宛名ラベルや長形3号・角形2号の封筒に宛名を印刷します。縦書き・横書き、最大10件の一括印刷に対応。入力はブラウザ内で処理され、送信されません。">
+<link rel="canonical" href="https://icekun.net/envelope/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+
+  /* --- input --- */
+  #tool .hint { margin-bottom: 0.9rem; }
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.6rem; margin: 1.1rem 0 0.7rem;
+  }
+  .count {
+    margin: 0; font-family: var(--mono); font-size: 0.72rem;
+    letter-spacing: 0.03em; color: var(--muted);
+  }
+  #add { height: 2.5rem; }
+  .recipient {
+    position: relative; margin: 0; padding: 1rem 1.1rem 1.05rem;
+    border: 1px solid var(--rule); border-radius: 8px; background: var(--bg);
+  }
+  .recipient legend {
+    padding: 0 0.35rem; font-family: var(--mono); font-size: 0.7rem;
+    letter-spacing: 0.08em; color: var(--muted);
+  }
+  .recipient .remove {
+    position: absolute; top: 0.5rem; right: 0.55rem;
+    height: 1.9rem; padding: 0 0.65rem; font-size: 0.72rem;
+  }
+  .rgrid { display: grid; gap: 0.7rem; grid-template-columns: minmax(0, 1fr) 7.5rem; }
+  .recipient .field + .field { margin-top: 0.7rem; }
+  .rgrid .field + .field { margin-top: 0; }
+  .recipient input, .recipient select { background: var(--card); }
+  .lookup-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.6rem; margin-top: 0.55rem; }
+  .lookup { flex: 1 1 12rem; margin: 0; min-height: 1.3em; font-size: 0.75rem; line-height: 1.65; color: var(--muted); }
+  .lookup.is-ok { color: var(--ok); }
+  .lookup.is-warn { color: var(--warn); }
+  .lookup-retry { height: 1.8rem; padding: 0 0.6rem; font-size: 0.7rem; flex: 0 0 auto; }
+  .candidates { margin-top: 0.45rem; }
+  .candidates[hidden] { display: none !important; }
+  .candidate { display: grid; gap: 0.25rem; }
+  .candidate label { font-size: 0.7rem; color: var(--muted); }
+  .candidate select { background: var(--card); }
+  .sender-opt { margin: 0 0 0.85rem; }
+
+  /* --- preview surface --- */
+  #preview-panel { overflow: hidden; }
+  .preview-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; }
+  .preview-head .hint { margin: 0; }
+  .preview-scroll {
+    margin-top: 0.9rem; padding: 1rem;
+    background: #e9e3d7; border: 1px solid var(--rule); border-radius: 8px;
+    overflow: auto; max-height: 76vh; overscroll-behavior: contain;
+  }
+  .sheets { margin: 0 auto; }
+  .sheet {
+    position: relative; margin: 0 auto 1.25rem;
+    background: #fff; color: #000; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.08);
+    font-family: "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sheet:last-child { margin-bottom: 0; }
+  .sheet.a4 {
+    width: 210mm; height: 297mm; padding: 12mm;
+    display: grid;
+    grid-template-columns: 86.4mm 86.4mm;
+    grid-template-rows: repeat(5, 50.8mm);
+    column-gap: 13.2mm; row-gap: 4.75mm;
+  }
+  .sheet.naga3 { width: 120mm; height: 235mm; }
+  .sheet.kaku2 { width: 332mm; height: 240mm; }
+  .empty-note {
+    position: absolute; inset: 0; margin: 0; padding: 18mm;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-family: var(--sans); font-size: 9pt; line-height: 1.9; color: #8b8790;
+  }
+
+  /* --- A4 10-up label cells --- */
+  .cell {
+    position: relative; overflow: hidden; padding: 0;
+    font-size: 10pt; line-height: 1.4;
+  }
+  .cell .postal {
+    position: absolute; top: 2.2mm; left: 3mm; right: 3mm;
+    font-family: "Public Sans", "Yu Gothic", "Hiragino Sans", sans-serif;
+    font-size: 7.5pt; letter-spacing: 0.07em; line-height: 1;
+    white-space: nowrap;
+  }
+  .cell .lines { position: absolute; left: 3mm; right: 3mm; }
+  .cell.horizontal .lines {
+    top: 6mm; bottom: 4.5mm;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 0.8mm;
+  }
+  .cell.has-sender .lines { bottom: 6.2mm; }
+  .cell.horizontal .rec-addr-h {
+    font-size: 8.6pt; line-height: 1.35; overflow: hidden;
+  }
+  .cell.horizontal .rec-addr-h.addr-s { font-size: 7.5pt; }
+  .cell.horizontal .rec-addr-h.addr-xs { font-size: 6.7pt; }
+  .cell.horizontal .rec-name-h {
+    margin-top: auto; font-size: 13pt; line-height: 1.25;
+    font-weight: 600; text-align: right; overflow: hidden;
+  }
+  .cell.horizontal .rec-name-h.name-s { font-size: 11pt; }
+  .cell.horizontal .rec-name-h.name-xs { font-size: 9.5pt; }
+
+  .cell.vertical .lines {
+    top: 5mm; bottom: 4.5mm; display: flex;
+    flex-direction: row-reverse; justify-content: center; align-items: stretch;
+    gap: 3mm;
+  }
+  .cell.has-sender .lines { bottom: 6.2mm; }
+  .cell.vertical .rec-addr {
+    writing-mode: vertical-rl; text-orientation: mixed;
+    height: 100%; max-width: 46mm; overflow: hidden;
+    font-size: 8pt; line-height: 1.45;
+  }
+  .cell.vertical .rec-addr.addr-s { font-size: 7.2pt; }
+  .cell.vertical .rec-addr.addr-xs { font-size: 6.5pt; }
+  .cell.vertical .rec-name {
+    writing-mode: vertical-rl; text-orientation: upright;
+    height: 100%; max-width: 20mm; overflow: hidden;
+    font-size: 11pt; line-height: 1.5; font-weight: 600;
+  }
+  .cell.vertical .rec-name.name-s { font-size: 9.5pt; }
+  .cell.vertical .rec-name.name-xs { font-size: 8.2pt; }
+  .cell .sender-mini {
+    position: absolute; left: 3mm; right: 3mm; bottom: 1.5mm;
+    font-family: "Public Sans", "Yu Gothic", "Hiragino Sans", sans-serif;
+    font-size: 5.4pt; line-height: 1.25; color: #333;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* --- envelopes --- */
+  .sheet .postal-env {
+    position: absolute;
+    font-family: "Public Sans", "Yu Gothic", "Hiragino Sans", sans-serif;
+    font-size: 10pt; letter-spacing: 0.13em; line-height: 1; white-space: nowrap;
+  }
+  .stamp-guide {
+    position: absolute; width: 20mm; height: 20mm; display: none;
+    align-items: center; justify-content: center;
+    border: 0.3mm dashed rgba(0,0,0,.42);
+    font-family: var(--sans); font-size: 6pt; color: #7b7780;
+  }
+  .sheet.naga3 .rec-addr, .sheet.naga3 .rec-name,
+  .sheet.kaku2 .rec-addr, .sheet.kaku2 .rec-name {
+    position: absolute; margin: 0;
+  }
+  .sheet.naga3.vertical .rec-addr, .sheet.kaku2.vertical .rec-addr {
+    writing-mode: vertical-rl; text-orientation: mixed;
+  }
+  .sheet.naga3.vertical .rec-name, .sheet.kaku2.vertical .rec-name {
+    writing-mode: vertical-rl; text-orientation: upright;
+    font-weight: 600;
+  }
+  .sheet .rec-block { position: absolute; text-align: right; }
+  .sheet.naga3.horizontal .rec-addr-h, .sheet.kaku2.horizontal .rec-addr-h { line-height: 1.55; }
+  .sheet.naga3.horizontal .rec-name-h, .sheet.kaku2.horizontal .rec-name-h {
+    line-height: 1.4; font-weight: 600;
+  }
+
+  .sheet.naga3 .postal-env { top: 8mm; right: 10mm; }
+  .sheet.naga3 .stamp-guide { top: 8mm; left: 8mm; }
+  .sheet.naga3.vertical .rec-addr {
+    top: 38mm; right: 10mm; height: 142mm; max-width: 40mm;
+  }
+  .sheet.naga3.vertical .rec-name {
+    top: 56mm; right: 50mm; height: 130mm; max-width: 26mm;
+  }
+  .sheet.naga3.horizontal .rec-block { top: 52mm; right: 12mm; width: 84mm; }
+  .sheet.naga3.horizontal .rec-addr-h { font-size: 10.5pt; }
+  .sheet.naga3.horizontal .rec-name-h { margin-top: 5mm; font-size: 17pt; }
+
+  .sheet.kaku2 .postal-env { top: 36mm; right: 18mm; font-size: 11pt; }
+  .sheet.kaku2 .stamp-guide { top: 12mm; right: 12mm; }
+  .sheet.kaku2.vertical .rec-addr {
+    top: 50mm; right: 18mm; height: 176mm; max-width: 70mm;
+    font-size: 11.5pt; line-height: 1.65;
+  }
+  .sheet.kaku2.vertical .rec-name {
+    top: 62mm; right: 78mm; height: 156mm; max-width: 34mm;
+    font-size: 20pt; line-height: 1.5;
+  }
+  .sheet.kaku2.horizontal .rec-block { top: 62mm; right: 20mm; width: 180mm; }
+  .sheet.kaku2.horizontal .rec-addr-h { font-size: 12pt; }
+  .sheet.kaku2.horizontal .rec-name-h { margin-top: 6mm; font-size: 20pt; }
+
+  .sheet .sender {
+    position: absolute; color: #333; line-height: 1.45;
+    font-family: "Public Sans", "Yu Gothic", "Hiragino Sans", sans-serif;
+  }
+  .sheet .sender .zip { letter-spacing: 0.04em; }
+  .sheet.naga3 .sender { left: 10mm; bottom: 10mm; width: 84mm; font-size: 7pt; }
+  .sheet.kaku2 .sender { left: 18mm; bottom: 14mm; width: 150mm; font-size: 8pt; }
+
+  .hon { font-size: 0.78em; font-weight: 400; }
+  .hon.block { display: block; }
+  .cell.horizontal .hon, .sheet.horizontal .hon { margin-left: 0.3em; }
+  .cell.horizontal .hon.block, .sheet.horizontal .hon.block { margin-left: 0; }
+
+  @media screen {
+    .stamp-guide { display: flex; }
+  }
+
+  .print-row {
+    margin-top: 1rem; align-items: center; gap: 0.75rem 1.1rem;
+  }
+  #printBtn { height: 2.75rem; padding: 0 1.5rem; font-size: 0.9rem; }
+  #preview-panel > .hint { margin-top: 0.9rem; }
+
+  @media (max-width: 40rem) {
+    .rgrid { grid-template-columns: 1fr; }
+    .preview-scroll { padding: 0.6rem; max-height: 68vh; }
+  }
+
+  /* --- print --- */
+  @media print {
+    html, body { background: #fff !important; }
+    header.site, footer.site, .page-head, .prose, .tool-nav, .ad-slot { display: none !important; }
+    .panel:not(#preview-panel) { display: none !important; }
+    main.wrap { max-width: none; margin: 0; padding: 0; }
+    #preview-panel {
+      margin: 0 !important; padding: 0 !important; overflow: visible !important;
+      border: 0 !important; border-radius: 0 !important; background: none !important;
+    }
+    .preview-head, .print-row, #preview-panel > .hint { display: none !important; }
+    .preview-scroll {
+      margin: 0 !important; padding: 0 !important; border: 0 !important;
+      border-radius: 0 !important; background: none !important;
+      overflow: visible !important; max-height: none !important;
+    }
+    .sheets { zoom: 1 !important; }
+    .sheet {
+      margin: 0 !important; box-shadow: none !important;
+      break-inside: avoid; page-break-inside: avoid;
+      break-after: page; page-break-after: always;
+    }
+    .sheet:last-child { break-after: auto; page-break-after: auto; }
+    .stamp-guide { display: none !important; }
+    body.print-guides .stamp-guide { display: flex !important; }
+  }
+</style>
+<style id="page-size">@page { size: A4; margin: 0; }</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>宛名印刷</h1>
+    <p class="lead">郵便番号から住所を補い、封筒やはがきの宛名を印刷します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>宛名を入力</h2>
+    <p class="hint">郵便番号を7桁入れると、住所を自動で補います。候補が複数あるときは一覧から選べます。</p>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="layout"><span>用紙</span></label>
+        <select id="layout">
+          <option value="a4">A4 10面（宛名ラベル）</option>
+          <option value="naga3">長形3号（120×235mm）</option>
+          <option value="kaku2">角形2号（332×240mm）</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="direction"><span>文字の向き</span></label>
+        <select id="direction">
+          <option value="vertical">縦書き</option>
+          <option value="horizontal">横書き</option>
+        </select>
+      </div>
+    </div>
+    <p class="hint" id="setupHint" aria-live="polite" style="margin-top:0.6rem"></p>
+
+    <div class="toolbar">
+      <p class="count" id="count" aria-live="polite">宛名 1 / 10件</p>
+      <button class="btn secondary" id="add" type="button">宛名を追加</button>
+    </div>
+
+    <div id="recipients" class="stack"></div>
+    <p class="err" id="toolErr" role="alert" hidden></p>
+    <noscript><p class="warn">この道具はJavaScriptを使います。ブラウザでJavaScriptを有効にしてください。</p></noscript>
+  </section>
+
+  <section class="panel" id="sender-panel">
+    <h2>差出人</h2>
+    <p class="hint">封筒の左下、またはラベルの下に小さく印刷します。ラベルでは、はじめ印刷しない設定です。</p>
+    <label class="check sender-opt" for="showSender"><input type="checkbox" id="showSender"> 差出人を印刷する</label>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="s-postal"><span>郵便番号</span></label>
+        <input id="s-postal" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="8" placeholder="150-0001">
+      </div>
+      <div class="field">
+        <label for="s-name"><span>氏名・会社名</span></label>
+        <input id="s-name" type="text" autocomplete="name" placeholder="道具箱 太郎">
+      </div>
+    </div>
+    <div class="field" style="margin-top:0.7rem">
+      <label for="s-address"><span>住所</span></label>
+      <input id="s-address" type="text" autocomplete="street-address" placeholder="東京都渋谷区神宮前1-1">
+    </div>
+    <div class="lookup-row">
+      <p class="lookup" id="s-status" aria-live="polite"></p>
+      <button type="button" class="btn ghost lookup-retry" id="s-retry" hidden>住所を引く</button>
+    </div>
+    <div class="candidates" id="s-candidates" hidden></div>
+  </section>
+
+  <section class="panel" id="preview-panel">
+    <div class="preview-head">
+      <h2>プレビュー</h2>
+      <p class="hint" id="previewMeta" aria-live="polite"></p>
+    </div>
+    <div class="preview-scroll" id="previewScroll">
+      <div class="sheets" id="sheets" aria-hidden="true"></div>
+    </div>
+    <div class="row print-row">
+      <button class="btn" id="printBtn" type="button">印刷する</button>
+      <label class="check" for="guides"><input type="checkbox" id="guides"> 切手位置のガイドを印刷する</label>
+    </div>
+    <p class="hint">印刷画面では、拡大縮小を100%（なし）、余白を「なし」にしてください。点線のガイドは画面の確認用です。PDFは印刷画面の「PDFに保存」で作れます。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>用紙と文字の向きを選びます。</li>
+      <li>郵便番号・住所・氏名を入力します。</li>
+      <li>プレビューを確かめて印刷します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>宛名印刷について</h2>
+    <p>郵便番号を7桁入れると、日本郵便の郵便番号データから都道府県・市区町村・町名を引いて住所欄に入れます。候補が複数あるときは、一覧から選べます。通信できないときは、住所を手で入力してください。</p>
+
+    <h3>用紙と位置</h3>
+    <p>A4 10面は、86.4×50.8mmの宛名ラベル（2列×5段）に合わせています。左右12mm・上下12mmの余白、列の間隔13.2mm、行の間隔4.75mmで組んでいます。長形3号は120×235mm、角形2号は332×240mmで、封筒を横にした向きに印刷します。</p>
+    <p>縦書きでは、宛名を大きく中央に、住所を右側に置きます。横書きでは、住所を上、宛名を下にして右側に寄せます。差出人はどちらも左下です。切手の位置は、縦長の封筒では左上、横長の封筒では右上です。</p>
+    <p>プレビューの点線は位置の目安で、はじめは印刷されません。「切手位置のガイドを印刷する」を選ぶと、点線も印刷されます。</p>
+
+    <h3>印刷の前に</h3>
+    <p>プリンタの用紙設定を用紙に合わせ、拡大縮小は100%（なし）、余白は「なし」または「最小」にしてください。封筒は給紙方法によって位置がずれることがあるため、最初は白紙で試し、プレビューと照らし合わせてください。PDFが必要なときは、印刷画面の送信先で「PDFに保存」を選びます。</p>
+    <p>郵便番号は、印刷では「〒」を付けず、ハイフンで区切った数字にしています。内国郵便約款の印字例に合わせたものです。</p>
+
+    <h3>差出人とデータ</h3>
+    <p>差出人は、封筒では左下に、ラベルでは下に小さく入ります。入力した住所や氏名は送信せず、保存もしません。ページを閉じると消えます。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<template id="recipientTemplate">
+  <fieldset class="recipient">
+    <legend>宛名 <span class="rnum">1</span></legend>
+    <button type="button" class="btn ghost remove" aria-label="宛名1を削除">削除</button>
+    <div class="rgrid">
+      <div class="field">
+        <label for="postal-1"><span>郵便番号</span></label>
+        <input class="postal" data-field="postal" id="postal-1" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="8" placeholder="130-0001">
+      </div>
+      <div class="field">
+        <label for="honorific-1"><span>敬称</span></label>
+        <select class="honorific" data-field="honorific" id="honorific-1">
+          <option value="様">様</option>
+          <option value="御中">御中</option>
+          <option value="">なし</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="address-1"><span>住所</span></label>
+      <input class="address" data-field="address" id="address-1" type="text" autocomplete="street-address" placeholder="東京都墨田区吾妻橋1-1">
+    </div>
+    <div class="field">
+      <label for="name-1"><span>氏名・会社名</span></label>
+      <input class="name" data-field="name" id="name-1" type="text" autocomplete="name" placeholder="山田 太郎">
+    </div>
+    <div class="lookup-row">
+      <p class="lookup" aria-live="polite"></p>
+      <button type="button" class="btn ghost lookup-retry" hidden>住所を引く</button>
+    </div>
+    <div class="candidates" hidden></div>
+  </fieldset>
+</template>
+
+<script>
+(function () {
+  'use strict';
+
+  var DATA = '/jusho/data/';
+  var MAX = 10;
+
+  var layoutEl = document.getElementById('layout');
+  var directionEl = document.getElementById('direction');
+  var setupHint = document.getElementById('setupHint');
+  var recipientsEl = document.getElementById('recipients');
+  var addBtn = document.getElementById('add');
+  var countEl = document.getElementById('count');
+  var toolErr = document.getElementById('toolErr');
+  var sPostal = document.getElementById('s-postal');
+  var sAddress = document.getElementById('s-address');
+  var sName = document.getElementById('s-name');
+  var sStatus = document.getElementById('s-status');
+  var sCandidates = document.getElementById('s-candidates');
+  var sRetry = document.getElementById('s-retry');
+  var showSender = document.getElementById('showSender');
+  var guides = document.getElementById('guides');
+  var previewScroll = document.getElementById('previewScroll');
+  var sheets = document.getElementById('sheets');
+  var previewMeta = document.getElementById('previewMeta');
+  var printBtn = document.getElementById('printBtn');
+  var tpl = document.getElementById('recipientTemplate');
+  var pageStyle = document.getElementById('page-size');
+
+  var state = { layout: 'a4', direction: 'vertical' };
+  var senderTouched = false;
+  var frame = 0;
+  var fetchCache = new Map();
+
+  var LAYOUT = {
+    a4: { label: 'A4 10面', widthMm: 210, heightMm: 297, hint: '86.4×50.8mmの宛名ラベル、2列×5段です。年賀状の宛名に使うラベルです。' },
+    naga3: { label: '長形3号', widthMm: 120, heightMm: 235, hint: '120×235mm。A4を三つ折りにして入れる封筒です。' },
+    kaku2: { label: '角形2号', widthMm: 332, heightMm: 240, hint: '332×240mm（横）。A4を折らずに入れる封筒です。' }
+  };
+  var DIR = {
+    vertical: { label: '縦書き', hint: '縦書きは、住所を右、宛名をその左に置きます。' },
+    horizontal: { label: '横書き', hint: '横書きは、住所を上、宛名を下に置きます。' }
+  };
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function zipText(value) {
+    var d = String(value || '').replace(/\D/g, '');
+    return d.length === 7 ? d.slice(0, 3) + '-' + d.slice(3) : '';
+  }
+
+  function fetchJson(path) {
+    var p = fetchCache.get(path);
+    if (!p) {
+      p = fetch(path, { credentials: 'omit' }).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      });
+      p.catch(function () { fetchCache.delete(path); });
+      fetchCache.set(path, p);
+    }
+    return p;
+  }
+
+  async function lookupPostal(digits) {
+    var chunk = await fetchJson(DATA + 'postal/' + digits.slice(0, 2) + '.json');
+    var flat = chunk[digits];
+    if (!flat) return [];
+
+    var dict = await Promise.all([
+      fetchJson(DATA + 'prefs.json'),
+      fetchJson(DATA + 'cities.json')
+    ]);
+    var prefs = dict[0];
+    var cities = dict[1];
+
+    var triples = [];
+    for (var i = 0; i + 2 < flat.length; i += 3) {
+      triples.push([flat[i], flat[i + 1], flat[i + 2]]);
+    }
+    var townPromises = {};
+    var towns = await Promise.all(triples.map(function (t) {
+      var pi = t[0];
+      if (!townPromises[pi]) townPromises[pi] = fetchJson(DATA + 'towns/' + pi + '.json');
+      return townPromises[pi];
+    }));
+
+    var hits = [];
+    var seen = {};
+    triples.forEach(function (t, idx) {
+      var pi = t[0], ci = t[1], ti = t[2];
+      var pref = prefs[pi] ? prefs[pi][0] : '';
+      var city = cities[ci] ? cities[ci][1] : '';
+      var town = towns[idx][ti] ? towns[idx][ti][1] : '';
+      var addr = pref + city + town;
+      if (addr && !seen[addr]) {
+        seen[addr] = true;
+        hits.push(addr);
+      }
+    });
+    return hits;
+  }
+
+  function wirePostal(opts) {
+    var postal = opts.postal;
+    var address = opts.address;
+    var status = opts.status;
+    var candidates = opts.candidates;
+    var retry = opts.retry;
+    var timer = 0;
+    var seq = 0;
+    var lastDigits = '';
+
+    function setStatus(text, kind) {
+      status.textContent = text;
+      status.className = 'lookup' + (kind ? ' is-' + kind : '');
+    }
+    function clearCandidates() {
+      candidates.textContent = '';
+      candidates.hidden = true;
+    }
+    function showRetry(show) {
+      retry.hidden = !show;
+    }
+
+    async function run(digits) {
+      var my = ++seq;
+      setStatus('住所を検索しています…', '');
+      clearCandidates();
+      showRetry(false);
+      try {
+        var hits = await lookupPostal(digits);
+        if (my !== seq) return;
+        if (!hits.length) {
+          setStatus('この郵便番号の住所が見つかりませんでした。手入力してください。', 'warn');
+          showRetry(true);
+          lastDigits = '';
+          return;
+        }
+        if (hits.length === 1) {
+          address.value = hits[0];
+          setStatus('住所を入力しました。', 'ok');
+          return;
+        }
+        setStatus('候補が' + hits.length + '件あります。選んでください。', '');
+        var wrap = el('div', 'candidate');
+        var id = 'cand-' + (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+        var label = el('label', null, '候補');
+        label.htmlFor = id;
+        var sel = document.createElement('select');
+        sel.id = id;
+        var ph = el('option', null, '選んでください');
+        ph.value = '';
+        sel.appendChild(ph);
+        hits.forEach(function (hit) {
+          var o = el('option', null, hit);
+          o.value = hit;
+          sel.appendChild(o);
+        });
+        sel.addEventListener('change', function () {
+          if (!sel.value) return;
+          address.value = sel.value;
+          setStatus('住所を入力しました。', 'ok');
+          clearCandidates();
+        });
+        wrap.appendChild(label);
+        wrap.appendChild(sel);
+        candidates.appendChild(wrap);
+        candidates.hidden = false;
+        sel.focus();
+      } catch (e) {
+        if (my !== seq) return;
+        setStatus('住所を自動で引けませんでした。手入力してください。', 'warn');
+        showRetry(true);
+        lastDigits = '';
+      }
+    }
+
+    function digitsOf() {
+      return postal.value.replace(/\D/g, '').slice(0, 7);
+    }
+
+    postal.addEventListener('input', function () {
+      var d = digitsOf();
+      if (d.length === 7) {
+        postal.value = d.slice(0, 3) + '-' + d.slice(3);
+        clearTimeout(timer);
+        if (d !== lastDigits) {
+          lastDigits = d;
+          timer = setTimeout(function () { run(d); }, 300);
+        }
+      } else {
+        lastDigits = '';
+        clearTimeout(timer);
+        clearCandidates();
+        showRetry(false);
+        if (d) setStatus('7桁で入れると住所を引きます。', '');
+        else setStatus('', '');
+      }
+    });
+
+    postal.addEventListener('blur', function () {
+      var d = digitsOf();
+      if (d.length === 7 && d !== lastDigits) {
+        lastDigits = d;
+        run(d);
+      }
+    });
+
+    retry.addEventListener('click', function () {
+      var d = digitsOf();
+      if (d.length === 7) run(d);
+    });
+
+    return {
+      run: function () {
+        var d = digitsOf();
+        if (d.length === 7) run(d);
+      }
+    };
+  }
+
+  function newCard() {
+    var node = tpl.content.firstElementChild.cloneNode(true);
+    recipientsEl.appendChild(node);
+    wirePostal({
+      postal: node.querySelector('.postal'),
+      address: node.querySelector('.address'),
+      status: node.querySelector('.lookup'),
+      candidates: node.querySelector('.candidates'),
+      retry: node.querySelector('.lookup-retry')
+    });
+    node.querySelector('.remove').addEventListener('click', function () {
+      if (recipientsEl.querySelectorAll('.recipient').length <= 1) return;
+      node.remove();
+      renumber();
+      scheduleRender();
+    });
+    return node;
+  }
+
+  function renumber() {
+    var cards = Array.prototype.slice.call(recipientsEl.querySelectorAll('.recipient'));
+    cards.forEach(function (card, i) {
+      var n = i + 1;
+      card.querySelector('.rnum').textContent = String(n);
+      Array.prototype.forEach.call(card.querySelectorAll('[data-field]'), function (field) {
+        field.id = field.getAttribute('data-field') + '-' + n;
+        var wrap = field.closest('.field');
+        var label = wrap ? wrap.querySelector('label') : null;
+        if (label) label.htmlFor = field.id;
+      });
+      var remove = card.querySelector('.remove');
+      remove.setAttribute('aria-label', '宛名' + n + 'を削除');
+      remove.hidden = cards.length === 1;
+    });
+    countEl.textContent = '宛名 ' + cards.length + ' / ' + MAX + '件';
+    addBtn.disabled = cards.length >= MAX;
+    addBtn.textContent = cards.length >= MAX ? '上限の10件です' : '宛名を追加';
+  }
+
+  function readRows() {
+    return Array.prototype.slice.call(recipientsEl.querySelectorAll('.recipient'))
+      .map(function (card) {
+        return {
+          postal: card.querySelector('.postal').value,
+          address: card.querySelector('.address').value.trim(),
+          name: card.querySelector('.name').value.trim(),
+          honorific: card.querySelector('.honorific').value
+        };
+      })
+      .filter(function (r) { return r.address || r.name; });
+  }
+
+  function readSender() {
+    return {
+      postal: sPostal.value,
+      address: sAddress.value.trim(),
+      name: sName.value.trim()
+    };
+  }
+
+  function senderNode(mini) {
+    var s = readSender();
+    if (!s.address && !s.name) return null;
+    var node = el('div', mini ? 'sender-mini' : 'sender');
+    var zip = zipText(s.postal);
+    if (zip) {
+      node.appendChild(el('span', 'zip', '〒' + zip));
+      node.appendChild(document.createTextNode(' '));
+    }
+    if (s.address) node.appendChild(el('span', null, s.address));
+    if (s.name) {
+      if (mini) node.appendChild(document.createTextNode(' '));
+      else node.appendChild(document.createElement('br'));
+      node.appendChild(el('span', 'who', s.name));
+    }
+    return node;
+  }
+
+  function nameNode(r, vertical) {
+    if (!r.name) return null;
+    var node = el('div', vertical ? 'rec-name' : 'rec-name-h');
+    node.appendChild(document.createTextNode(r.name));
+    if (r.honorific) {
+      node.appendChild(el('span', 'hon' + (r.honorific === '御中' ? ' block' : ''), r.honorific));
+    }
+    return node;
+  }
+
+  function addrNode(r, vertical) {
+    if (!r.address) return null;
+    return el('div', vertical ? 'rec-addr' : 'rec-addr-h', r.address);
+  }
+
+  function sizeClass(len, kind) {
+    if (kind === 'addr') {
+      if (len > 54) return 'addr-xs';
+      if (len > 40) return 'addr-s';
+    } else {
+      if (len > 26) return 'name-xs';
+      if (len > 18) return 'name-s';
+    }
+    return '';
+  }
+
+  function fillCell(cell, r) {
+    var zip = zipText(r.postal);
+    if (zip) cell.appendChild(el('div', 'postal', zip));
+
+    var lines = el('div', 'lines');
+    var vertical = state.direction === 'vertical';
+    var addr = addrNode(r, vertical);
+    var name = nameNode(r, vertical);
+    if (addr) {
+      var ac = sizeClass(r.address.length, 'addr');
+      if (ac) addr.classList.add(ac);
+      lines.appendChild(addr);
+    }
+    if (name) {
+      var nc = sizeClass(r.name.length, 'name');
+      if (nc) name.classList.add(nc);
+      lines.appendChild(name);
+    }
+    cell.appendChild(lines);
+
+    if (showSender.checked) {
+      var s = senderNode(true);
+      if (s) {
+        cell.appendChild(s);
+        cell.classList.add('has-sender');
+      }
+    }
+  }
+
+  function fillEnvelope(sheet, r) {
+    var zip = zipText(r.postal);
+    if (zip) sheet.appendChild(el('div', 'postal-env', zip));
+
+    var stamp = el('div', 'stamp-guide', '切手');
+    stamp.setAttribute('aria-hidden', 'true');
+    sheet.appendChild(stamp);
+
+    if (state.direction === 'vertical') {
+      var addr = addrNode(r, true);
+      if (addr) sheet.appendChild(addr);
+      var name = nameNode(r, true);
+      if (name) sheet.appendChild(name);
+    } else {
+      var block = el('div', 'rec-block');
+      var a = addrNode(r, false);
+      var n = nameNode(r, false);
+      if (a) block.appendChild(a);
+      if (n) block.appendChild(n);
+      sheet.appendChild(block);
+    }
+
+    if (showSender.checked) {
+      var s = senderNode(false);
+      if (s) sheet.appendChild(s);
+    }
+  }
+
+  function placeholder() {
+    return el('p', 'empty-note', '郵便番号・住所・氏名を入力すると、ここに宛名が表示されます。');
+  }
+
+  function updateSetup() {
+    setupHint.textContent = LAYOUT[state.layout].hint + DIR[state.direction].hint;
+  }
+
+  function updatePageSize() {
+    var size = state.layout === 'a4' ? 'A4' : (state.layout === 'naga3' ? '120mm 235mm' : '332mm 240mm');
+    pageStyle.textContent = '@page { size: ' + size + '; margin: 0; }';
+  }
+
+  function fitPreview() {
+    if (!previewScroll || !sheets) return;
+    var wPx = LAYOUT[state.layout].widthMm * 96 / 25.4;
+    var hPx = LAYOUT[state.layout].heightMm * 96 / 25.4;
+    var cs = getComputedStyle(previewScroll);
+    var availW = previewScroll.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0) - 2;
+    var availH = previewScroll.clientHeight - parseFloat(cs.paddingTop || 0) - parseFloat(cs.paddingBottom || 0) - 2;
+    if (!availW || availW < 40) return;
+    var scale = Math.min(1, availW / wPx);
+    if (availH > 80) scale = Math.min(scale, availH / hPx);
+    scale = Math.max(0.15, scale);
+    sheets.style.zoom = String(scale);
+  }
+
+  function renderSheets() {
+    frame = 0;
+    updatePageSize();
+    updateSetup();
+
+    var rows = readRows();
+    sheets.textContent = '';
+
+    if (state.layout === 'a4') {
+      var list = rows.length ? rows : [null];
+      for (var i = 0; i < list.length; i += 10) {
+        var sheet = el('div', 'sheet a4 ' + state.direction);
+        for (var j = 0; j < 10; j++) {
+          var cell = el('div', 'cell ' + state.direction);
+          var r = list[i + j];
+          if (r) fillCell(cell, r);
+          sheet.appendChild(cell);
+        }
+        if (!rows.length) sheet.appendChild(placeholder());
+        sheets.appendChild(sheet);
+      }
+    } else {
+      var list2 = rows.length ? rows : [null];
+      list2.forEach(function (r) {
+        var sheet = el('div', 'sheet ' + state.layout + ' ' + state.direction);
+        if (r) fillEnvelope(sheet, r);
+        else sheet.appendChild(placeholder());
+        sheets.appendChild(sheet);
+      });
+    }
+
+    document.body.classList.toggle('print-guides', guides.checked);
+
+    if (!rows.length) {
+      previewMeta.textContent = '入力すると、ここに宛名が表示されます。';
+    } else {
+      var per = state.layout === 'a4' ? 10 : 1;
+      var pageCount = Math.ceil(rows.length / per);
+      previewMeta.textContent = LAYOUT[state.layout].label + '・' + DIR[state.direction].label +
+        '・宛名' + rows.length + '件（' + pageCount + '枚）';
+    }
+
+    fitPreview();
+  }
+
+  function scheduleRender() {
+    if (frame) return;
+    frame = requestAnimationFrame(renderSheets);
+  }
+
+  function showError(text) {
+    toolErr.textContent = text;
+    toolErr.hidden = false;
+  }
+
+  function hideError() {
+    toolErr.textContent = '';
+    toolErr.hidden = true;
+  }
+
+  recipientsEl.addEventListener('input', function (e) {
+    if (e.target.matches('.postal, .address, .name')) {
+      hideError();
+      scheduleRender();
+    }
+  });
+  recipientsEl.addEventListener('change', function (e) {
+    if (e.target.matches('.honorific')) scheduleRender();
+  });
+
+  [sPostal, sAddress, sName].forEach(function (input) {
+    input.addEventListener('input', function () {
+      hideError();
+      scheduleRender();
+    });
+  });
+
+  layoutEl.addEventListener('change', function () {
+    state.layout = layoutEl.value;
+    if (!senderTouched) showSender.checked = state.layout !== 'a4';
+    scheduleRender();
+  });
+
+  directionEl.addEventListener('change', function () {
+    state.direction = directionEl.value;
+    scheduleRender();
+  });
+
+  showSender.addEventListener('change', function () {
+    senderTouched = true;
+    scheduleRender();
+  });
+
+  guides.addEventListener('change', function () {
+    document.body.classList.toggle('print-guides', guides.checked);
+  });
+
+  addBtn.addEventListener('click', function () {
+    if (recipientsEl.querySelectorAll('.recipient').length >= MAX) return;
+    var card = newCard();
+    renumber();
+    scheduleRender();
+    var postal = card.querySelector('.postal');
+    if (postal) postal.focus();
+  });
+
+  printBtn.addEventListener('click', function () {
+    var rows = readRows();
+    if (!rows.length) {
+      showError('宛名を1件以上入力してください。');
+      var first = recipientsEl.querySelector('.name') || recipientsEl.querySelector('.address');
+      if (first) first.focus();
+      return;
+    }
+    hideError();
+    renderSheets();
+    requestAnimationFrame(function () { window.print(); });
+  });
+
+  window.addEventListener('beforeprint', function () {
+    updatePageSize();
+    renderSheets();
+  });
+
+  var resizeTimer = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(fitPreview, 120);
+  });
+
+  wirePostal({
+    postal: sPostal,
+    address: sAddress,
+    status: sStatus,
+    candidates: sCandidates,
+    retry: sRetry
+  });
+
+  newCard();
+  renumber();
+  renderSheets();
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fitPreview);
+  }
+})();
+</script>
+</body>
+</html>

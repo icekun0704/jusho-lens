@@ -262,6 +262,7 @@
     font-family: var(--serif); font-size: 1rem; line-height: 1.5;
   }
   .guide-list .go { flex: none; color: var(--muted); font-family: var(--sans); font-size: 0.9rem; transition: color 140ms ease; }
+  .guide-list > li:last-child { grid-column: 1 / -1; }
   @media (hover: hover) and (pointer: fine) {
     .guide-list a:hover { background: var(--card); }
     .guide-list a:hover .go { color: var(--ox); }
@@ -320,6 +321,9 @@
 
   @media (min-width: 34rem) {
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 34rem) {
+    .guide-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (min-width: 52rem) {
     .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -818,11 +822,31 @@
       <h2 id="guides-title">使い方</h2>
       <span class="note">guides</span>
     </div>
-    <p class="section-lead">書類の手続きで迷うところを、1ページずつまとめています。</p>
+    <p class="section-lead">お金・書類・住まいで迷うところを、1ページずつまとめています。</p>
     <ul class="guide-list">
-      <li><a href="/guide/amazon/">Amazonの英語住所<span class="go" aria-hidden="true">→</span></a></li>
-      <li><a href="/guide/denshi/">電子帳簿保存法のファイル名<span class="go" aria-hidden="true">→</span></a></li>
-      <li><a href="/guide/invoice/">適格請求書の必須項目<span class="go" aria-hidden="true">→</span></a></li>
+      <!-- GUIDES_START -->
+      <li>
+        <a href="/guide/amazon/">Amazonの英語住所<span class="go" aria-hidden="true">→</span></a>
+      </li>
+      <li>
+        <a href="/guide/denshi/">電子帳簿保存法のファイル名<span class="go" aria-hidden="true">→</span></a>
+      </li>
+      <li>
+        <a href="/guide/invoice/">適格請求書の必須項目<span class="go" aria-hidden="true">→</span></a>
+      </li>
+      <li>
+        <a href="/guide/inshi/">収入印紙が要るか<span class="go" aria-hidden="true">→</span></a>
+      </li>
+      <li>
+        <a href="/guide/tedori/">額面と手取りの差<span class="go" aria-hidden="true">→</span></a>
+      </li>
+      <li>
+        <a href="/guide/tsubo/">坪・平米・畳を比べる<span class="go" aria-hidden="true">→</span></a>
+      </li>
+      <li>
+        <a href="/guide/photo/">証明写真の規格と余白<span class="go" aria-hidden="true">→</span></a>
+      </li>
+      <!-- GUIDES_END -->
     </ul>
   </section>
 

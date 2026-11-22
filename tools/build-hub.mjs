@@ -70,6 +70,17 @@ const FEATURED = [
   ['/password/', '強い文字列を作る'],
 ]
 
+// Articles linked from the 使い方 band: [href, short label]
+const GUIDES = [
+  ['/guide/amazon/', 'Amazonの英語住所'],
+  ['/guide/denshi/', '電子帳簿保存法のファイル名'],
+  ['/guide/invoice/', '適格請求書の必須項目'],
+  ['/guide/inshi/', '収入印紙が要るか'],
+  ['/guide/tedori/', '額面と手取りの差'],
+  ['/guide/tsubo/', '坪・平米・畳を比べる'],
+  ['/guide/photo/', '証明写真の規格と余白'],
+]
+
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 
 const tools = new Map()
@@ -86,6 +97,11 @@ for (const [href, short] of FEATURED) {
   favHtml += `            <span class="fav-name">${esc(tool.name)}</span>\n`
   favHtml += `            <span class="fav-desc">${esc(short)}</span>\n`
   favHtml += `          </a>\n        </li>\n`
+}
+
+let guideHtml = ''
+for (const [href, label] of GUIDES) {
+  guideHtml += `      <li>\n        <a href="${href}">${esc(label)}<span class="go" aria-hidden="true">→</span></a>\n      </li>\n`
 }
 
 let gridHtml = ''
@@ -105,6 +121,13 @@ for (const [id, label, list] of GROUPS) {
 const featuredHrefs = FEATURED.map(([href]) => href)
 if (new Set(featuredHrefs).size !== FEATURED.length) throw new Error('featured shortcuts should point at distinct tools')
 
+const guideRoot = path.resolve(import.meta.dirname, '..', 'deploy', 'guide')
+for (const [href] of GUIDES) {
+  const slug = href.replace(/^\/guide\//, '').replace(/\/$/, '')
+  if (!fs.existsSync(path.join(guideRoot, slug, 'index.html'))) throw new Error(`guide page not found: ${href}`)
+}
+if (new Set(GUIDES.map(([href]) => href)).size !== GUIDES.length) throw new Error('guides should be distinct')
+
 const file = path.resolve(import.meta.dirname, '..', 'deploy', 'hub', 'index.html')
 const source = fs.readFileSync(file, 'utf8')
 
@@ -116,12 +139,13 @@ const replaceBlock = (html, name, content) => {
 
 let out = replaceBlock(source, 'FEATURED', favHtml)
 out = replaceBlock(out, 'TOOLS', gridHtml)
+out = replaceBlock(out, 'GUIDES', guideHtml)
 if (!out.includes('data-count>')) throw new Error('data-count marker not found')
 out = out.replace(/(<p class="result-count"[^>]*data-count>)[^<]*(<\/p>)/, `$1${tools.size}の道具$2`)
 
 if (out === source) {
-  console.log(`hub unchanged: ${tools.size} tools in ${GROUPS.length} groups, ${FEATURED.length} shortcuts`)
+  console.log(`hub unchanged: ${tools.size} tools in ${GROUPS.length} groups, ${FEATURED.length} shortcuts, ${GUIDES.length} guides`)
 } else {
   fs.writeFileSync(file, out)
-  console.log(`hub updated: ${tools.size} tools in ${GROUPS.length} groups, ${FEATURED.length} shortcuts`)
+  console.log(`hub updated: ${tools.size} tools in ${GROUPS.length} groups, ${FEATURED.length} shortcuts, ${GUIDES.length} guides`)
 }
