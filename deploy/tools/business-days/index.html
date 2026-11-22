@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>営業日計算｜道具箱</title>
+<meta name="description" content="土日・祝日・独自の休業日を除いて、○営業日後の日付や期間の営業日数を計算します。○営業日前の逆算にも対応。2024年から2030年の祝日を使い、入力はブラウザ内で処理します。">
+<link rel="canonical" href="https://icekun.net/business-days/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  [hidden] { display: none !important; }
+  .tbl-scroll {
+    margin-top: 1rem; overflow: auto; max-height: 26rem;
+    border: 1px solid var(--rule); border-radius: 8px; background: var(--bg);
+  }
+  .tbl-scroll table { border-collapse: separate; border-spacing: 0; }
+  .tbl-scroll th, .tbl-scroll td { border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  .tbl-scroll thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--card); box-shadow: inset 0 -1px 0 var(--rule);
+  }
+  .tbl-scroll tbody tr:last-child td { border-bottom: 0; }
+  .tbl-scroll td.date { font-family: var(--mono); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+  .tbl-scroll td.wd { color: var(--muted); }
+  .tbl-scroll td.work { color: var(--ok); }
+  .tbl-scroll td.skip { color: var(--muted); }
+  .tbl-scroll td.hol { color: var(--ox); }
+  #resultMain { margin-top: 1rem; }
+  #resultMain:empty { display: none; }
+  #tool .stats { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 48rem) { #tool .stats { grid-template-columns: repeat(5, 1fr); } }
+  @media (max-width: 40rem) {
+    select, input[type="date"], input[type="number"] { min-height: 2.75rem; }
+  }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>営業日計算</h1>
+    <p class="lead">土日と祝日を除いて、営業日の日付や日数を計算します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <div class="grid-2">
+      <label class="field" for="mode">
+        <span>計算の種類</span>
+        <select id="mode">
+          <option value="after" selected>○営業日後を計算</option>
+          <option value="before">○営業日前を計算（逆算）</option>
+          <option value="range">期間の営業日数を数える</option>
+        </select>
+      </label>
+      <label class="field" for="base">
+        <span id="baseLabel">起算日</span>
+        <input type="date" id="base">
+      </label>
+      <label class="field" id="nWrap" for="n">
+        <span>営業日数</span>
+        <input type="number" id="n" min="0" max="1000" step="1" value="5" inputmode="numeric">
+      </label>
+      <label class="field" id="endWrap" for="end" hidden>
+        <span>終了日</span>
+        <input type="date" id="end">
+      </label>
+    </div>
+
+    <div class="row" style="margin-top:0.9rem">
+      <label class="check" id="countBaseWrap">
+        <input type="checkbox" id="countBase"> 起算日を1日目に数える
+      </label>
+      <span id="rangeOpts" hidden>
+        <label class="check" style="margin-right:1rem">
+          <input type="checkbox" id="incStart" checked> 開始日を含める
+        </label>
+        <label class="check">
+          <input type="checkbox" id="incEnd" checked> 終了日を含める
+        </label>
+      </span>
+    </div>
+
+    <label class="field" for="closures" style="margin-top:1.25rem">
+      <span>独自の休業日（任意）</span>
+      <textarea id="closures" rows="3" spellcheck="false" placeholder="2026-05-06&#10;2026-12-29〜2027-01-03"></textarea>
+    </label>
+    <p class="hint" style="margin:0.4rem 0 0">1行に1つ。2026-05-06 のように日付を、2026-12-29〜2027-01-03 のように範囲を書けます。</p>
+    <p class="err" id="closureMsg" role="alert"></p>
+
+    <p class="result large" id="resultMain" role="status" aria-live="polite"></p>
+    <p class="hint" id="resultSub" role="status" aria-live="polite" style="margin:0.5rem 0 0"></p>
+    <p class="err" id="errMsg" role="alert"></p>
+    <p class="warn" id="yearWarn" role="status" aria-live="polite"></p>
+
+    <div class="stats">
+      <div class="stat"><b id="stBiz">—</b><span>営業日</span></div>
+      <div class="stat"><b id="stSat">—</b><span>土曜</span></div>
+      <div class="stat"><b id="stSun">—</b><span>日曜</span></div>
+      <div class="stat"><b id="stHol">—</b><span>祝日</span></div>
+      <div class="stat"><b id="stClosed">—</b><span>休業日</span></div>
+    </div>
+
+    <div id="traceWrap" hidden style="margin-top:1.25rem">
+      <h2>内訳</h2>
+      <p class="hint" style="margin:0.2rem 0 0">数えた日と、除いた日を並べています。</p>
+      <div class="tbl-scroll">
+        <table id="traceTable">
+          <caption class="sr-only">日ごとの判定</caption>
+          <thead>
+            <tr><th scope="col">日付</th><th scope="col">曜日</th><th scope="col">扱い</th></tr>
+          </thead>
+          <tbody id="traceBody"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="traceNote" style="margin:0.5rem 0 0"></p>
+    </div>
+
+    <p class="note">祝日データは2024年から2030年までです。春分・秋分は概算です。振替休日・臨時休日は対象外です。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">日付の計算は、ブラウザ内だけで行います。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>計算の種類と起算日を選びます。</li>
+      <li>営業日数か期間を入力します。</li>
+      <li>結果と内訳を確認します。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>営業日の数え方</h2>
+    <p>営業日は、土曜・日曜・祝日・独自の休業日を除いた日です。この道具では、起算日の翌日から数え、土日などを飛ばして○営業日目にあたる日付を出します。起算日を1日目に含めたいときは、「起算日を1日目に数える」を選んでください。</p>
+    <p>逆算では、締切日から指定した営業日だけ前の日付を求めます。「5営業日前までに送る」のような期限の確認に使えます。期間の計算では、開始日から終了日までの営業日を数え、両端を含めるかどうかを切り替えられます。</p>
+
+    <h3>祝日の範囲</h3>
+    <p>祝日は、国民の祝日に関する法律で定められた2024年から2030年までの16日を収録しています。成人の日・海の日・敬老の日・スポーツの日は月曜日の規則で求め、春分の日と秋分の日は近似式で求めます。正式な日付は前年に官報で告示されるため、春分・秋分は1日ずれる年があります。</p>
+    <p>振替休日・臨時休日・国民の休日は対象外です。日曜と重なった祝日の代わりや、即位の日のような臨時の休みは自動では除きません。会社の休業日や年末年始は「独自の休業日」に日付か範囲を書いてください。</p>
+
+    <h3>使う場面</h3>
+    <p>納期の連絡、支払期限の設定、見積もりの回答期限、稟議の起案日など、営業日で数える約束に使えます。相手の休みが分かっている場合は、その日を独自の休業日に足すと、実際の稼働日に近づきます。</p>
+
+    <h3>制限</h3>
+    <p>起算日は1日から1000営業日まで、期間は10年以内です。祝日データの範囲外では、土日だけを除いて計算し、その旨を表示します。夜間・休日・地域ごとの休みは扱いません。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/holiday/">祝日カレンダー</a>
+    <a href="/date/">日付計算・和暦変換</a>
+    <a href="/csv-dedupe/">CSV名寄せ・重複削除</a>
+    <a href="/csv/">CSV⇔JSON変換</a>
+    <a href="/csv-merge/">CSV結合</a>
+    <a href="/invoice-check/">適格請求書の登録番号チェック</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var WD = ['日', '月', '火', '水', '木', '金', '土'];
+  var YEAR_MIN = 2024;
+  var YEAR_MAX = 2030;
+  var MAX_DAYS = 3660;
+
+  function $(id) { return document.getElementById(id); }
+
+  function p2(n) { return n < 10 ? '0' + n : String(n); }
+  function keyOf(y, m, d) { return y + '-' + p2(m) + '-' + p2(d); }
+  function keyToMs(key) {
+    var a = key.split('-');
+    return Date.UTC(parseInt(a[0], 10), parseInt(a[1], 10) - 1, parseInt(a[2], 10));
+  }
+  function dowOf(key) { return new Date(keyToMs(key)).getUTCDay(); }
+  function addDays(key, n) {
+    var t = new Date(keyToMs(key) + n * 86400000);
+    return keyOf(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate());
+  }
+  function yearOf(key) { return parseInt(key.slice(0, 4), 10); }
+  function formatJP(key) {
+    var a = key.split('-');
+    return parseInt(a[0], 10) + '年' + parseInt(a[1], 10) + '月' + parseInt(a[2], 10) + '日（' + WD[dowOf(key)] + '）';
+  }
+
+  function nthMonday(y, m, n) {
+    var dow = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+    return 1 + ((8 - dow) % 7) + (n - 1) * 7;
+  }
+  function springEquinox(y) {
+    return Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  }
+  function autumnEquinox(y) {
+    return Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  }
+  function holidaysFor(y) {
+    return [
+      { m: 1, d: 1, name: '元日' },
+      { m: 1, d: nthMonday(y, 1, 2), name: '成人の日' },
+      { m: 2, d: 11, name: '建国記念の日' },
+      { m: 2, d: 23, name: '天皇誕生日' },
+      { m: 3, d: springEquinox(y), name: '春分の日' },
+      { m: 4, d: 29, name: '昭和の日' },
+      { m: 5, d: 3, name: '憲法記念日' },
+      { m: 5, d: 4, name: 'みどりの日' },
+      { m: 5, d: 5, name: 'こどもの日' },
+      { m: 7, d: nthMonday(y, 7, 3), name: '海の日' },
+      { m: 8, d: 11, name: '山の日' },
+      { m: 9, d: nthMonday(y, 9, 3), name: '敬老の日' },
+      { m: 9, d: autumnEquinox(y), name: '秋分の日' },
+      { m: 10, d: nthMonday(y, 10, 2), name: 'スポーツの日' },
+      { m: 11, d: 3, name: '文化の日' },
+      { m: 11, d: 23, name: '勤労感謝の日' }
+    ];
+  }
+
+  var HOLIDAYS = Object.create(null);
+  (function () {
+    for (var y = YEAR_MIN; y <= YEAR_MAX; y++) {
+      holidaysFor(y).forEach(function (h) {
+        HOLIDAYS[keyOf(y, h.m, h.d)] = h.name;
+      });
+    }
+  })();
+
+  var closures = Object.create(null);
+  var sawOutside = false;
+
+  var modeEl = $('mode');
+  var baseEl = $('base');
+  var nEl = $('n');
+  var endEl = $('end');
+  var baseLabel = $('baseLabel');
+  var nWrap = $('nWrap');
+  var endWrap = $('endWrap');
+  var countBaseWrap = $('countBaseWrap');
+  var countBaseEl = $('countBase');
+  var rangeOpts = $('rangeOpts');
+  var incStartEl = $('incStart');
+  var incEndEl = $('incEnd');
+  var closuresEl = $('closures');
+  var closureMsg = $('closureMsg');
+  var errEl = $('errMsg');
+  var yearWarn = $('yearWarn');
+  var resultMain = $('resultMain');
+  var resultSub = $('resultSub');
+  var traceWrap = $('traceWrap');
+  var traceBody = $('traceBody');
+  var traceNote = $('traceNote');
+  var st = {
+    biz: $('stBiz'), sat: $('stSat'), sun: $('stSun'), hol: $('stHol'), closed: $('stClosed')
+  };
+
+  var nf = new Intl.NumberFormat('ja-JP');
+
+  function todayKey() {
+    var t = new Date();
+    return keyOf(t.getFullYear(), t.getMonth() + 1, t.getDate());
+  }
+
+  function parseKey(s) {
+    var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(s).trim());
+    if (!m) return null;
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    var d = parseInt(m[3], 10);
+    if (y < 1900 || y > 2200 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    var dt = new Date(Date.UTC(y, mo - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() + 1 !== mo || dt.getUTCDate() !== d) return null;
+    return keyOf(y, mo, d);
+  }
+
+  function judge(key) {
+    var y = yearOf(key);
+    if (y < YEAR_MIN || y > YEAR_MAX) sawOutside = true;
+    var dow = dowOf(key);
+    if (dow === 6) return { work: false, type: 'sat', label: '土曜' };
+    if (dow === 0) return { work: false, type: 'sun', label: '日曜' };
+    if (HOLIDAYS[key]) return { work: false, type: 'holiday', label: HOLIDAYS[key] };
+    if (closures[key]) return { work: false, type: 'closed', label: '休業日' };
+    return { work: true, type: 'work', label: '営業日' };
+  }
+
+  function readClosures() {
+    var text = closuresEl.value;
+    var map = Object.create(null);
+    var errors = [];
+    if (!text.trim()) return { map: map, errors: errors };
+
+    var lines = text.split(/[\n\r、,;；]+/);
+    lines.forEach(function (raw, i) {
+      var line = raw.trim();
+      if (!line) return;
+      var range = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})\s*(?:〜|～|~|\.\.)\s*(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/.exec(line);
+      if (range) {
+        var a = parseKey(range[1] + '-' + range[2] + '-' + range[3]);
+        var b = parseKey(range[4] + '-' + range[5] + '-' + range[6]);
+        if (!a || !b) {
+          errors.push(line + ' は日付として読めません。');
+          return;
+        }
+        if (b < a) { var tmp = a; a = b; b = tmp; }
+        var span = Math.round((keyToMs(b) - keyToMs(a)) / 86400000);
+        if (span > MAX_DAYS) {
+          errors.push(line + ' の範囲が長すぎます（10年以内）。');
+          return;
+        }
+        for (var k = 0; k <= span; k++) map[addDays(a, k)] = true;
+        return;
+      }
+      var one = parseKey(line);
+      if (!one) {
+        errors.push(line + ' は日付として読めません。2026-05-06 の形で書いてください。');
+        return;
+      }
+      map[one] = true;
+    });
+    return { map: map, errors: errors };
+  }
+
+  var trace = [];
+
+  function pushTrace(key, info, count) {
+    trace.push({ key: key, label: info.label, type: info.type, work: info.work, count: count });
+  }
+
+  function reset() {
+    trace = [];
+    sawOutside = false;
+    st.biz.textContent = '—';
+    st.sat.textContent = '—';
+    st.sun.textContent = '—';
+    st.hol.textContent = '—';
+    st.closed.textContent = '—';
+    traceBody.textContent = '';
+    traceNote.textContent = '';
+    traceWrap.hidden = true;
+    resultMain.textContent = '';
+    resultSub.textContent = '';
+    errEl.textContent = '';
+    yearWarn.textContent = '';
+  }
+
+  function showError(msg) {
+    reset();
+    errEl.textContent = msg;
+  }
+
+  function tally(info) {
+    if (info.type === 'sat') st.sat.textContent = nf.format(parseInt(st.sat.textContent, 10) + 1);
+    if (info.type === 'sun') st.sun.textContent = nf.format(parseInt(st.sun.textContent, 10) + 1);
+    if (info.type === 'holiday') st.hol.textContent = nf.format(parseInt(st.hol.textContent, 10) + 1);
+    if (info.type === 'closed') st.closed.textContent = nf.format(parseInt(st.closed.textContent, 10) + 1);
+  }
+
+  function initStats() {
+    st.biz.textContent = '0';
+    st.sat.textContent = '0';
+    st.sun.textContent = '0';
+    st.hol.textContent = '0';
+    st.closed.textContent = '0';
+  }
+
+  function renderTrace(limitNote) {
+    traceBody.textContent = '';
+    var shown = trace.slice(0, 200);
+    shown.forEach(function (row) {
+      var tr = document.createElement('tr');
+      var d = document.createElement('td');
+      d.className = 'date';
+      d.textContent = row.key.replace(/-/g, '/');
+      var w = document.createElement('td');
+      w.className = 'wd';
+      w.textContent = WD[dowOf(row.key)] + '曜日';
+      var j = document.createElement('td');
+      if (row.work) {
+        j.className = 'work';
+        j.textContent = row.count ? '営業日（' + row.count + '日目）' : '営業日';
+      } else if (row.type === 'holiday') {
+        j.className = 'hol';
+        j.textContent = '祝日：' + row.label;
+      } else {
+        j.className = 'skip';
+        j.textContent = row.label;
+      }
+      tr.appendChild(d);
+      tr.appendChild(w);
+      tr.appendChild(j);
+      traceBody.appendChild(tr);
+    });
+    traceWrap.hidden = trace.length === 0;
+    if (trace.length > 200) {
+      traceNote.textContent = '内訳は先頭200日分です。件数は上の集計に含まれます。' + (limitNote || '');
+    } else {
+      traceNote.textContent = limitNote || '';
+    }
+  }
+
+  function finish() {
+    var biz = parseInt(st.biz.textContent, 10);
+    if (isNaN(biz)) biz = 0;
+    st.biz.textContent = nf.format(biz);
+    if (sawOutside) {
+      yearWarn.textContent = '祝日データは2024年から2030年までです。範囲外の日付は、土日と独自の休業日だけで判定しました。';
+    }
+  }
+
+  function computeAfter(base, n, countBase) {
+    initStats();
+    if (n === 0) {
+      resultMain.textContent = formatJP(base);
+      resultSub.textContent = '0営業日は、起算日そのものです。';
+      return;
+    }
+    var cur = base;
+    var counted = 0;
+    var steps = 0;
+    if (countBase) {
+      var first = judge(base);
+      if (first.work) {
+        counted = 1;
+        st.biz.textContent = '1';
+        pushTrace(base, first, 1);
+      } else {
+        tally(first);
+        pushTrace(base, first, 0);
+      }
+    }
+    while (counted < n) {
+      cur = addDays(cur, 1);
+      steps++;
+      if (steps > MAX_DAYS) {
+        showError('指定した営業日数が多すぎます。1000営業日以内で指定してください。');
+        return;
+      }
+      var info = judge(cur);
+      if (info.work) {
+        counted++;
+        st.biz.textContent = String(counted);
+        pushTrace(cur, info, counted);
+      } else {
+        tally(info);
+        pushTrace(cur, info, 0);
+      }
+    }
+    resultMain.textContent = formatJP(cur);
+    resultSub.textContent = formatJP(base) + ' から' + (countBase ? '起算日を含めて' : '') + nf.format(n) + '営業日後です。';
+    renderTrace();
+    finish();
+  }
+
+  function computeBefore(base, n, countBase) {
+    initStats();
+    if (n === 0) {
+      resultMain.textContent = formatJP(base);
+      resultSub.textContent = '0営業日は、起算日そのものです。';
+      return;
+    }
+    var cur = base;
+    var counted = 0;
+    var steps = 0;
+    if (countBase) {
+      var first = judge(base);
+      if (first.work) {
+        counted = 1;
+        st.biz.textContent = '1';
+        pushTrace(base, first, 1);
+      } else {
+        tally(first);
+        pushTrace(base, first, 0);
+      }
+    }
+    while (counted < n) {
+      cur = addDays(cur, -1);
+      steps++;
+      if (steps > MAX_DAYS) {
+        showError('指定した営業日数が多すぎます。1000営業日以内で指定してください。');
+        return;
+      }
+      var info = judge(cur);
+      if (info.work) {
+        counted++;
+        st.biz.textContent = String(counted);
+        pushTrace(cur, info, counted);
+      } else {
+        tally(info);
+        pushTrace(cur, info, 0);
+      }
+    }
+    trace.sort(function (a, b) { return a.key < b.key ? -1 : 1; });
+    resultMain.textContent = formatJP(cur);
+    resultSub.textContent = formatJP(base) + ' から' + (countBase ? '起算日を含めて' : '') + nf.format(n) + '営業日前です。';
+    renderTrace();
+    finish();
+  }
+
+  function computeRange(start, end, incStart, incEnd) {
+    initStats();
+    if (end < start) {
+      showError('終了日は開始日より後の日付にしてください。');
+      return;
+    }
+    var span = Math.round((keyToMs(end) - keyToMs(start)) / 86400000) + 1;
+    if (span > MAX_DAYS) {
+      showError('期間は10年以内で指定してください。');
+      return;
+    }
+    var biz = 0;
+    var traceAll = [];
+    for (var i = 0; i < span; i++) {
+      var key = addDays(start, i);
+      var inStart = i !== 0 || incStart;
+      var inEnd = i !== span - 1 || incEnd;
+      if (!inStart || !inEnd) continue;
+      var info = judge(key);
+      if (info.work) {
+        biz++;
+        traceAll.push({ key: key, label: info.label, type: info.type, work: true, count: 0 });
+      } else {
+        tally(info);
+        traceAll.push({ key: key, label: info.label, type: info.type, work: false, count: 0 });
+      }
+    }
+    st.biz.textContent = String(biz);
+    trace = traceAll;
+    resultMain.textContent = nf.format(biz) + '営業日';
+    var bounds = [];
+    if (incStart) bounds.push('開始日を含む');
+    if (incEnd) bounds.push('終了日を含む');
+    resultSub.textContent = formatJP(start) + ' から ' + formatJP(end) + ' まで' +
+      (bounds.length ? '（' + bounds.join('・') + '）' : '（両端を除く）') + 'の営業日です。';
+    if (biz === 0) {
+      resultSub.textContent += ' 数える日がありません。';
+    }
+    renderTrace('土日・祝日・休業日の日も並べています。');
+    finish();
+  }
+
+  function update() {
+    reset();
+    closureMsg.textContent = '';
+    var mode = modeEl.value;
+    var isRange = mode === 'range';
+    nWrap.hidden = isRange;
+    endWrap.hidden = !isRange;
+    rangeOpts.hidden = !isRange;
+    countBaseWrap.hidden = isRange;
+    baseLabel.textContent = isRange ? '開始日' : '起算日';
+
+    var base = parseKey(baseEl.value);
+    if (!base) {
+      showError(isRange ? '開始日を選んでください。' : '起算日を選んでください。');
+      return;
+    }
+
+    var parsed = readClosures();
+    if (parsed.errors.length) {
+      closureMsg.textContent = parsed.errors.slice(0, 3).join(' ');
+      return;
+    }
+    closures = parsed.map;
+
+    if (isRange) {
+      var end = parseKey(endEl.value);
+      if (!end) {
+        showError('終了日を選んでください。');
+        return;
+      }
+      computeRange(base, end, incStartEl.checked, incEndEl.checked);
+      return;
+    }
+
+    var n = parseInt(nEl.value, 10);
+    if (isNaN(n) || n < 0 || n > 1000) {
+      showError('営業日数は0から1000までの整数で指定してください。');
+      return;
+    }
+    if (mode === 'before') computeBefore(base, n, countBaseEl.checked);
+    else computeAfter(base, n, countBaseEl.checked);
+  }
+
+  var timer = 0;
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(update, 150);
+  }
+
+  modeEl.addEventListener('change', function () {
+    if (modeEl.value === 'range' && !endEl.value) {
+      var b = parseKey(baseEl.value) || todayKey();
+      endEl.value = addDays(b, 7);
+    }
+    update();
+  });
+  [baseEl, endEl, nEl, countBaseEl, incStartEl, incEndEl].forEach(function (el) {
+    el.addEventListener('change', update);
+  });
+  closuresEl.addEventListener('input', schedule);
+
+  var now = todayKey();
+  baseEl.value = now;
+  endEl.value = addDays(now, 7);
+  update();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>年収の壁の判定と逆算｜道具箱</title>
+<meta name="description" content="時給と今年の収入から、年収100万・103万・106万・130万円の壁までの残り金額と、あと何時間働けるかを概算します。社会保険・税・扶養の区分を令和8年度の前提で判定します。">
+<link rel="canonical" href="https://icekun.net/nenshu-kabe/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  #wallCards .stat b { font-size: 1.15rem; }
+  #wallCards .stat .meta { color: var(--muted); font-size: 0.7rem; line-height: 1.6; }
+  #wallCards .stat .over { color: var(--err); }
+  #wallCards .stat .under { color: var(--ok); }
+  #wallCards .stat .na { color: var(--warn); }
+  .result { font-variant-numeric: tabular-nums; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>年収の壁の判定と逆算</h1>
+    <p class="lead">時給と今年の収入から、壁まであと何時間働けるかを試算します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>時給と今年の収入</h2>
+    <p class="hint">入力すると自動で計算されます。金額は円、時間は時間単位です。</p>
+
+    <form id="kabeForm" novalidate>
+      <div class="grid-2">
+        <div class="field">
+          <label for="hourly"><span>時給（円）</span></label>
+          <input type="number" id="hourly" min="0" max="100000" step="10" inputmode="numeric" autocomplete="off" value="1200">
+        </div>
+        <div class="field">
+          <label for="current"><span>今年すでに得た給与（円）</span></label>
+          <input type="number" id="current" min="0" max="100000000" step="10000" inputmode="numeric" autocomplete="off" value="800000">
+        </div>
+        <div class="field">
+          <label for="weeks"><span>年末までの残り週数（週）</span></label>
+          <input type="number" id="weeks" min="0" max="52" step="1" inputmode="numeric" autocomplete="off" value="8">
+        </div>
+        <div class="field">
+          <label for="weekHours"><span>週の所定労働時間（時間）</span></label>
+          <input type="number" id="weekHours" min="0" max="60" step="0.5" inputmode="decimal" autocomplete="off" value="20">
+        </div>
+        <div class="field">
+          <label for="size"><span>勤務先の従業員数</span></label>
+          <select id="size">
+            <option value="large" selected>51人以上</option>
+            <option value="small">50人以下</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="target"><span>残り時間を出す壁</span></label>
+          <select id="target">
+            <option value="resident">住民税の壁</option>
+            <option value="income">所得税の壁</option>
+            <option value="social" selected>社会保険の壁（106万円）</option>
+            <option value="dependent">扶養・被扶養の壁（130万円）</option>
+            <option value="spouse">配偶者控除の壁</option>
+            <option value="spouseUpper">配偶者特別控除の上限</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:1rem">
+        <button class="btn" type="submit">計算する</button>
+        <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
+      </div>
+    </form>
+
+    <p class="err" id="status" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="paceAnnual">—</b><span>年末の見込み年収</span></div>
+      <div class="stat"><b id="monthlyWage">—</b><span>月額賃金の目安</span></div>
+      <div class="stat"><b id="selectedRemain">—</b><span>選んだ壁までの残り</span></div>
+      <div class="stat"><b id="selectedHours">—</b><span>あと何時間</span></div>
+      <div class="stat"><b id="selectedWeekly">—</b><span>残り週の1週あたり</span></div>
+    </div>
+
+    <p class="result" id="summary" role="status" aria-live="polite">—</p>
+
+    <h2 style="margin-top:1.5rem">壁ごとの判定</h2>
+    <p class="hint">年末の見込み年収と比べています。あと何時間は、今年すでに得た給与から壁までを時給で割った値です。</p>
+    <div class="stats" id="wallCards" aria-live="polite"></div>
+
+    <p class="warn">金額は令和8年度の概算です。税制改正や自治体で控除額と非課税限度額が変わります。勤務先・自治体・年度で異なるため、最終確認は国税庁・厚生労働省・お住まいの自治体の公式情報で行ってください。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="assum-h">
+    <h2 id="assum-h">控除と壁の前提（編集できます）</h2>
+    <p class="hint">初期値は令和8年度の概算です。お住まいの自治体や改正の内容に合わせて書き換えてください。</p>
+
+    <div class="grid-3">
+      <div class="field">
+        <label for="salaryDed"><span>給与所得控除の最低額（円）</span></label>
+        <input type="number" id="salaryDed" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="740000">
+      </div>
+      <div class="field">
+        <label for="incomeBase"><span>所得税の基礎控除（円）</span></label>
+        <input type="number" id="incomeBase" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="1040000">
+      </div>
+      <div class="field">
+        <label for="residentLimit"><span>住民税の非課税限度額（合計所得・円）</span></label>
+        <input type="number" id="residentLimit" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="450000">
+      </div>
+      <div class="field">
+        <label for="socialLine"><span>社会保険の加入ライン（年収・円）</span></label>
+        <input type="number" id="socialLine" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="1060000">
+      </div>
+      <div class="field">
+        <label for="dependentLine"><span>扶養・被扶養のライン（年収・円）</span></label>
+        <input type="number" id="dependentLine" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="1300000">
+      </div>
+      <div class="field">
+        <label for="spouseIncomeReq"><span>配偶者控除の所得要件（配偶者の合計所得・円）</span></label>
+        <input type="number" id="spouseIncomeReq" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="480000">
+      </div>
+      <div class="field">
+        <label for="spouseUpperIncome"><span>配偶者特別控除の上限所得（配偶者の合計所得・円）</span></label>
+        <input type="number" id="spouseUpperIncome" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="1330000">
+      </div>
+    </div>
+
+    <p class="ok">所得税の壁は、給与所得控除の最低額と所得税の基礎控除を足した額です。住民税の壁は、給与所得控除の最低額と住民税の非課税限度額を足した額です。配偶者控除の壁は、給与所得控除の最低額と配偶者の所得要件を足した額です。</p>
+    <p class="note">社会保険の106万円の壁は、従業員51人以上の勤務先で、週20時間以上・月額8.8万円以上などの要件を満たす場合にかかります。130万円の壁は、健康保険の被扶養者と国民年金の第3号被保険者の判定に使います。どちらも年収見込みで判定し、月ごとの給与や残業で変わります。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="spouse-h">
+    <h2 id="spouse-h">配偶者控除と扶養の区分</h2>
+    <p class="hint">金額は上の前提値から計算しています。本人の年収が上がると、配偶者の側の控除が減ります。</p>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr><th scope="col">本人の年収</th><th scope="col">区分</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono" id="spouseA">—</td><td>配偶者控除の対象（配偶者の合計所得が要件以下）</td></tr>
+          <tr><td class="mono" id="spouseB">—</td><td>配偶者特別控除（配偶者の合計所得に応じて段階的に減る）</td></tr>
+          <tr><td class="mono" id="spouseC">—</td><td>配偶者控除・配偶者特別控除の対象外</td></tr>
+          <tr><td class="mono" id="depRow">—</td><td>健康保険の被扶養者・国民年金第3号の目安（60歳以上・障害者は180万円未満）</td></tr>
+          <tr><td class="mono" id="socialRow">—</td><td>社会保険の加入判定（51人以上・週20時間・月8.8万円などの要件）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">配偶者控除は、働く本人ではなく配偶者の側が受け取る控除です。健康保険の被扶養者は年収130万円未満が目安で、国民年金の第3号被保険者も同じく130万円未満です。世帯の状況で変わるため、勤務先と自治体に確認してください。</p>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>時給と今年の収入を入れます。</li>
+      <li>壁と控除の値を確かめます。</li>
+      <li>あと何時間働けるかを見ます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>年収の壁の決まり方</h2>
+    <p>パートや扶養内で働くときの「壁」は、税金と社会保険で別々に決まります。税金は、給与収入から給与所得控除を引き、さらに基礎控除を引いた残りにかかります。社会保険は、年収と労働時間、勤務先の従業員数で加入が決まります。この道具は、入力した前提値でそれぞれの境目を計算し、時給で割って残りの労働時間を出します。</p>
+
+    <h3>税の壁</h3>
+    <p>所得税は、給与所得控除と基礎控除の合計を超えた分にかかります。住民税は、給与所得控除と住民税の非課税限度額の合計を超えた分にかかります。令和8年度は税制改正で控除額が見直されているため、初期値は概算です。<a href="https://www.nta.go.jp/" rel="noopener">国税庁</a>の公表値に合わせて書き換えてください。</p>
+
+    <h3>社会保険の壁</h3>
+    <p>106万円の壁は、従業員51人以上の勤務先で、週20時間以上、月額8.8万円以上、2か月を超える雇用見込みなどの要件を満たす人が対象です。130万円の壁は、健康保険の被扶養者と国民年金の第3号被保険者の収入要件です。どちらも年収見込みで判定し、月ごとの給与や残業で変わります。詳しくは<a href="https://www.mhlw.go.jp/" rel="noopener">厚生労働省</a>の案内を見てください。</p>
+
+    <h3>配偶者控除と扶養</h3>
+    <p>配偶者控除は、配偶者の合計所得が48万円以下のときに受けられます。48万円を超え133万円以下なら配偶者特別控除になり、金額は段階的に減ります。健康保険の被扶養者は年収130万円未満、国民年金の第3号被保険者も同じく130万円未満が目安です。世帯の状況で変わるため、勤務先と自治体に確認してください。</p>
+
+    <h3>結果の見方と制限</h3>
+    <p>この計算は、残りの期間も同じ時給と労働時間で働く前提です。賞与、残業代、交通費の扱い、勤務先ごとの社会保険の加入条件、自治体の非課税限度額は反映しません。金額は目安として使い、契約前に勤務先へ確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const form = document.getElementById('kabeForm');
+  const hourlyEl = document.getElementById('hourly');
+  const currentEl = document.getElementById('current');
+  const weeksEl = document.getElementById('weeks');
+  const weekHoursEl = document.getElementById('weekHours');
+  const sizeEl = document.getElementById('size');
+  const targetEl = document.getElementById('target');
+  const statusEl = document.getElementById('status');
+  const summaryEl = document.getElementById('summary');
+  const wallCardsEl = document.getElementById('wallCards');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const OUT = {
+    paceAnnual: document.getElementById('paceAnnual'),
+    monthlyWage: document.getElementById('monthlyWage'),
+    selectedRemain: document.getElementById('selectedRemain'),
+    selectedHours: document.getElementById('selectedHours'),
+    selectedWeekly: document.getElementById('selectedWeekly')
+  };
+
+  const ASSUMPTION_IDS = [
+    'salaryDed', 'incomeBase', 'residentLimit', 'socialLine',
+    'dependentLine', 'spouseIncomeReq', 'spouseUpperIncome'
+  ];
+
+  const DEFAULTS = {
+    hourly: '1200',
+    current: '800000',
+    weeks: '8',
+    weekHours: '20',
+    size: 'large',
+    target: 'social',
+    salaryDed: '740000',
+    incomeBase: '1040000',
+    residentLimit: '450000',
+    socialLine: '1060000',
+    dependentLine: '1300000',
+    spouseIncomeReq: '480000',
+    spouseUpperIncome: '1330000'
+  };
+
+  const WALLS = [
+    { key: 'social', name: '社会保険の壁', sub: '106万円', cls: 'social' },
+    { key: 'dependent', name: '扶養・被扶養の壁', sub: '130万円', cls: 'dependent' },
+    { key: 'resident', name: '住民税の壁', sub: '従来100万円', cls: 'resident' },
+    { key: 'income', name: '所得税の壁', sub: '従来103万円', cls: 'income' },
+    { key: 'spouse', name: '配偶者控除の壁', sub: '配偶者の所得要件', cls: 'spouse' },
+    { key: 'spouseUpper', name: '配偶者特別控除の上限', sub: '控除がなくなる線', cls: 'spouseUpper' }
+  ];
+
+  function readNumber(el, fallback) {
+    const raw = el.value.trim();
+    if (raw === '') return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function yen(n) {
+    return Math.round(n).toLocaleString('ja-JP') + '円';
+  }
+
+  function hours(n) {
+    return n.toLocaleString('ja-JP', { maximumFractionDigits: 1, minimumFractionDigits: 0 }) + '時間';
+  }
+
+  function hideError() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function showError(message) {
+    statusEl.hidden = false;
+    statusEl.textContent = message;
+  }
+
+  function readAssumptions() {
+    const values = {};
+    for (const id of ASSUMPTION_IDS) {
+      const el = document.getElementById(id);
+      const value = readNumber(el, NaN);
+      if (Number.isNaN(value) || value < 0 || value > 10000000) return null;
+      values[id] = value;
+    }
+    return values;
+  }
+
+  function buildWalls(a) {
+    return {
+      resident: a.salaryDed + a.residentLimit,
+      income: a.salaryDed + a.incomeBase,
+      social: a.socialLine,
+      dependent: a.dependentLine,
+      spouse: a.salaryDed + a.spouseIncomeReq,
+      spouseUpper: a.salaryDed + a.spouseUpperIncome
+    };
+  }
+
+  function statusFor(wall, pace, already, hourly, weeks, size, socialApplies) {
+    if (wall.key === 'social' && !socialApplies) {
+      return {
+        text: size === 'small' ? '対象外（従業員50人以下）' : '対象外（週20時間・月8.8万円の要件）',
+        cls: 'na',
+        remain: null,
+        hoursLeft: null,
+        weekly: null
+      };
+    }
+    const remain = wall.value - already;
+    const over = pace - wall.value;
+    let text;
+    let cls;
+    if (over > 0) {
+      text = '見込みで ' + yen(over) + ' 超過';
+      cls = 'over';
+    } else {
+      text = '見込みで ' + yen(-over) + ' 余裕';
+      cls = 'under';
+    }
+    let hoursLeft = null;
+    if (remain > 0 && hourly > 0) hoursLeft = remain / hourly;
+    let weekly = null;
+    if (hoursLeft !== null && weeks > 0) weekly = hoursLeft / weeks;
+    return { text, cls, remain, hoursLeft, weekly };
+  }
+
+  function renderCards(walls, pace, already, hourly, weeks, size, socialApplies) {
+    wallCardsEl.replaceChildren();
+    for (const meta of WALLS) {
+      const wall = { key: meta.key, value: walls[meta.key] };
+      const state = statusFor(wall, pace, already, hourly, weeks, size, socialApplies);
+      const card = document.createElement('div');
+      card.className = 'stat';
+      const amount = document.createElement('b');
+      amount.textContent = yen(wall.value);
+      const label = document.createElement('span');
+      label.textContent = meta.name + '（' + meta.sub + '）';
+      const detail = document.createElement('span');
+      detail.className = 'meta ' + state.cls;
+      detail.textContent = state.text;
+      card.append(amount, label, detail);
+      wallCardsEl.append(card);
+    }
+  }
+
+  function updateTargetLabels(walls) {
+    for (const option of targetEl.options) {
+      const meta = WALLS.find(item => item.key === option.value);
+      if (meta) option.textContent = meta.name + '（' + yen(walls[meta.key]) + '）';
+    }
+  }
+
+  function updateSpouseTable(walls) {
+    document.getElementById('spouseA').textContent = '〜' + yen(walls.spouse);
+    document.getElementById('spouseB').textContent = yen(walls.spouse + 1) + '〜' + yen(walls.spouseUpper);
+    document.getElementById('spouseC').textContent = yen(walls.spouseUpper + 1) + '〜';
+    document.getElementById('depRow').textContent = yen(walls.dependent) + '未満';
+    document.getElementById('socialRow').textContent = '年収' + yen(walls.social) + '以上';
+  }
+
+  function clearResults() {
+    Object.keys(OUT).forEach(key => { OUT[key].textContent = '—'; });
+    wallCardsEl.replaceChildren();
+    summaryEl.textContent = '時給と今年の収入を入れると計算結果が表示されます。';
+  }
+
+  function calc() {
+    const hourly = readNumber(hourlyEl, NaN);
+    const current = readNumber(currentEl, 0);
+    const weeks = readNumber(weeksEl, 0);
+    const weekHours = readNumber(weekHoursEl, 0);
+    const assumptions = readAssumptions();
+
+    if (Number.isNaN(hourly) || hourly < 0 || hourly > 100000) {
+      showError('時給は 0〜100,000 円で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(current) || current < 0 || current > 100000000) {
+      showError('今年すでに得た給与は 0〜100,000,000 円で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(weeks) || weeks < 0 || weeks > 52) {
+      showError('残り週数は 0〜52 週で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(weekHours) || weekHours < 0 || weekHours > 60) {
+      showError('週の労働時間は 0〜60 時間で入力してください。');
+      clearResults();
+      return;
+    }
+    if (!assumptions) {
+      showError('控除と壁の前提は 0〜10,000,000 円で入力してください。');
+      clearResults();
+      return;
+    }
+
+    hideError();
+
+    const walls = buildWalls(assumptions);
+    const pace = current + hourly * weekHours * weeks;
+    const monthlyWage = hourly * weekHours * 52 / 12;
+    const socialApplies = sizeEl.value === 'large' && weekHours >= 20 && monthlyWage >= 88000;
+
+    OUT.paceAnnual.textContent = yen(pace);
+    OUT.monthlyWage.textContent = yen(monthlyWage);
+
+    updateTargetLabels(walls);
+    updateSpouseTable(walls);
+    renderCards(walls, pace, current, hourly, weeks, sizeEl.value, socialApplies);
+
+    const targetKey = targetEl.value;
+    const targetMeta = WALLS.find(item => item.key === targetKey) || WALLS[0];
+    const targetWall = walls[targetKey];
+    const remain = targetWall - current;
+    const hoursLeft = hourly > 0 && remain > 0 ? remain / hourly : null;
+    const weekly = hoursLeft !== null && weeks > 0 ? hoursLeft / weeks : null;
+
+    if (remain <= 0) {
+      OUT.selectedRemain.textContent = yen(-remain) + ' 超過';
+    } else {
+      OUT.selectedRemain.textContent = yen(remain);
+    }
+    OUT.selectedHours.textContent = hoursLeft === null ? '—' : hours(hoursLeft);
+    OUT.selectedWeekly.textContent = weekly === null ? '—' : hours(weekly);
+
+    let message = '年末の見込みは ' + yen(pace) + '。';
+    if (remain > 0) {
+      message += targetMeta.name + '（' + yen(targetWall) + '）まで、今年すでに得た給与からあと ' + yen(remain);
+      if (hoursLeft !== null) message += '、時給' + yen(hourly) + 'で約' + hours(hoursLeft);
+      if (weekly !== null) message += '（残り' + weeks + '週で1週あたり約' + hours(weekly) + '）';
+      message += '。';
+    } else {
+      message += targetMeta.name + '（' + yen(targetWall) + '）を、今年すでに ' + yen(-remain) + ' 超えています。';
+    }
+    if (targetKey === 'social' && !socialApplies) {
+      message += 'この条件では社会保険の加入要件を満たさない見込みです。';
+    }
+    summaryEl.textContent = message;
+  }
+
+  [hourlyEl, currentEl, weeksEl, weekHoursEl].forEach(el => {
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+  ASSUMPTION_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+  sizeEl.addEventListener('change', calc);
+  targetEl.addEventListener('change', calc);
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    calc();
+  });
+  resetBtn.addEventListener('click', () => {
+    Object.keys(DEFAULTS).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = DEFAULTS[id];
+    });
+    calc();
+    hourlyEl.focus();
+  });
+
+  calc();
+})();
+</script>
+</body>
+</html>

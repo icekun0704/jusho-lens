@@ -400,6 +400,7 @@
       <button type="button" class="chip" data-cat="file" aria-pressed="false">画像・ファイル</button>
       <button type="button" class="chip" data-cat="money" aria-pressed="false">仕事・お金</button>
       <button type="button" class="chip" data-cat="life" aria-pressed="false">暮らし・健康</button>
+      <button type="button" class="chip" data-cat="dev" aria-pressed="false">開発・データ</button>
     </div>
 
     <section class="featured" aria-labelledby="fav-title" data-featured>
@@ -449,7 +450,7 @@
       </ul>
     </section>
 
-    <p class="result-count" role="status" aria-live="polite" data-count>44の道具</p>
+    <p class="result-count" role="status" aria-live="polite" data-count>45の道具</p>
 
     <ul class="grid" data-grid>
       <!-- TOOLS_START -->
@@ -475,6 +476,14 @@
           <strong class="card-name">電子帳簿のファイル名</strong>
           <span class="card-desc">取引日・取引先・金額から保存用のファイル名を作る。</span>
           <span class="card-tags"><i>電子帳簿保存法</i><i>ファイル名</i><i>保存</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="jusho" data-key="宛名印刷 郵便番号から住所を補い、封筒やラベルの宛名を印刷する。 住所・書類 宛名 封筒 年賀状">
+        <a class="card" href="/envelope/">
+          <span class="card-cat">住所・書類</span>
+          <strong class="card-name">宛名印刷</strong>
+          <span class="card-desc">郵便番号から住所を補い、封筒やラベルの宛名を印刷する。</span>
+          <span class="card-tags"><i>宛名</i><i>封筒</i><i>年賀状</i></span>
         </a>
       </li>
       <li class="cell" data-cat="text" data-key="文字数カウント 文字数と原稿用紙換算、SNSの上限を数える。 テキスト 文章 原稿 SNS">
@@ -509,68 +518,12 @@
           <span class="card-tags"><i>URL</i><i>エンコード</i></span>
         </a>
       </li>
-      <li class="cell" data-cat="text" data-key="正規表現テスター パターンのマッチとキャプチャを確認する。 テキスト 正規表現 開発">
-        <a class="card" href="/regex/">
-          <span class="card-cat">テキスト</span>
-          <strong class="card-name">正規表現テスター</strong>
-          <span class="card-desc">パターンのマッチとキャプチャを確認する。</span>
-          <span class="card-tags"><i>正規表現</i><i>開発</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="text" data-key="cron式の読み方 cron式を日本語に読み解き、次回の実行時刻を出す。 テキスト cron 定期実行 開発">
-        <a class="card" href="/cron/">
-          <span class="card-cat">テキスト</span>
-          <strong class="card-name">cron式の読み方</strong>
-          <span class="card-desc">cron式を日本語に読み解き、次回の実行時刻を出す。</span>
-          <span class="card-tags"><i>cron</i><i>定期実行</i><i>開発</i></span>
-        </a>
-      </li>
       <li class="cell" data-cat="text" data-key="テキスト差分 2つのテキストを行単位で比較する。 テキスト 差分 校正">
         <a class="card" href="/diff/">
           <span class="card-cat">テキスト</span>
           <strong class="card-name">テキスト差分</strong>
           <span class="card-desc">2つのテキストを行単位で比較する。</span>
           <span class="card-tags"><i>差分</i><i>校正</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="text" data-key="CSV⇔JSON CSVとJSONを相互に変換する。 テキスト CSV JSON 表">
-        <a class="card" href="/csv/">
-          <span class="card-cat">テキスト</span>
-          <strong class="card-name">CSV⇔JSON</strong>
-          <span class="card-desc">CSVとJSONを相互に変換する。</span>
-          <span class="card-tags"><i>CSV</i><i>JSON</i><i>表</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="text" data-key="CSV結合 複数のCSVを見出しを確かめて1つにまとめる。 テキスト CSV 結合 表">
-        <a class="card" href="/csv-merge/">
-          <span class="card-cat">テキスト</span>
-          <strong class="card-name">CSV結合</strong>
-          <span class="card-desc">複数のCSVを見出しを確かめて1つにまとめる。</span>
-          <span class="card-tags"><i>CSV</i><i>結合</i><i>表</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="text" data-key="Excel列番号変換 列番号と列字母を変換。範囲の列数も出す。 テキスト Excel 列 表計算">
-        <a class="card" href="/excel-column/">
-          <span class="card-cat">テキスト</span>
-          <strong class="card-name">Excel列番号変換</strong>
-          <span class="card-desc">列番号と列字母を変換。範囲の列数も出す。</span>
-          <span class="card-tags"><i>Excel</i><i>列</i><i>表計算</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="text" data-key="JSON整形 JSONを整形・圧縮して検証する。 テキスト JSON 開発">
-        <a class="card" href="/json/">
-          <span class="card-cat">テキスト</span>
-          <strong class="card-name">JSON整形</strong>
-          <span class="card-desc">JSONを整形・圧縮して検証する。</span>
-          <span class="card-tags"><i>JSON</i><i>開発</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="text" data-key="Base64変換 テキストとファイルをBase64にする。 テキスト Base64 変換">
-        <a class="card" href="/base64/">
-          <span class="card-cat">テキスト</span>
-          <strong class="card-name">Base64変換</strong>
-          <span class="card-desc">テキストとファイルをBase64にする。</span>
-          <span class="card-tags"><i>Base64</i><i>変換</i></span>
         </a>
       </li>
       <li class="cell" data-cat="file" data-key="画像変換・圧縮 WebP/JPEG/PNG変換、リサイズ、一括保存。 画像・ファイル 画像 圧縮 WebP">
@@ -603,30 +556,6 @@
           <strong class="card-name">QRコード作成</strong>
           <span class="card-desc">URLやテキストからQRコードを作って保存する。</span>
           <span class="card-tags"><i>QR</i><i>画像</i><i>URL</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="file" data-key="gzip圧縮・解凍 テキストやファイルをgzipで圧縮・解凍する。 画像・ファイル gzip 圧縮">
-        <a class="card" href="/gzip/">
-          <span class="card-cat">画像・ファイル</span>
-          <strong class="card-name">gzip圧縮・解凍</strong>
-          <span class="card-desc">テキストやファイルをgzipで圧縮・解凍する。</span>
-          <span class="card-tags"><i>gzip</i><i>圧縮</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="file" data-key="ハッシュ生成 SHA-1/256/384/512をテキストとファイルから。 画像・ファイル ハッシュ SHA">
-        <a class="card" href="/hash/">
-          <span class="card-cat">画像・ファイル</span>
-          <strong class="card-name">ハッシュ生成</strong>
-          <span class="card-desc">SHA-1/256/384/512をテキストとファイルから。</span>
-          <span class="card-tags"><i>ハッシュ</i><i>SHA</i></span>
-        </a>
-      </li>
-      <li class="cell" data-cat="file" data-key="RSA暗号化・復号 鍵生成・暗号化・復号をブラウザで試す。 画像・ファイル 暗号 RSA 学習">
-        <a class="card" href="/rsa/">
-          <span class="card-cat">画像・ファイル</span>
-          <strong class="card-name">RSA暗号化・復号</strong>
-          <span class="card-desc">鍵生成・暗号化・復号をブラウザで試す。</span>
-          <span class="card-tags"><i>暗号</i><i>RSA</i><i>学習</i></span>
         </a>
       </li>
       <li class="cell" data-cat="money" data-key="勤務時間・残業代 開始・終了・休憩から勤務時間と残業代を出す。 仕事・お金 勤務 残業 時給">
@@ -749,14 +678,6 @@
           <span class="card-tags"><i>健康</i><i>BMI</i></span>
         </a>
       </li>
-      <li class="cell" data-cat="life" data-key="タイムゾーン変換 2つの地域の時刻を換算する。 暮らし・健康 時差 海外">
-        <a class="card" href="/timezone/">
-          <span class="card-cat">暮らし・健康</span>
-          <strong class="card-name">タイムゾーン変換</strong>
-          <span class="card-desc">2つの地域の時刻を換算する。</span>
-          <span class="card-tags"><i>時差</i><i>海外</i></span>
-        </a>
-      </li>
       <li class="cell" data-cat="life" data-key="燃費・ガソリン代 走行距離と給油量から実燃費とガソリン代を出す。 暮らし・健康 燃費 ガソリン 車">
         <a class="card" href="/fuel/">
           <span class="card-cat">暮らし・健康</span>
@@ -765,44 +686,132 @@
           <span class="card-tags"><i>燃費</i><i>ガソリン</i><i>車</i></span>
         </a>
       </li>
-      <li class="cell" data-cat="life" data-key="カラー・コントラスト HEX/RGB/HSL変換とコントラスト判定。 暮らし・健康 色 デザイン WCAG">
+      <li class="cell" data-cat="dev" data-key="正規表現テスター パターンのマッチとキャプチャを確認する。 開発・データ 正規表現 開発">
+        <a class="card" href="/regex/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">正規表現テスター</strong>
+          <span class="card-desc">パターンのマッチとキャプチャを確認する。</span>
+          <span class="card-tags"><i>正規表現</i><i>開発</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="cron式の読み方 cron式を日本語に読み解き、次回の実行時刻を出す。 開発・データ cron 定期実行 開発">
+        <a class="card" href="/cron/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">cron式の読み方</strong>
+          <span class="card-desc">cron式を日本語に読み解き、次回の実行時刻を出す。</span>
+          <span class="card-tags"><i>cron</i><i>定期実行</i><i>開発</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="JSON整形 JSONを整形・圧縮して検証する。 開発・データ JSON 開発">
+        <a class="card" href="/json/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">JSON整形</strong>
+          <span class="card-desc">JSONを整形・圧縮して検証する。</span>
+          <span class="card-tags"><i>JSON</i><i>開発</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="Base64変換 テキストとファイルをBase64にする。 開発・データ Base64 変換">
+        <a class="card" href="/base64/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">Base64変換</strong>
+          <span class="card-desc">テキストとファイルをBase64にする。</span>
+          <span class="card-tags"><i>Base64</i><i>変換</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="CSV⇔JSON CSVとJSONを相互に変換する。 開発・データ CSV JSON 表">
+        <a class="card" href="/csv/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">CSV⇔JSON</strong>
+          <span class="card-desc">CSVとJSONを相互に変換する。</span>
+          <span class="card-tags"><i>CSV</i><i>JSON</i><i>表</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="CSV結合 複数のCSVを見出しを確かめて1つにまとめる。 開発・データ CSV 結合 表">
+        <a class="card" href="/csv-merge/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">CSV結合</strong>
+          <span class="card-desc">複数のCSVを見出しを確かめて1つにまとめる。</span>
+          <span class="card-tags"><i>CSV</i><i>結合</i><i>表</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="Excel列番号変換 列番号と列字母を変換。範囲の列数も出す。 開発・データ Excel 列 表計算">
+        <a class="card" href="/excel-column/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">Excel列番号変換</strong>
+          <span class="card-desc">列番号と列字母を変換。範囲の列数も出す。</span>
+          <span class="card-tags"><i>Excel</i><i>列</i><i>表計算</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="gzip圧縮・解凍 テキストやファイルをgzipで圧縮・解凍する。 開発・データ gzip 圧縮">
+        <a class="card" href="/gzip/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">gzip圧縮・解凍</strong>
+          <span class="card-desc">テキストやファイルをgzipで圧縮・解凍する。</span>
+          <span class="card-tags"><i>gzip</i><i>圧縮</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="ハッシュ生成 SHA-1/256/384/512をテキストとファイルから。 開発・データ ハッシュ SHA">
+        <a class="card" href="/hash/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">ハッシュ生成</strong>
+          <span class="card-desc">SHA-1/256/384/512をテキストとファイルから。</span>
+          <span class="card-tags"><i>ハッシュ</i><i>SHA</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="RSA暗号化・復号 鍵生成・暗号化・復号をブラウザで試す。 開発・データ 暗号 RSA 学習">
+        <a class="card" href="/rsa/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">RSA暗号化・復号</strong>
+          <span class="card-desc">鍵生成・暗号化・復号をブラウザで試す。</span>
+          <span class="card-tags"><i>暗号</i><i>RSA</i><i>学習</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="カラー・コントラスト HEX/RGB/HSL変換とコントラスト判定。 開発・データ 色 デザイン WCAG">
         <a class="card" href="/color/">
-          <span class="card-cat">暮らし・健康</span>
+          <span class="card-cat">開発・データ</span>
           <strong class="card-name">カラー・コントラスト</strong>
           <span class="card-desc">HEX/RGB/HSL変換とコントラスト判定。</span>
           <span class="card-tags"><i>色</i><i>デザイン</i><i>WCAG</i></span>
         </a>
       </li>
-      <li class="cell" data-cat="life" data-key="色覚シミュレーション 2色がP型・D型・T型の色覚でどう見えるかを比べる。 暮らし・健康 色覚 配色 アクセシビリティ">
+      <li class="cell" data-cat="dev" data-key="色覚シミュレーション 2色がP型・D型・T型の色覚でどう見えるかを比べる。 開発・データ 色覚 配色 アクセシビリティ">
         <a class="card" href="/color-blind/">
-          <span class="card-cat">暮らし・健康</span>
+          <span class="card-cat">開発・データ</span>
           <strong class="card-name">色覚シミュレーション</strong>
           <span class="card-desc">2色がP型・D型・T型の色覚でどう見えるかを比べる。</span>
           <span class="card-tags"><i>色覚</i><i>配色</i><i>アクセシビリティ</i></span>
         </a>
       </li>
-      <li class="cell" data-cat="life" data-key="パスワード生成 端末内で強いパスワードを作る。 暮らし・健康 パスワード 安全">
+      <li class="cell" data-cat="dev" data-key="パスワード生成 端末内で強いパスワードを作る。 開発・データ パスワード 安全">
         <a class="card" href="/password/">
-          <span class="card-cat">暮らし・健康</span>
+          <span class="card-cat">開発・データ</span>
           <strong class="card-name">パスワード生成</strong>
           <span class="card-desc">端末内で強いパスワードを作る。</span>
           <span class="card-tags"><i>パスワード</i><i>安全</i></span>
         </a>
       </li>
-      <li class="cell" data-cat="life" data-key="IPチェック 接続元のIP・地域・ブラウザを確認する。 暮らし・健康 IP 接続">
+      <li class="cell" data-cat="dev" data-key="IPチェック 接続元のIP・地域・ブラウザを確認する。 開発・データ IP 接続">
         <a class="card" href="/ip/">
-          <span class="card-cat">暮らし・健康</span>
+          <span class="card-cat">開発・データ</span>
           <strong class="card-name">IPチェック</strong>
           <span class="card-desc">接続元のIP・地域・ブラウザを確認する。</span>
           <span class="card-tags"><i>IP</i><i>接続</i></span>
         </a>
       </li>
-      <li class="cell" data-cat="life" data-key="User-Agent判定 UA文字列から端末・OS・ブラウザを判定する。 暮らし・健康 ブラウザ 端末 開発">
+      <li class="cell" data-cat="dev" data-key="User-Agent判定 UA文字列から端末・OS・ブラウザを判定する。 開発・データ ブラウザ 端末 開発">
         <a class="card" href="/useragent/">
-          <span class="card-cat">暮らし・健康</span>
+          <span class="card-cat">開発・データ</span>
           <strong class="card-name">User-Agent判定</strong>
           <span class="card-desc">UA文字列から端末・OS・ブラウザを判定する。</span>
           <span class="card-tags"><i>ブラウザ</i><i>端末</i><i>開発</i></span>
+        </a>
+      </li>
+      <li class="cell" data-cat="dev" data-key="タイムゾーン変換 2つの地域の時刻を換算する。 開発・データ 時差 海外">
+        <a class="card" href="/timezone/">
+          <span class="card-cat">開発・データ</span>
+          <strong class="card-name">タイムゾーン変換</strong>
+          <span class="card-desc">2つの地域の時刻を換算する。</span>
+          <span class="card-tags"><i>時差</i><i>海外</i></span>
         </a>
       </li>
       <!-- TOOLS_END -->

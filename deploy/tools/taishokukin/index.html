@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>退職金の手取り概算｜道具箱</title>
+<meta name="description" content="退職金と勤続年数、役員か一般か、iDeCo・企業年金の有無から、退職所得控除と分離課税の税額、手取りを概算します。控除額と税率は令和8年度の前提で編集できます。">
+<link rel="canonical" href="https://icekun.net/taishokukin/">
+<meta name="theme-color" content="#f7f3ea">
+<meta name="google-adsense-account" content="ca-pub-1870128904709930">
+<link rel="icon" type="image/svg+xml" href="/jusho/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/tools.css">
+<style>
+  .result { font-variant-numeric: tabular-nums; }
+  .breakdown th[scope="row"] { font-size: 0.8125rem; color: var(--ink); font-weight: 400; letter-spacing: 0; }
+  .breakdown td.mono { font-variant-numeric: tabular-nums; }
+  .breakdown tr.sum th, .breakdown tr.sum td { font-weight: 600; }
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1870128904709930" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="jp">道具箱</span><span class="en">icekun tools</span></a>
+    <nav class="site" aria-label="メイン">
+      <a href="/#tools">道具</a>
+      <a href="/#about">このサイト</a>
+      <a href="/jusho/">住所レンズ</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="page-head">
+    <h1>退職金の手取り概算</h1>
+    <p class="lead">勤続年数と退職金から、退職所得控除と手取りの概算を出します。</p>
+  </div>
+
+  <section class="panel" id="tool">
+    <h2>退職金と勤続年数</h2>
+    <p class="hint">入力すると自動で計算されます。金額は円、年数は年単位です。</p>
+
+    <form id="retireForm" novalidate>
+      <div class="grid-2">
+        <div class="field">
+          <label for="retirePay"><span>退職金（会社から・円）</span></label>
+          <input type="number" id="retirePay" min="0" max="1000000000" step="10000" inputmode="numeric" autocomplete="off" value="10000000">
+        </div>
+        <div class="field">
+          <label for="idecoPay"><span>iDeCo・企業年金の一時金（円）</span></label>
+          <input type="number" id="idecoPay" min="0" max="1000000000" step="10000" inputmode="numeric" autocomplete="off" value="0">
+        </div>
+        <div class="field">
+          <label for="years"><span>勤続年数（年）</span></label>
+          <input type="number" id="years" min="0" max="60" step="0.5" inputmode="decimal" autocomplete="off" value="20">
+        </div>
+        <div class="field">
+          <label for="role"><span>退職の区分</span></label>
+          <select id="role">
+            <option value="general" selected>一般の従業員</option>
+            <option value="officer">役員等（期間5年以下）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="officerYears"><span>役員等としての期間（年）</span></label>
+          <input type="number" id="officerYears" min="0" max="5" step="0.5" inputmode="decimal" autocomplete="off" value="3" disabled>
+        </div>
+        <div class="field">
+          <label for="idecoYears"><span>iDeCo・企業年金の加入年数（年）</span></label>
+          <input type="number" id="idecoYears" min="0" max="60" step="0.5" inputmode="decimal" autocomplete="off" value="0">
+        </div>
+        <div class="field">
+          <label for="overlapYears"><span>勤続年数との重複年数（年）</span></label>
+          <input type="number" id="overlapYears" min="0" max="60" step="0.5" inputmode="decimal" autocomplete="off" value="0">
+        </div>
+      </div>
+      <div class="row" style="margin-top:1rem">
+        <button class="btn" type="submit">計算する</button>
+        <button class="btn secondary" type="button" id="resetBtn">初期値に戻す</button>
+      </div>
+    </form>
+
+    <p class="err" id="status" role="alert" hidden></p>
+
+    <div class="stats">
+      <div class="stat"><b id="totalPay">—</b><span>退職金の合計</span></div>
+      <div class="stat"><b id="deduction">—</b><span>退職所得控除</span></div>
+      <div class="stat"><b id="taxable">—</b><span>課税退職所得</span></div>
+      <div class="stat"><b id="taxTotal">—</b><span>税の合計</span></div>
+      <div class="stat"><b id="net">—</b><span>手取りの概算</span></div>
+    </div>
+
+    <p class="result" id="summary" role="status" aria-live="polite">—</p>
+    <p class="note">退職金には社会保険料はかかりません。所得税は分離課税で、住民税は翌年度に普通徴収で納めるのが一般的です。</p>
+    <p class="warn">この結果は概算です。退職金の支給額、勤続年数の数え方、役員期間、iDeCo・企業年金の加入期間と重複期間、受給の順序で税額は変わります。金額を保証するものではありません。最終確認は国税庁・勤務先・税理士で行ってください。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="rates-h">
+    <h2 id="rates-h">控除と税率の前提（編集できます）</h2>
+    <p class="hint">初期値は令和8年度の概算です。改正の内容に合わせて書き換えてください。</p>
+
+    <div class="grid-3">
+      <div class="field">
+        <label for="perYearShort"><span>退職所得控除（20年以下・1年あたり・円）</span></label>
+        <input type="number" id="perYearShort" min="0" max="2000000" step="10000" inputmode="numeric" autocomplete="off" value="400000">
+      </div>
+      <div class="field">
+        <label for="perYearLong"><span>退職所得控除（20年超・1年あたり・円）</span></label>
+        <input type="number" id="perYearLong" min="0" max="2000000" step="10000" inputmode="numeric" autocomplete="off" value="700000">
+      </div>
+      <div class="field">
+        <label for="longAdjust"><span>20年超の調整額（円）</span></label>
+        <input type="number" id="longAdjust" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="6000000">
+      </div>
+      <div class="field">
+        <label for="minDeduction"><span>退職所得控除の最低額（円）</span></label>
+        <input type="number" id="minDeduction" min="0" max="10000000" step="10000" inputmode="numeric" autocomplete="off" value="800000">
+      </div>
+      <div class="field">
+        <label for="halfRate"><span>退職所得の課税割合（％）</span></label>
+        <input type="number" id="halfRate" min="0" max="100" step="1" inputmode="numeric" autocomplete="off" value="50">
+      </div>
+      <div class="field">
+        <label for="residentRate"><span>住民税の所得割率（％）</span></label>
+        <input type="number" id="residentRate" min="0" max="20" step="0.1" inputmode="decimal" autocomplete="off" value="10">
+      </div>
+      <div class="field">
+        <label for="reconstructionRate"><span>復興特別所得税率（％）</span></label>
+        <input type="number" id="reconstructionRate" min="0" max="10" step="0.1" inputmode="decimal" autocomplete="off" value="2.1">
+      </div>
+    </div>
+
+    <p class="ok">退職所得控除は、勤続年数20年以下なら40万円×年数、20年超なら70万円×年数−600万円です。どちらも最低80万円です。1年未満は切り上げます。役員等としての期間が5年以下の場合は、その期間を勤続年数から除きます。</p>
+    <p class="note">iDeCo・企業年金の一時金は退職所得として扱い、勤続年数と加入年数が重複する期間を控除の計算から除きます。控除額は退職金と一時金の金額比で按分しています。同一年に複数の退職金を受け取る場合や、ほかの制度が混ざる場合は、控除の調整が別に必要です。</p>
+  </section>
+
+  <section class="panel" aria-labelledby="breakdown-h">
+    <h2 id="breakdown-h">内訳</h2>
+    <p class="hint">金額は円です。課税退職所得は1,000円未満、住民税は100円未満を切り捨てています。</p>
+    <div style="overflow-x:auto">
+      <table class="breakdown">
+        <thead>
+          <tr><th scope="col">項目</th><th scope="col">金額</th><th scope="col">備考</th></tr>
+        </thead>
+        <tbody id="breakdown"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>使い方</h2>
+    <p class="hint">入力はブラウザ内で処理され、サーバーには送られません。</p>
+    <ol style="margin:0;padding-left:1.2rem;font-size:0.875rem;line-height:1.95;color:#4a4952">
+      <li>退職金と勤続年数を入れます。</li>
+      <li>役員か、年金の有無を選びます。</li>
+      <li>控除と手取りの内訳を見ます。</li>
+    </ol>
+  </section>
+
+  <!-- 広告: AdSense でディスプレイ広告ユニットを作ったら、下のコメントを外して data-ad-slot を入れる
+  <div class="ad-slot" aria-label="広告">
+    <p class="label">広告</p>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1870128904709930" data-ad-slot="" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  -->
+
+  <section class="prose">
+    <h2>退職金の手取りの決まり方</h2>
+    <p>退職金は給与と分けて課税する分離課税です。退職金の合計から退職所得控除を引き、残りの2分の1を課税退職所得とし、所得税と住民税を計算します。社会保険料はかかりません。この道具は、勤続年数と加入年数から控除を出し、税と手取りを概算します。</p>
+
+    <h3>退職所得控除</h3>
+    <p>勤続年数20年以下は40万円×年数、20年超は70万円×年数−600万円です。どちらも最低80万円です。1年未満は切り上げます。勤続年数は、役員等としての期間が5年以下の場合、その期間を除いて数えます。</p>
+
+    <h3>役員とiDeCo</h3>
+    <p>役員等としての期間が5年以下の人は、特定役員退職手当等として2分の1課税が適用されません。iDeCoや企業年金の一時金は退職所得として扱い、勤続年数と加入年数が重複する期間は控除の計算から除きます。受給の順序や同年の受給で控除の調整が必要になることがあります。</p>
+
+    <h3>税額と手取り</h3>
+    <p>課税退職所得に所得税の速算表を当てはめ、復興特別所得税2.1％を加えます。住民税は10％です。退職金からこの2つを引いた金額が手取りの概算です。住民税は翌年度に普通徴収で納めるのが一般的です。制度の詳細は<a href="https://www.nta.go.jp/" rel="noopener">国税庁</a>の案内を見てください。</p>
+
+    <h3>結果の見方と制限</h3>
+    <p>退職金の支給額、役員期間、iDeCoの加入期間と重複期間で結果は変わります。控除額と税率は令和8年度の概算で、税制改正で変わります。最終確認は国税庁の案内と勤務先の源泉徴収票で行ってください。同一年に複数の退職金を受け取る場合や、iDeCo以外の制度が混ざる場合は、控除の調整が必要です。税理士や勤務先に確認してください。</p>
+  </section>
+
+  <nav class="tool-nav" aria-label="ほかの道具">
+    <h2>ほかの道具</h2>
+    <a href="/jusho/">住所レンズ</a>
+    <a href="/text/">文字数カウント</a>
+    <a href="/image/">画像変換・圧縮</a>
+    <a href="/ip/">IPチェック</a>
+    <a href="/rsa/">RSA暗号化・復号</a>
+    <a href="/hash/">ハッシュ生成</a>
+    <a href="/json/">JSON整形</a>
+    <a href="/password/">パスワード生成</a>
+    <a href="/color/">カラー・コントラスト</a>
+    <a href="/base64/">Base64変換</a>
+  </nav>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a href="/">道具箱</a>
+        <a href="/#contact">お問い合わせ</a>
+        <a href="/jusho/#/legal/privacy">プライバシー</a>
+        <a href="/jusho/#/legal/terms">利用規約</a>
+      </div>
+      <div><p style="margin:0">© 2026 icekun tools</p></div>
+    </div>
+    <p class="fine">入力した内容はブラウザの外に出ません。外部APIを使う道具では、その旨をページ内に明記しています。</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const form = document.getElementById('retireForm');
+  const retirePayEl = document.getElementById('retirePay');
+  const idecoPayEl = document.getElementById('idecoPay');
+  const yearsEl = document.getElementById('years');
+  const roleEl = document.getElementById('role');
+  const officerYearsEl = document.getElementById('officerYears');
+  const idecoYearsEl = document.getElementById('idecoYears');
+  const overlapYearsEl = document.getElementById('overlapYears');
+  const statusEl = document.getElementById('status');
+  const summaryEl = document.getElementById('summary');
+  const breakdownEl = document.getElementById('breakdown');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const RATE_IDS = [
+    'perYearShort', 'perYearLong', 'longAdjust', 'minDeduction',
+    'halfRate', 'residentRate', 'reconstructionRate'
+  ];
+
+  const OUT = {
+    totalPay: document.getElementById('totalPay'),
+    deduction: document.getElementById('deduction'),
+    taxable: document.getElementById('taxable'),
+    taxTotal: document.getElementById('taxTotal'),
+    net: document.getElementById('net')
+  };
+
+  const DEFAULTS = {
+    retirePay: '10000000',
+    idecoPay: '0',
+    years: '20',
+    role: 'general',
+    officerYears: '3',
+    idecoYears: '0',
+    overlapYears: '0',
+    perYearShort: '400000',
+    perYearLong: '700000',
+    longAdjust: '6000000',
+    minDeduction: '800000',
+    halfRate: '50',
+    residentRate: '10',
+    reconstructionRate: '2.1'
+  };
+
+  const TAX_BRACKETS = [
+    { limit: 1950000, rate: 0.05, deduct: 0 },
+    { limit: 3300000, rate: 0.10, deduct: 97500 },
+    { limit: 6950000, rate: 0.20, deduct: 427500 },
+    { limit: 9000000, rate: 0.23, deduct: 636000 },
+    { limit: 18000000, rate: 0.33, deduct: 1536000 },
+    { limit: 40000000, rate: 0.40, deduct: 2796000 },
+    { limit: Infinity, rate: 0.45, deduct: 4796000 }
+  ];
+
+  function readNumber(el, fallback) {
+    const raw = el.value.trim();
+    if (raw === '') return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function yen(n) {
+    return Math.round(n).toLocaleString('ja-JP') + '円';
+  }
+
+  function pct(n) {
+    return n.toLocaleString('ja-JP', { maximumFractionDigits: 3 }) + '％';
+  }
+
+  function hideError() {
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+  }
+
+  function showError(message) {
+    statusEl.hidden = false;
+    statusEl.textContent = message;
+  }
+
+  function clearResults() {
+    Object.keys(OUT).forEach(key => { OUT[key].textContent = '—'; });
+    summaryEl.textContent = '退職金と勤続年数を入れると計算結果が表示されます。';
+    breakdownEl.replaceChildren();
+  }
+
+  function progressiveTax(taxable) {
+    for (const bracket of TAX_BRACKETS) {
+      if (taxable <= bracket.limit) {
+        return Math.max(0, taxable * bracket.rate - bracket.deduct);
+      }
+    }
+    return 0;
+  }
+
+  function floorTo(value, unit) {
+    return Math.floor(value / unit) * unit;
+  }
+
+  function addRow(label, value, note, className) {
+    const tr = document.createElement('tr');
+    if (className) tr.className = className;
+    const th = document.createElement('th');
+    th.scope = 'row';
+    th.textContent = label;
+    const tdValue = document.createElement('td');
+    tdValue.className = 'mono';
+    tdValue.textContent = value;
+    const tdNote = document.createElement('td');
+    tdNote.textContent = note;
+    tr.append(th, tdValue, tdNote);
+    breakdownEl.append(tr);
+  }
+
+  function toggleOfficer() {
+    const isOfficer = roleEl.value === 'officer';
+    officerYearsEl.disabled = !isOfficer;
+  }
+
+  function calc() {
+    const retirePay = readNumber(retirePayEl, 0);
+    const idecoPay = readNumber(idecoPayEl, 0);
+    const years = readNumber(yearsEl, 0);
+    const officerYears = readNumber(officerYearsEl, 0);
+    const idecoYears = readNumber(idecoYearsEl, 0);
+    const overlapYears = readNumber(overlapYearsEl, 0);
+    const isOfficer = roleEl.value === 'officer';
+
+    if (Number.isNaN(retirePay) || retirePay < 0 || retirePay > 1000000000) {
+      showError('退職金は 0〜1,000,000,000 円で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(idecoPay) || idecoPay < 0 || idecoPay > 1000000000) {
+      showError('iDeCo・企業年金の一時金は 0〜1,000,000,000 円で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(years) || years < 0 || years > 60) {
+      showError('勤続年数は 0〜60 年で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(officerYears) || officerYears < 0 || officerYears > 60) {
+      showError('役員等としての期間は 0〜60 年で入力してください。');
+      clearResults();
+      return;
+    }
+    if (isOfficer && officerYears > 5) {
+      showError('役員等としての期間は5年以下で入力してください。5年を超える場合は「一般の従業員」を選んでください。');
+      clearResults();
+      return;
+    }
+    if (isOfficer && officerYears > years) {
+      showError('役員等としての期間は勤続年数以下で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(idecoYears) || idecoYears < 0 || idecoYears > 60) {
+      showError('iDeCo・企業年金の加入年数は 0〜60 年で入力してください。');
+      clearResults();
+      return;
+    }
+    if (Number.isNaN(overlapYears) || overlapYears < 0 || overlapYears > 60) {
+      showError('重複年数は 0〜60 年で入力してください。');
+      clearResults();
+      return;
+    }
+    if (overlapYears > idecoYears) {
+      showError('重複年数は加入年数以下で入力してください。');
+      clearResults();
+      return;
+    }
+
+    const rates = {};
+    const labels = {
+      perYearShort: '20年以下の1年あたりの控除',
+      perYearLong: '20年超の1年あたりの控除',
+      longAdjust: '20年超の調整額',
+      minDeduction: '控除の最低額',
+      halfRate: '課税割合',
+      residentRate: '住民税の所得割率',
+      reconstructionRate: '復興特別所得税率'
+    };
+    for (const id of RATE_IDS) {
+      const el = document.getElementById(id);
+      const value = readNumber(el, NaN);
+      if (Number.isNaN(value) || value < 0) {
+        showError(labels[id] + 'を0以上の数字で入力してください。');
+        clearResults();
+        return;
+      }
+      rates[id] = value;
+    }
+    if (rates.halfRate > 100) {
+      showError('課税割合は 0〜100 で入力してください。');
+      clearResults();
+      return;
+    }
+    if (rates.residentRate > 20) {
+      showError('住民税の所得割率は 0〜20 で入力してください。');
+      clearResults();
+      return;
+    }
+    if (rates.reconstructionRate > 10) {
+      showError('復興特別所得税率は 0〜10 で入力してください。');
+      clearResults();
+      return;
+    }
+
+    hideError();
+
+    const totalPay = retirePay + idecoPay;
+    let baseYears = years;
+    if (isOfficer) baseYears = Math.max(0, years - officerYears);
+    const rawDeductionYears = baseYears + idecoYears - overlapYears;
+    const deductionYears = rawDeductionYears > 0 ? Math.max(1, Math.ceil(rawDeductionYears)) : 0;
+
+    let deduction = 0;
+    if (deductionYears > 0) {
+      if (deductionYears <= 20) {
+        deduction = rates.perYearShort * deductionYears;
+      } else {
+        deduction = rates.perYearLong * deductionYears - rates.longAdjust;
+      }
+      deduction = Math.max(rates.minDeduction, deduction);
+    }
+    deduction = Math.round(deduction);
+
+    let companyDeduction = 0;
+    let idecoDeduction = 0;
+    if (totalPay > 0 && deduction > 0) {
+      if (retirePay > 0 && idecoPay > 0) {
+        companyDeduction = deduction * retirePay / totalPay;
+        idecoDeduction = deduction - companyDeduction;
+      } else if (retirePay > 0) {
+        companyDeduction = deduction;
+      } else {
+        idecoDeduction = deduction;
+      }
+    }
+
+    const companyTaxableRaw = Math.max(0, retirePay - companyDeduction);
+    const idecoTaxableRaw = Math.max(0, idecoPay - idecoDeduction);
+    const companyRate = isOfficer ? 1 : rates.halfRate / 100;
+    const idecoRate = rates.halfRate / 100;
+    const taxableRaw = companyTaxableRaw * companyRate + idecoTaxableRaw * idecoRate;
+    const taxable = floorTo(taxableRaw, 1000);
+
+    const incomeTaxBase = progressiveTax(taxable);
+    const incomeTax = Math.floor(incomeTaxBase * (1 + rates.reconstructionRate / 100));
+    const residentTax = floorTo(taxable * rates.residentRate / 100, 100);
+    const taxTotal = incomeTax + residentTax;
+    const net = totalPay - taxTotal;
+
+    OUT.totalPay.textContent = yen(totalPay);
+    OUT.deduction.textContent = yen(deduction);
+    OUT.taxable.textContent = yen(taxable);
+    OUT.taxTotal.textContent = yen(taxTotal);
+    OUT.net.textContent = yen(net);
+
+    if (totalPay === 0) {
+      summaryEl.textContent = '退職金が0円のため、控除・税・手取りはすべて0円です。';
+    } else {
+      summaryEl.textContent =
+        '退職金 ' + yen(totalPay) + ' → 退職所得控除 ' + yen(deduction) +
+        '、課税退職所得 ' + yen(taxable) + '、税 ' + yen(taxTotal) +
+        '、手取り ' + yen(net) + '。';
+    }
+
+    breakdownEl.replaceChildren();
+
+    addRow('退職金（会社から）', yen(retirePay), '退職手当等');
+    if (idecoPay > 0) addRow('iDeCo・企業年金の一時金', yen(idecoPay), '退職所得として合算');
+    addRow('退職金の合計', yen(totalPay), '所得税は分離課税', 'sum');
+    addRow('控除算定の勤続年数', deductionYears + '年', isOfficer ? '役員期間 ' + officerYears + '年を除外し、1年未満切り上げ' : '1年未満切り上げ');
+    addRow('退職所得控除', yen(deduction), deductionYears > 20 ? '70万円×年数 − 600万円（最低80万円）' : '40万円×年数（最低80万円）');
+    if (retirePay > 0 && idecoPay > 0) {
+      addRow('控除の按分（会社）', yen(companyDeduction), '金額比で按分');
+      addRow('控除の按分（iDeCo等）', yen(idecoDeduction), '金額比で按分');
+    }
+    addRow('課税退職所得', yen(taxable), isOfficer ? '役員分は2分の1課税なし、1,000円未満切捨て' : '退職所得控除後の2分の1、1,000円未満切捨て', 'sum');
+    addRow('所得税（復興特別所得税込み）', yen(incomeTax), '速算表 × ' + (1 + rates.reconstructionRate / 100).toFixed(3));
+    addRow('住民税', yen(residentTax), '課税退職所得 × ' + pct(rates.residentRate));
+    addRow('税の合計', yen(taxTotal), '所得税 + 住民税', 'sum');
+    addRow('手取りの概算', yen(net), totalPay > 0 ? '退職金の ' + (net / totalPay * 100).toFixed(1) + '％' : '', 'sum');
+  }
+
+  [retirePayEl, idecoPayEl, yearsEl, officerYearsEl, idecoYearsEl, overlapYearsEl].forEach(el => {
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+  RATE_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', calc);
+    el.addEventListener('change', calc);
+  });
+  roleEl.addEventListener('change', () => {
+    toggleOfficer();
+    calc();
+  });
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    calc();
+  });
+  resetBtn.addEventListener('click', () => {
+    Object.keys(DEFAULTS).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = DEFAULTS[id];
+    });
+    toggleOfficer();
+    calc();
+    retirePayEl.focus();
+  });
+
+  toggleOfficer();
+  calc();
+})();
+</script>
+</body>
+</html>
