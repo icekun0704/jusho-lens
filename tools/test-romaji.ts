@@ -1,0 +1,91 @@
+import { kanaToRomaji, nameToRomaji } from '../src/lib/romaji.ts'
+
+const cases: [string, string][] = [
+  ['とうきょう', 'tokyo'],
+  ['おおさか', 'osaka'],
+  ['ほっかいどう', 'hokkaido'],
+  ['さっぽろ', 'sapporo'],
+  ['よこはま', 'yokohama'],
+  ['しんじゅく', 'shinjuku'],
+  ['しぶや', 'shibuya'],
+  ['ちよだ', 'chiyoda'],
+  ['かすみがせき', 'kasumigaseki'],
+  ['きょうと', 'kyoto'],
+  ['おきなわ', 'okinawa'],
+  ['ふくおか', 'fukuoka'],
+  ['おおいた', 'oita'],
+  ['にいがた', 'niigata'],
+  ['ながい', 'nagai'],
+  ['えびす', 'ebisu'],
+  ['しんおおさか', "shin'osaka"],
+  ['よっかいち', 'yokkaichi'],
+  ['はっちょう', 'hatcho'],
+  ['こっち', 'kotchi'],
+  ['ほんま', 'honma'],
+  ['けんいち', "ken'ichi"],
+  ['まっちゃ', 'matcha'],
+  ['ふぁっくす', 'fakkusu'],
+  ['ゔぁいおりん', 'vaiorin'],
+  ['とうきょうと', 'tokyoto'],
+  ['さとう', 'sato'],
+  ['おおの', 'ono'],
+  ['すずき', 'suzuki'],
+  ['ゆうこ', 'yuko'],
+  ['ゆうすけ', 'yusuke'],
+  ['しょうた', 'shota'],
+  ['たかはし', 'takahashi'],
+  ['こばやし', 'kobayashi'],
+  ['わたなべ', 'watanabe'],
+  ['なかむら', 'nakamura'],
+  ['やまだ', 'yamada'],
+  ['あおき', 'aoki'],
+  ['いとう', 'ito'],
+  ['さいとう', 'saito'],
+  ['まつもと', 'matsumoto'],
+  ['いのうえ', 'inoue'],
+  ['きむら', 'kimura'],
+  ['はやし', 'hayashi'],
+  ['しみず', 'shimizu'],
+  ['やまぐち', 'yamaguchi'],
+  ['もり', 'mori'],
+  ['いけだ', 'ikeda'],
+  ['はしもと', 'hashimoto'],
+  ['おがわ', 'ogawa'],
+  ['いしかわ', 'ishikawa'],
+  ['むらかみ', 'murakami'],
+  ['こんどう', 'kondo'],
+  ['いしかわ', 'ishikawa'],
+  ['おおた', 'ota'],
+  ['なかがわ', 'nakagawa'],
+  ['ふじた', 'fujita'],
+  ['おかだ', 'okada'],
+  ['ごとう', 'goto'],
+  ['ながの', 'nagano'],
+  ['にしむら', 'nishimura'],
+  ['きのした', 'kinoshita'],
+  ['さくら', 'sakura'],
+  ['あおやま', 'aoyama'],
+  ['おおやま', 'oyama'],
+  ['とうよう', 'toyo'],
+  ['いのうえ', 'inoue'],
+  ['おおい', 'oi'],
+  ['ちゅうおう', 'chuo'],
+  ['ちゅうおうく', 'chuoku'],
+  ['おおしま', 'oshima'],
+  ['おおいし', 'oishi'],
+  ['えんどう', 'endo'],
+  ['くどう', 'kudo'],
+]
+
+let failed = 0
+for (const [input, expected] of cases) {
+  const actual = kanaToRomaji(input)
+  if (actual !== expected) {
+    console.error(`FAIL  ${input}  →  ${actual}   (expected ${expected})`)
+    failed++
+  }
+}
+console.log(`${cases.length - failed}/${cases.length} passed`)
+console.log('name:', nameToRomaji('やまだ', 'たろう'))
+console.log('name upper:', nameToRomaji('やまだ', 'たろう', { uppercase: true }))
+process.exit(failed ? 1 : 0)
