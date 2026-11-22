@@ -131,6 +131,7 @@ export function BatchPage() {
               ref={fileRef}
               type="file"
               accept=".csv,text/csv"
+              aria-label="CSVファイルを選択"
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }}
             />
